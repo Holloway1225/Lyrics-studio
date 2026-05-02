@@ -32,12 +32,15 @@
   .header h1 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 8vw, 3rem); font-weight: 900; line-height: 1.1; background: linear-gradient(135deg, #f0abfc, #c084fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .header p { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 3px; color: var(--muted); margin-top: 10px; text-transform: uppercase; }
   .api-section { margin-top: 28px; background: rgba(168,85,247,0.06); border: 1px solid rgba(168,85,247,0.2); border-radius: 14px; padding: 18px; }
-  .api-row { display: flex; gap: 8px; align-items: center; }
+  .api-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .api-row:last-of-type { margin-bottom: 0; }
+  .api-label { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; min-width: 70px; }
   .api-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: 'Inconsolata', monospace; font-size: 13px; outline: none; -webkit-appearance: none; }
   .api-input:focus { border-color: var(--accent); }
   .api-toggle { background: rgba(168,85,247,0.1); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--accent); font-family: 'Inconsolata', monospace; font-size: 12px; cursor: pointer; white-space: nowrap; }
-  .api-hint { font-family: 'Inconsolata', monospace; font-size: 10px; color: rgba(124,106,154,0.7); margin-top: 8px; letter-spacing: 1px; }
+  .api-hint { font-family: 'Inconsolata', monospace; font-size: 10px; color: rgba(124,106,154,0.7); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; }
   .api-saved { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--green); margin-top: 6px; letter-spacing: 1px; display: none; }
+  .active-model { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; margin-top: 8px; color: var(--accent); display: none; }
   .section-label { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; margin: 24px 0 8px; }
   textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); font-family: 'Lora', Georgia, serif; font-size: 15px; resize: none; outline: none; -webkit-appearance: none; transition: border-color 0.2s; line-height: 1.6; }
   textarea:focus { border-color: rgba(168,85,247,0.6); }
@@ -75,16 +78,22 @@
   <div class="header">
     <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
     <h1>Your Lyrics.<br>Your Voice.</h1>
-    <p>100% Original · Graded · Powered by Groq</p>
+    <p>100% Original · Graded · Powered by Groq + Gemini</p>
   </div>
   <div class="api-section" style="margin-top:28px">
-    <div class="section-label" style="margin-top:0">Groq API Key</div>
+    <div class="section-label" style="margin-top:0">API Keys</div>
     <div class="api-row">
-      <input type="password" id="api-key" class="api-input" placeholder="gsk_...">
-      <button class="api-toggle" onclick="toggleKey()">Show</button>
+      <div class="api-label">GROQ</div>
+      <input type="password" id="api-groq" class="api-input" placeholder="gsk_...">
     </div>
-    <div class="api-hint">Get yours free at console.groq.com → API Keys</div>
-    <div class="api-saved" id="api-saved">✓ Key saved to this browser</div>
+    <div class="api-row">
+      <div class="api-label">GEMINI</div>
+      <input type="password" id="api-gemini" class="api-input" placeholder="AIza...">
+    </div>
+    <div class="api-hint">Groq is used first. Gemini kicks in automatically if Groq hits its limit.<br>Groq: console.groq.com · Gemini: aistudio.google.com</div>
+    <div class="api-saved" id="api-saved">✓ Keys saved to this browser</div>
+    <div class="active-model" id="active-model"></div>
+    <button onclick="saveKeys()" style="margin-top:12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:8px 16px;color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">Save Keys</button>
   </div>
   <div class="section-label">Song Theme *</div>
   <textarea id="theme" rows="3" placeholder="e.g. Going through trials and coming out stronger on the other side..."></textarea>
@@ -98,19 +107,19 @@
     <button class="toggle-btn" data-value="EDM">EDM</button>
     <button class="toggle-btn" data-value="Soul">Soul</button>
     <button class="toggle-btn" data-value="Indie">Indie</button>
-    <button class="toggle-btn" data-value="Christian Rock">✝️ Christian Rock</button>
+    <button class="toggle-btn" data-value="Christian Rock">✝ Christian Rock</button>
     <button class="toggle-btn" data-value="Christian Worship">🙏 Christian Worship</button>
   </div>
   <div class="section-label">Mood / Vibe</div>
   <div class="toggle-group" id="mood-group">
-    <button class="toggle-btn active" data-value="high-energy, hype, trap, hard-hitting">🔥 Hype</button>
-    <button class="toggle-btn" data-value="emotional, sad, heartbreak, melancholic">💔 Heartbreak</button>
-    <button class="toggle-btn" data-value="euphoric, uplifting, anthemic, feel-good">✨ Euphoric</button>
-    <button class="toggle-btn" data-value="angry, intense, aggressive, raw, unfiltered">😤 Rage</button>
-    <button class="toggle-btn" data-value="chill, introspective, lo-fi, late night vibes">🌙 Late Night</button>
-    <button class="toggle-btn" data-value="romantic, smooth, sensual, R&B">💘 Romantic</button>
-    <button class="toggle-btn" data-value="dreamy, ethereal, atmospheric, indie">🌊 Dreamy</button>
-    <button class="toggle-btn" data-value="empowering, confident, bold, anthemic">💪 Empowerment</button>
+    <button class="toggle-btn active" data-value="high-energy, hype, hard-hitting">🔥 Hype</button>
+    <button class="toggle-btn" data-value="emotional, heartbreak, melancholic">💔 Heartbreak</button>
+    <button class="toggle-btn" data-value="euphoric, uplifting, anthemic">✨ Euphoric</button>
+    <button class="toggle-btn" data-value="angry, intense, aggressive, raw">😤 Rage</button>
+    <button class="toggle-btn" data-value="chill, introspective, late night">🌙 Late Night</button>
+    <button class="toggle-btn" data-value="romantic, smooth, sensual">💘 Romantic</button>
+    <button class="toggle-btn" data-value="dreamy, ethereal, atmospheric">🌊 Dreamy</button>
+    <button class="toggle-btn" data-value="empowering, confident, bold">💪 Empowerment</button>
   </div>
   <div class="section-label">Your Lines — Protected & Featured</div>
   <textarea id="user-lines" rows="3" placeholder="Your own lines from real life — these will never be changed or removed..."></textarea>
@@ -121,137 +130,144 @@
 <script>
 const GROQ_URL="https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL="llama-3.3-70b-versatile";
-let state={lyrics:"",feedback:"",userLines:""};
+const GEMINI_MODEL="gemini-1.5-flash";
+let state={lyrics:"",feedback:"",userLines:"",genre:""};
 
-const GENRE_STYLES={
-  "Pop":"Catchy, melodic, emotionally direct. Verses build tension, choruses explode with the hook. Think Max Martin structure — clear narrative, universal emotion, memorable phrasing.",
-  "Hip-Hop":"Rhythmic, punchy, street-level imagery. Wordplay matters. Verses are dense and specific, choruses are anthemic or hypnotic. Flow and cadence are as important as the words.",
-  "R&B":"Smooth, intimate, sensual. Vulnerable and specific. Slow burn verses, emotionally raw choruses. Details are physical and personal.",
-  "Country":"Storytelling first. Specific places, people, and moments. Conversational and direct. A good country song tells you exactly who, what, where and why.",
-  "Rock":"Driving, bold, anthemic. Verses build pressure, choruses release it. Imagery is visceral and physical. Energy is everything.",
-  "EDM":"Hypnotic, repetitive, euphoric. Simple but powerful phrases that hit hard on the drop. Emotion is conveyed through texture and repetition as much as words.",
-  "Soul":"Raw, gospel-rooted, deeply emotional. Conversational and confessional. Imagery is human and universal. Feels like it comes from lived experience.",
-  "Indie":"Literary, atmospheric, specific. Unexpected imagery and unconventional structure. Values emotional truth over commercial polish.",
-  "Christian Rock":"Anthemic, faith-driven, bold. Themes of struggle, redemption, and spiritual warfare. Powerful and direct without being preachy. Imagery draws from real human experience filtered through faith.",
-  "Christian Worship":"Devotional, reverent, intimate. Written as a direct conversation with God. Simple and singable with deep emotional weight. Imagery is personal and spiritually honest."
-};
+window.addEventListener('load',()=>{
+  ['groq','gemini'].forEach(k=>{const v=localStorage.getItem(`key_${k}`);if(v)document.getElementById(`api-${k}`).value=v;});
+  if(localStorage.getItem('key_groq')||localStorage.getItem('key_gemini')){document.getElementById('api-saved').style.display='block';}
+});
+function saveKeys(){
+  ['groq','gemini'].forEach(k=>{const v=document.getElementById(`api-${k}`).value.trim();if(v)localStorage.setItem(`key_${k}`,v);});
+  document.getElementById('api-saved').style.display='block';
+}
+function getKey(k){return document.getElementById(`api-${k}`).value.trim();}
 
-window.addEventListener('load',()=>{const s=localStorage.getItem('groq_api_key');if(s){document.getElementById('api-key').value=s;document.getElementById('api-saved').style.display='block';}});
-document.getElementById('api-key').addEventListener('change',()=>{const k=document.getElementById('api-key').value.trim();if(k){localStorage.setItem('groq_api_key',k);document.getElementById('api-saved').style.display='block';}});
-function toggleKey(){const i=document.getElementById('api-key');const b=event.target;if(i.type==='password'){i.type='text';b.textContent='Hide';}else{i.type='password';b.textContent='Show';}}
 document.querySelectorAll('.toggle-group').forEach(group=>{group.querySelectorAll('.toggle-btn').forEach(btn=>{btn.addEventListener('click',()=>{group.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});});});
-function getSelected(groupId){return document.querySelector(`#${groupId} .toggle-btn.active`)?.dataset.value||'';}
+function getSelected(id){return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.value||'';}
+
 function copyText(text,btn){const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}catch(e){btn.textContent='Failed';}document.body.removeChild(ta);};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}).catch(fallback);}else{fallback();}}
 function setStatus(msg,isError=false){const el=document.getElementById('status');el.textContent=msg;el.className='status visible'+(isError?' error':' pulsing');}
 function clearStatus(){document.getElementById('status').className='status';}
-async function groqCall(messages,temperature=0.95,maxTokens=1200){const key=document.getElementById('api-key').value.trim();if(!key)throw new Error('No API key — paste your Groq key above');const res=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},body:JSON.stringify({model:GROQ_MODEL,messages,max_tokens:maxTokens,temperature,top_p:0.9})});if(!res.ok){const err=await res.json();throw new Error(err?.error?.message||`API error ${res.status}`);}const data=await res.json();return data.choices[0].message.content.trim();}
 
-function lyricsPrompt(theme,genre,mood,userLines){
-  const sacred=userLines?`\nYOUR LINES — SACRED AND MANDATORY:\nThese lines come from the user's real life and MUST appear verbatim in the final lyrics.\nDo not paraphrase, alter, or remove them. Build the entire song around them:\n${userLines}\n`:'';
-  const genreStyle=GENRE_STYLES[genre]||"Write in the most authentic voice for this genre.";
-  return `You are a world class songwriter with mastery across all genres. You do not have a signature sound — you adapt completely to the genre and mood requested. Your job is to write the most authentic, powerful song possible for the specific genre selected.
+const GENRE_STYLES={
+  "Pop":"Catchy, melodic, emotionally direct. Clear narrative, universal emotion, memorable phrasing.",
+  "Hip-Hop":"Rhythmic, punchy, street-level imagery. Dense specific verses, anthemic or hypnotic choruses.",
+  "R&B":"Smooth, intimate, vulnerable. Physical and personal details. Slow burn verses, raw choruses.",
+  "Country":"Storytelling first. Specific places, people, moments. Conversational and direct.",
+  "Rock":"Driving, bold, anthemic. Verses build pressure, choruses release it. Visceral physical imagery.",
+  "EDM":"Hypnotic, euphoric. Simple powerful phrases that hit hard. Emotion through texture and repetition.",
+  "Soul":"Raw, gospel-rooted, deeply emotional. Conversational and confessional. Lived experience.",
+  "Indie":"Literary, atmospheric, specific. Unexpected imagery. Values emotional truth over polish.",
+  "Christian Rock":"Anthemic, faith-driven, bold. Struggle, redemption, spiritual warfare. Powerful without being preachy. Real human experience filtered through faith.",
+  "Christian Worship":"Devotional, reverent, intimate. Direct conversation with God. Simple and singable with deep emotional weight. Personally and spiritually honest."
+};
 
-THEME: ${theme}
-GENRE: ${genre}
-MOOD/VIBE: ${mood}
-${sacred}
-GENRE STYLE GUIDE — write authentically to this:
-${genreStyle}
+async function aiCall(messages,temperature=0.95,maxTokens=1000){
+  const groqKey=getKey('groq');
+  const geminiKey=getKey('gemini');
 
-NARRATIVE STRUCTURE — as important as the imagery:
-- Tell ONE clear story with a beginning, middle and end
-- A listener should describe what this song is about in one sentence
-- Verse 1: establish the specific situation — where are we, what just happened
-- Verse 2: something has shifted — deepen or complicate the situation
-- Bridge: the turning point — a realization, a memory, a moment of clarity
-- Chorus: the emotional truth the whole story builds toward
-- Every line must serve the story — random beautiful images with no narrative connection are not allowed
+  // Try Groq first
+  if(groqKey){
+    try{
+      const res=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${groqKey}`},body:JSON.stringify({model:GROQ_MODEL,messages,max_tokens:maxTokens,temperature,top_p:0.9})});
+      if(res.ok){
+        const data=await res.json();
+        showModel('✦ Using Groq');
+        return data.choices[0].message.content.trim();
+      }
+      const err=await res.json();
+      // If rate limited fall through to Gemini
+      if(!err?.error?.message?.includes('rate limit')&&!err?.error?.message?.includes('Rate limit')){
+        throw new Error(err?.error?.message||`Groq error ${res.status}`);
+      }
+      showModel('⚡ Groq limit reached — switching to Gemini');
+    }catch(e){
+      if(!e.message.includes('rate limit')&&!e.message.includes('Rate limit')&&!e.message.includes('429')){
+        if(!geminiKey) throw e;
+      }
+    }
+  }
 
-SONGWRITING RULES:
-- Ground every emotion in a PHYSICAL, SPECIFIC detail
-  Good: "your jacket still smells like the bar on fifth"
-  Bad: "I feel the weight of everything"
-- Use imagery and language authentic to the genre — country uses different imagery than hip-hop
-- No forced rhymes that sacrifice meaning
-- Choruses: maximum 4 lines, each under 10 words, ONE central emotional statement
-- Pre-chorus: 2 lines max, build tension
-- Bridge: shift perspective or time, stay in the song's world
+  // Fallback to Gemini
+  if(geminiKey){
+    const prompt=messages.map(m=>m.content).join('\n\n');
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature,maxOutputTokens:maxTokens}})});
+    if(!res.ok){const err=await res.json();throw new Error(err?.error?.message||`Gemini error ${res.status}`);}
+    const data=await res.json();
+    showModel('✦ Using Gemini');
+    return data.candidates[0].content.parts[0].text.trim();
+  }
 
-QUALITY BANS — never use these regardless of genre:
-- Vague abstractions with no sensory anchor
-- Lines that explain the emotion instead of embodying it
-- Forced end rhymes that make lines awkward
-- Choruses longer than 4 lines
-- Gore or horror imagery
-
-STRUCTURE: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Outro]
-Output ONLY the lyrics. No commentary.`;
+  throw new Error('No API key — add your Groq or Gemini key above');
 }
 
-function gradePrompt(lyrics,userLines,genre){
-  const sacred=userLines?`\nSACRED LINES — written by the user, not generated:\n${userLines}\nNEVER flag these as weak. NEVER suggest rewriting them. They are untouchable.\n`:'';
-  const genreStyle=GENRE_STYLES[genre]||"";
-  return `You are a brilliant song editor with expertise across all genres. Grade these lyrics honestly and calibrate your feedback to the specific genre they were written for.
+function showModel(msg){
+  const el=document.getElementById('active-model');
+  el.textContent=msg;
+  el.style.display='block';
+}
 
-GENRE: ${genre}
-GENRE STANDARD: ${genreStyle}
+function buildPrompt(theme,genre,mood,userLines){
+  const sacred=userLines?`\nSACRED LINES — appear verbatim, build the song around them:\n${userLines}\n`:'';
+  const style=GENRE_STYLES[genre]||'Write authentically to this genre.';
+  return `You are a world class songwriter. Adapt completely to the genre and mood. No signature style — match the genre authentically.
+
+THEME: ${theme}
+GENRE: ${genre} — ${style}
+MOOD: ${mood}
+${sacred}
+RULES:
+- Tell ONE clear story: Verse 1 = situation, Verse 2 = shift, Bridge = turning point, Chorus = emotional truth
+- Every line serves the story — no random beautiful images
+- Specific physical details, not vague emotions
+- Language authentic to the genre
+- Chorus: max 4 lines, each under 10 words, one central statement
+- Pre-chorus: 2 lines, build tension
+- No forced rhymes, no gore, no lines that explain instead of show
+
+STRUCTURE: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Outro]
+Output ONLY lyrics. No commentary.`;
+}
+
+function buildGradePrompt(lyrics,userLines,genre){
+  const sacred=userLines?`\nSACRED LINES — untouchable, never flag:\n${userLines}\n`:'';
+  const style=GENRE_STYLES[genre]||'';
+  return `You are a world class song editor. Grade these ${genre} lyrics honestly.
 
 LYRICS:
 ${lyrics}
 ${sacred}
-SCORE: X/10
+SCORE: X/10 (4=amateurish, 6=competent, 7=good, 8=professional, 9=near perfect, 10=nothing to fix)
 
-CALIBRATION:
-- 4/10 = amateurish, wall-to-wall clichés
-- 5/10 = weak, a couple decent moments in filler
-- 6/10 = competent but forgettable
-- 7/10 = genuinely good, one or two weak spots
-- 8/10 = strong professional quality, minor fixes needed
-- 9/10 = near perfect
-- 10/10 = nothing to fix
-Judge against the standard of the genre — a great country song is different from a great worship song.
-
-WHAT'S WORKING: (2-3 lines, quote exactly, one sentence why each works)
+WHAT'S WORKING: 2-3 lines, quote exactly, one sentence each
 
 STRUCTURAL ANALYSIS:
-- NARRATIVE: Can you describe what this song is about in one sentence? Does it tell a real story?
-- EMOTIONAL ARC: Where does it start and where does it end up?
-- GENRE AUTHENTICITY: Does it sound like it belongs in this genre or does it feel generic?
-- VERSE CONSISTENCY: Which verse is stronger? Which drifts?
-- BRIDGE: Does it reframe the story? Does it stay in the song's world?
-- CHORUS FIT: Does the chorus pay off the story the verses are telling?
+- NARRATIVE: One sentence — what is this song about? Does it tell a real story?
+- ARC: Where does it start emotionally, where does it end?
+- GENRE: Does it sound authentically like ${genre}? (Standard: ${style})
+- VERSE 2: Does it deepen Verse 1 or drift?
+- BRIDGE: Does it reframe the story?
+- CHORUS: Does it pay off the story?
 
-WHAT NEEDS FIXING: (3-4 weak lines NOT including sacred lines — quote exactly, why it fails, specific rewrite)
+WHAT NEEDS FIXING: 3 weak lines (not sacred lines) — quote, why it fails, rewrite
 
-CHORUS RULE: Judge chorus by chorus standards for this genre. Never replace a clean singable chorus with a dense verse metaphor.
-
-OVERALL NOTE: One sentence — the single biggest thing holding this back from a 10.`;
+OVERALL NOTE: One sentence — biggest thing holding this back from a 10.`;
 }
 
-function rewritePrompt(lyrics,feedback,userLines,genre){
-  const sacred=userLines?`\nSACRED LINES — from the user's real life. MUST appear verbatim. Do not touch them:\n${userLines}\n`:'';
-  const genreStyle=GENRE_STYLES[genre]||"";
-  return `You are a world class songwriter. Rewrite this song applying every editorial suggestion while keeping everything that was already working.
+function buildRewritePrompt(lyrics,feedback,userLines,genre){
+  const sacred=userLines?`\nSACRED LINES — verbatim, untouchable:\n${userLines}\n`:'';
+  const style=GENRE_STYLES[genre]||'';
+  return `World class songwriter. Rewrite applying all feedback. Keep what works, fix what doesn't.
 
-GENRE: ${genre}
-GENRE STANDARD: ${genreStyle}
-
-ORIGINAL LYRICS:
-${lyrics}
-
-EDITOR FEEDBACK:
-${feedback}
+GENRE: ${genre} — ${style}
+ORIGINAL:\n${lyrics}
+FEEDBACK:\n${feedback}
 ${sacred}
-RULES:
-- Keep every line the editor praised
-- Fix every flagged line — make them more specific, more emotionally precise, more authentic to the genre
-- Strengthen the narrative if it was flagged as weak — make sure the story moves forward
-- Keep the imagery authentic to the genre
-- Strange and specific does NOT mean violent or grotesque
-- If chorus is simple and singable — DO NOT CHANGE IT
-- Chorus: 4 lines max, each under 10 words
-- Same structure: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Outro]
-- Output ONLY the rewritten lyrics, no commentary`;
+- Fix flagged lines — more specific, more genre-authentic
+- Strengthen narrative if weak
+- DO NOT change a clean simple chorus
+- Same structure, output ONLY lyrics`;
 }
 
 function lyricsBox(lyrics,title,id){return `<div class="output-box"><div class="box-header"><div class="box-title">${title}</div><button class="copy-btn" id="copy-${id}">Copy</button></div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;}
@@ -261,22 +277,20 @@ function rewriteBox(){return `<button class="rewrite-btn" id="rewrite-btn" oncli
 
 async function generate(){
   const theme=document.getElementById('theme').value.trim();
-  const apiKey=document.getElementById('api-key').value.trim();
-  if(!apiKey){setStatus('⚠ Paste your Groq API key first',true);return;}
+  if(!getKey('groq')&&!getKey('gemini')){setStatus('⚠ Add at least one API key above',true);return;}
   if(!theme){setStatus('⚠ Drop a theme first',true);return;}
   const genre=getSelected('genre-group');
   const mood=getSelected('mood-group');
   const userLines=document.getElementById('user-lines').value.trim();
-  state.userLines=userLines;
-  state.genre=genre;
+  state={lyrics:'',feedback:'',userLines,genre};
   document.getElementById('generate-btn').disabled=true;
   document.getElementById('output').innerHTML='';
   setStatus('✦ Writing your lyrics...');
   try{
-    const lyrics=await groqCall([{role:'user',content:lyricsPrompt(theme,genre,mood,userLines)}]);
+    const lyrics=await aiCall([{role:'user',content:buildPrompt(theme,genre,mood,userLines)}]);
     state.lyrics=lyrics;
     setStatus('✦ Grading your lyrics...');
-    const feedback=await groqCall([{role:'user',content:gradePrompt(lyrics,userLines,genre)}],0.7,1000);
+    const feedback=await aiCall([{role:'user',content:buildGradePrompt(lyrics,userLines,genre)}],0.7,800);
     state.feedback=feedback;
     clearStatus();
     document.getElementById('output').innerHTML=lyricsBox(lyrics,'✦ Your Lyrics','lyrics')+feedbackBox(feedback,'feedback')+rewriteBox();
@@ -290,15 +304,13 @@ async function rewrite(){
   if(!state.lyrics||!state.feedback)return;
   const btn=document.getElementById('rewrite-btn');
   btn.disabled=true;
-  const rewriteOutput=document.getElementById('rewrite-output');
-  rewriteOutput.innerHTML=`<div class="status visible pulsing" style="margin-top:16px">✦ Rewriting with fixes applied...</div>`;
+  const out=document.getElementById('rewrite-output');
+  out.innerHTML=`<div class="status visible pulsing" style="margin-top:16px">✦ Rewriting with fixes applied...</div>`;
   try{
-    const rewritten=await groqCall([{role:'user',content:rewritePrompt(state.lyrics,state.feedback,state.userLines,state.genre)}]);
-    rewriteOutput.innerHTML=lyricsBox(rewritten,'✦ Rewrite — Final','rewrite');
+    const rewritten=await aiCall([{role:'user',content:buildRewritePrompt(state.lyrics,state.feedback,state.userLines,state.genre)}]);
+    out.innerHTML=lyricsBox(rewritten,'✦ Rewrite — Final','rewrite');
     attachCopy('rewrite',rewritten);
-  }catch(e){
-    rewriteOutput.innerHTML=`<div class="status visible error" style="margin-top:16px">⚠ ${e.message}</div>`;
-  }
+  }catch(e){out.innerHTML=`<div class="status visible error" style="margin-top:16px">⚠ ${e.message}</div>`;}
   btn.disabled=false;
 }
 </script>
