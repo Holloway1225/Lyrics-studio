@@ -37,7 +37,6 @@
   .api-label { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; min-width: 70px; }
   .api-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: 'Inconsolata', monospace; font-size: 13px; outline: none; -webkit-appearance: none; }
   .api-input:focus { border-color: var(--accent); }
-  .api-toggle { background: rgba(168,85,247,0.1); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--accent); font-family: 'Inconsolata', monospace; font-size: 12px; cursor: pointer; white-space: nowrap; }
   .api-hint { font-family: 'Inconsolata', monospace; font-size: 10px; color: rgba(124,106,154,0.7); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; }
   .api-saved { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--green); margin-top: 6px; letter-spacing: 1px; display: none; }
   .active-model { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; margin-top: 8px; color: var(--accent); display: none; }
@@ -52,17 +51,11 @@
   .generate-btn:active { transform: scale(0.98); opacity: 0.9; }
   .generate-btn:disabled { background: rgba(168,85,247,0.2); color: var(--muted); box-shadow: none; cursor: not-allowed; }
   .output-box { margin-top: 28px; background: rgba(0,0,0,0.3); border: 1px solid rgba(124,77,255,0.3); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
-  .feedback-box { border-color: rgba(251,191,36,0.25); background: rgba(251,191,36,0.04); }
   .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .box-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
-  .feedback-box .box-title { color: var(--gold); }
   .copy-btn { padding: 6px 16px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; min-width: 64px; text-align: center; }
   .copy-btn.copied { color: #f0abfc; border-color: var(--accent); }
   .lyrics-text { font-family: 'Lora', Georgia, serif; font-size: 15px; line-height: 2; color: var(--text); white-space: pre-wrap; word-break: break-word; }
-  .feedback-text { font-family: 'Lora', Georgia, serif; font-size: 14px; line-height: 1.9; color: #fef3c7; white-space: pre-wrap; word-break: break-word; }
-  .rewrite-btn { width: 100%; margin-top: 16px; padding: 16px; border-radius: 14px; border: 1.5px solid rgba(52,211,153,0.3); background: rgba(52,211,153,0.12); color: var(--green); font-family: 'Inconsolata', monospace; font-size: 13px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
-  .rewrite-btn:active { transform: scale(0.98); opacity: 0.9; }
-  .rewrite-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .status { font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 2px; color: var(--accent); margin-top: 20px; text-align: center; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); display: none; }
   .status.visible { display: block; }
   .status.error { color: var(--error); border-color: rgba(248,113,113,0.3); }
@@ -78,7 +71,7 @@
   <div class="header">
     <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
     <h1>Your Lyrics.<br>Your Voice.</h1>
-    <p>100% Original · Graded · Powered by Groq + Gemini</p>
+    <p>100% Original · Powered by Groq + Gemini</p>
   </div>
   <div class="api-section" style="margin-top:28px">
     <div class="section-label" style="margin-top:0">API Keys</div>
@@ -131,7 +124,6 @@
 const GROQ_URL="https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL="llama-3.3-70b-versatile";
 const GEMINI_MODEL="gemini-2.5-flash";
-let state={lyrics:"",feedback:"",userLines:"",genre:""};
 
 window.addEventListener('load',()=>{
   ['groq','gemini'].forEach(k=>{const v=localStorage.getItem(`key_${k}`);if(v)document.getElementById(`api-${k}`).value=v;});
@@ -161,12 +153,12 @@ const GENRE_STYLES={
   "Christian Worship":"Devotional, reverent, intimate. Direct conversation with God. Simple and singable with deep emotional weight. Personally and spiritually honest."
 };
 
-async function aiCall(messages,temperature=0.95,maxTokens=1200){
+async function aiCall(prompt,temperature=0.95,maxTokens=1200){
   const groqKey=getKey('groq');
   const geminiKey=getKey('gemini');
   if(groqKey){
     try{
-      const res=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${groqKey}`},body:JSON.stringify({model:GROQ_MODEL,messages,max_tokens:maxTokens,temperature,top_p:0.9})});
+      const res=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${groqKey}`},body:JSON.stringify({model:GROQ_MODEL,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature,top_p:0.9})});
       if(res.ok){const data=await res.json();showModel('✦ Using Groq');return data.choices[0].message.content.trim();}
       const err=await res.json();
       if(!err?.error?.message?.toLowerCase().includes('rate limit')&&!String(res.status).startsWith('429')){throw new Error(err?.error?.message||`Groq error ${res.status}`);}
@@ -176,15 +168,15 @@ async function aiCall(messages,temperature=0.95,maxTokens=1200){
     }
   }
   if(geminiKey){
-    const prompt=messages.map(m=>m.content).join('\n\n');
     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature,maxOutputTokens:maxTokens}})});
     if(!res.ok){const err=await res.json();throw new Error(err?.error?.message||`Gemini error ${res.status}`);}
     const data=await res.json();
     const candidate=data.candidates?.[0];
-    const text=candidate?.content?.parts?.[0]?.text||candidate?.output||'';
+    let text=candidate?.content?.parts?.[0]?.text||candidate?.output||'';
     if(!text)throw new Error('Empty response from Gemini');
+    text=text.replace(/\*\*[\s\S]*?\*\*/g,'').replace(/\*[^*]+\*/g,'').replace(/_{1,2}[^_]+_{1,2}/g,'').replace(/^\s*---+\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
     showModel('✦ Using Gemini');
-    return text.trim();
+    return text;
   }
   throw new Error('No API key — add your Groq or Gemini key above');
 }
@@ -192,71 +184,26 @@ async function aiCall(messages,temperature=0.95,maxTokens=1200){
 function showModel(msg){const el=document.getElementById('active-model');el.textContent=msg;el.style.display='block';}
 
 function buildPrompt(theme,genre,mood,userLines){
-  const sacred=userLines?`\nSACRED LINES — appear verbatim, build the song around them:\n${userLines}\n`:'';
+  const sacred=userLines?`\nSACRED LINES — include these verbatim, build the song around them:\n${userLines}\n`:'';
   const style=GENRE_STYLES[genre]||'Write authentically to this genre.';
-  return `You are a world class songwriter. Adapt completely to the genre and mood. No signature style — match the genre authentically.
+  return `You are a world class songwriter. Write a complete, professional song for the genre and mood specified. Output ONLY the lyrics — no stage directions, no asterisks, no markdown, no commentary before or after.
 
 THEME: ${theme}
 GENRE: ${genre} — ${style}
 MOOD: ${mood}
 ${sacred}
-RULES:
+NARRATIVE RULES:
 - Tell ONE clear story: Verse 1 = situation, Verse 2 = shift, Bridge = turning point, Chorus = emotional truth
-- Every line serves the story — no random beautiful images
+- Every line serves the story
 - Specific physical details, not vague emotions
-- Language authentic to the genre
-- Chorus: max 4 lines, each under 10 words, one central statement
-- Pre-chorus: 2 lines, build tension
-- No forced rhymes, no gore, no lines that explain instead of show
+- Language and imagery authentic to the genre
+- Chorus: max 4 lines, each under 10 words, one central emotional statement
+- Pre-chorus: 2 lines max, build tension
+- No forced rhymes, no lines that explain instead of show
 
-STRUCTURE: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Outro]
-Output ONLY the complete full lyrics from start to finish. No commentary. Do not cut off early.`;
+FORMAT: Use these section labels on their own line: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Outro]
+Output the complete song from start to finish. Every section. No truncating.`;
 }
-
-function buildGradePrompt(lyrics,userLines,genre){
-  const sacred=userLines?`\nSACRED LINES — untouchable, never flag:\n${userLines}\n`:'';
-  const style=GENRE_STYLES[genre]||'';
-  return `You are a world class song editor. Grade these ${genre} lyrics honestly.
-
-LYRICS:
-${lyrics}
-${sacred}
-SCORE: X/10 (4=amateurish, 6=competent, 7=good, 8=professional, 9=near perfect, 10=nothing to fix)
-
-WHAT'S WORKING: 2-3 lines, quote exactly, one sentence each
-
-STRUCTURAL ANALYSIS:
-- NARRATIVE: One sentence — what is this song about? Does it tell a real story?
-- ARC: Where does it start emotionally, where does it end?
-- GENRE: Does it sound authentically like ${genre}? (Standard: ${style})
-- VERSE 2: Does it deepen Verse 1 or drift?
-- BRIDGE: Does it reframe the story?
-- CHORUS: Does it pay off the story?
-
-WHAT NEEDS FIXING: 3 weak lines (not sacred lines) — quote, why it fails, rewrite
-
-OVERALL NOTE: One sentence — biggest thing holding this back from a 10.`;
-}
-
-function buildRewritePrompt(lyrics,feedback,userLines,genre){
-  const sacred=userLines?`\nSACRED LINES — verbatim, untouchable:\n${userLines}\n`:'';
-  const style=GENRE_STYLES[genre]||'';
-  return `You are a world class songwriter. Rewrite the COMPLETE song applying all feedback. Output every section in full — do not skip, summarize or cut off any part.
-
-GENRE: ${genre} — ${style}
-ORIGINAL:\n${lyrics}
-FEEDBACK:\n${feedback}
-${sacred}
-- Fix flagged lines — more specific, more genre-authentic
-- Strengthen narrative if weak
-- DO NOT change a clean simple chorus
-- Output the COMPLETE rewritten song from [Verse 1] to [Outro] — every line, no truncating`;
-}
-
-function lyricsBox(lyrics,title,id){return `<div class="output-box"><div class="box-header"><div class="box-title">${title}</div><button class="copy-btn" id="copy-${id}">Copy</button></div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;}
-function feedbackBox(feedback,id){return `<div class="output-box feedback-box"><div class="box-header"><div class="box-title" style="color:var(--gold)">✦ Editor Feedback</div><button class="copy-btn" id="copy-${id}">Copy</button></div><div class="feedback-text">${feedback.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;}
-function attachCopy(id,text){const btn=document.getElementById(`copy-${id}`);if(btn)btn.addEventListener('click',()=>copyText(text,btn));}
-function rewriteBox(){return `<button class="rewrite-btn" id="rewrite-btn" onclick="rewrite()">✦ &nbsp; Rewrite With Fixes</button><div id="rewrite-output"></div>`;}
 
 async function generate(){
   const theme=document.getElementById('theme').value.trim();
@@ -265,36 +212,17 @@ async function generate(){
   const genre=getSelected('genre-group');
   const mood=getSelected('mood-group');
   const userLines=document.getElementById('user-lines').value.trim();
-  state={lyrics:'',feedback:'',userLines,genre};
   document.getElementById('generate-btn').disabled=true;
   document.getElementById('output').innerHTML='';
   setStatus('✦ Writing your lyrics...');
   try{
-    const lyrics=await aiCall([{role:'user',content:buildPrompt(theme,genre,mood,userLines)}],0.95,1200);
-    state.lyrics=lyrics;
-    setStatus('✦ Grading your lyrics...');
-    const feedback=await aiCall([{role:'user',content:buildGradePrompt(lyrics,userLines,genre)}],0.7,800);
-    state.feedback=feedback;
+    const lyrics=await aiCall(buildPrompt(theme,genre,mood,userLines),0.95,1200);
     clearStatus();
-    document.getElementById('output').innerHTML=lyricsBox(lyrics,'✦ Your Lyrics','lyrics')+feedbackBox(feedback,'feedback')+rewriteBox();
-    attachCopy('lyrics',lyrics);
-    attachCopy('feedback',feedback);
+    const btn=`<button class="copy-btn" id="copy-lyrics">Copy</button>`;
+    document.getElementById('output').innerHTML=`<div class="output-box"><div class="box-header"><div class="box-title">✦ Your Lyrics</div>${btn}</div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;
+    document.getElementById('copy-lyrics').addEventListener('click',function(){copyText(lyrics,this);});
   }catch(e){setStatus('⚠ '+e.message,true);}
   document.getElementById('generate-btn').disabled=false;
-}
-
-async function rewrite(){
-  if(!state.lyrics||!state.feedback)return;
-  const btn=document.getElementById('rewrite-btn');
-  btn.disabled=true;
-  const out=document.getElementById('rewrite-output');
-  out.innerHTML=`<div class="status visible pulsing" style="margin-top:16px">✦ Rewriting with fixes applied...</div>`;
-  try{
-    const rewritten=await aiCall([{role:'user',content:buildRewritePrompt(state.lyrics,state.feedback,state.userLines,state.genre)}],0.95,1400);
-    out.innerHTML=lyricsBox(rewritten,'✦ Rewrite — Final','rewrite');
-    attachCopy('rewrite',rewritten);
-  }catch(e){out.innerHTML=`<div class="status visible error" style="margin-top:16px">⚠ ${e.message}</div>`;}
-  btn.disabled=false;
 }
 </script>
 </body>
