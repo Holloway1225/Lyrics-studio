@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lyrics Studio">
+<title>✦ Suno Lyrics Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inconsolata:wght@400;600&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07070f;
+    --surface: rgba(255,255,255,0.03);
+    --border: rgba(180,100,255,0.18);
+    --accent: #a855f7;
+    --accent2: #7c3aed;
+    --text: #ede8f5;
+    --muted: #7c6a9a;
+    --gold: #fbbf24;
+    --green: #34d399;
+    --error: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'Lora', Georgia, serif; min-height: 100vh; min-height: -webkit-fill-available; padding-bottom: env(safe-area-inset-bottom); overflow-x: hidden; }
+  .orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; filter: blur(80px); }
+  .orb1 { top: -15%; left: -15%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(88,28,135,0.3) 0%, transparent 70%); }
+  .orb2 { bottom: -20%; right: -15%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(109,40,217,0.2) 0%, transparent 70%); }
+  .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 0 16px 80px; }
+  .header { text-align: center; padding: 48px 20px 32px; border-bottom: 1px solid var(--border); }
+  .header-eyebrow { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 6px; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
+  .header h1 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 8vw, 3rem); font-weight: 900; line-height: 1.1; background: linear-gradient(135deg, #f0abfc, #c084fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header p { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 3px; color: var(--muted); margin-top: 10px; text-transform: uppercase; }
+  .api-section { margin-top: 28px; background: rgba(168,85,247,0.06); border: 1px solid rgba(168,85,247,0.2); border-radius: 14px; padding: 18px; }
+  .api-row { display: flex; gap: 8px; align-items: center; }
+  .api-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: 'Inconsolata', monospace; font-size: 13px; outline: none; -webkit-appearance: none; }
+  .api-input:focus { border-color: var(--accent); }
+  .api-toggle { background: rgba(168,85,247,0.1); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--accent); font-family: 'Inconsolata', monospace; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .api-hint { font-family: 'Inconsolata', monospace; font-size: 10px; color: rgba(124,106,154,0.7); margin-top: 8px; letter-spacing: 1px; }
+  .api-saved { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--green); margin-top: 6px; letter-spacing: 1px; display: none; }
+  .section-label { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; margin: 24px 0 8px; }
+  textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); font-family: 'Lora', Georgia, serif; font-size: 15px; resize: none; outline: none; -webkit-appearance: none; transition: border-color 0.2s; line-height: 1.6; }
+  textarea:focus { border-color: rgba(168,85,247,0.6); }
+  textarea::placeholder { color: var(--muted); font-style: italic; }
+  .toggle-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .toggle-btn { padding: 8px 14px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 1px; cursor: pointer; transition: all 0.15s; -webkit-appearance: none; }
+  .toggle-btn.active { border-color: var(--accent); background: rgba(168,85,247,0.15); color: #f0abfc; transform: scale(1.04); }
+  .generate-btn { width: 100%; margin-top: 28px; padding: 18px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; font-family: 'Inconsolata', monospace; font-size: 14px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 30px rgba(168,85,247,0.3); transition: all 0.2s; -webkit-appearance: none; }
+  .generate-btn:active { transform: scale(0.98); opacity: 0.9; }
+  .generate-btn:disabled { background: rgba(168,85,247,0.2); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+  .output-box { margin-top: 28px; background: rgba(0,0,0,0.3); border: 1px solid rgba(124,77,255,0.3); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
+  .feedback-box { border-color: rgba(251,191,36,0.25); background: rgba(251,191,36,0.04); }
+  .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .box-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
+  .feedback-box .box-title { color: var(--gold); }
+  .copy-btn { padding: 6px 16px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; min-width: 64px; text-align: center; }
+  .copy-btn.copied { color: #f0abfc; border-color: var(--accent); }
+  .lyrics-text { font-family: 'Lora', Georgia, serif; font-size: 15px; line-height: 2; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+  .feedback-text { font-family: 'Lora', Georgia, serif; font-size: 14px; line-height: 1.9; color: #fef3c7; white-space: pre-wrap; word-break: break-word; }
+  .rewrite-btn { width: 100%; margin-top: 16px; padding: 16px; border-radius: 14px; border: 1.5px solid rgba(52,211,153,0.3); background: rgba(52,211,153,0.12); color: var(--green); font-family: 'Inconsolata', monospace; font-size: 13px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
+  .rewrite-btn:active { transform: scale(0.98); opacity: 0.9; }
+  .rewrite-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .status { font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 2px; color: var(--accent); margin-top: 20px; text-align: center; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); display: none; }
+  .status.visible { display: block; }
+  .status.error { color: var(--error); border-color: rgba(248,113,113,0.3); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+  .pulsing { animation: pulse 1.2s ease infinite; }
+</style>
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="container">
+  <div class="header">
+    <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
+    <h1>Your Lyrics.<br>Your Voice.</h1>
+    <p>100% Original · Graded · Powered by Groq</p>
+  </div>
+  <div class="api-section" style="margin-top:28px">
+    <div class="section-label" style="margin-top:0">Groq API Key</div>
+    <div class="api-row">
+      <input type="password" id="api-key" class="api-input" placeholder="gsk_...">
+      <button class="api-toggle" onclick="toggleKey()">Show</button>
+    </div>
+    <div class="api-hint">Get yours free at console.groq.com → API Keys</div>
+    <div class="api-saved" id="api-saved">✓ Key saved to this browser</div>
+  </div>
+  <div class="section-label">Song Theme *</div>
+  <textarea id="theme" rows="3" placeholder="e.g. Moving on after a toxic relationship, finally feeling free..."></textarea>
+  <div class="section-label">Genre</div>
+  <div class="toggle-group" id="genre-group">
+    <button class="toggle-btn active" data-value="Pop">Pop</button>
+    <button class="toggle-btn" data-value="Hip-Hop">Hip-Hop</button>
+    <button class="toggle-btn" data-value="R&B">R&B</button>
+    <button class="toggle-btn" data-value="Country">Country</button>
+    <button class="toggle-btn" data-value="Rock">Rock</button>
+    <button class="toggle-btn" data-value="EDM">EDM</button>
+    <button class="toggle-btn" data-value="Soul">Soul</button>
+    <button class="toggle-btn" data-value="Indie">Indie</button>
+  </div>
+  <div class="section-label">Mood / Vibe</div>
+  <div class="toggle-group" id="mood-group">
+    <button class="toggle-btn active" data-value="high-energy, hype, trap, hard-hitting">🔥 Hype</button>
+    <button class="toggle-btn" data-value="emotional, sad, heartbreak, melancholic">💔 Heartbreak</button>
+    <button class="toggle-btn" data-value="euphoric, uplifting, anthemic, feel-good">✨ Euphoric</button>
+    <button class="toggle-btn" data-value="angry, intense, aggressive, raw, unfiltered">😤 Rage</button>
+    <button class="toggle-btn" data-value="chill, introspective, lo-fi, late night vibes">🌙 Late Night</button>
+    <button class="toggle-btn" data-value="romantic, smooth, sensual, R&B">💘 Romantic</button>
+    <button class="toggle-btn" data-value="dreamy, ethereal, atmospheric, indie">🌊 Dreamy</button>
+    <button class="toggle-btn" data-value="empowering, confident, bold, anthemic">💪 Empowerment</button>
+  </div>
+  <div class="section-label">Your Lines — Protected & Featured</div>
+  <textarea id="user-lines" rows="3" placeholder="Your own lines from real life — these will never be changed or removed..."></textarea>
+  <button class="generate-btn" id="generate-btn" onclick="generate()">✦ &nbsp; Generate My Lyrics</button>
+  <div class="status" id="status"></div>
+  <div id="output"></div>
+</div>
+<script>
+const GROQ_URL="https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL="llama-3.3-70b-versatile";
+let state={lyrics:"",feedback:"",userLines:""};
+window.addEventListener('load',()=>{const s=localStorage.getItem('groq_api_key');if(s){document.getElementById('api-key').value=s;document.getElementById('api-saved').style.display='block';}});
+document.getElementById('api-key').addEventListener('change',()=>{const k=document.getElementById('api-key').value.trim();if(k){localStorage.setItem('groq_api_key',k);document.getElementById('api-saved').style.display='block';}});
+function toggleKey(){const i=document.getElementById('api-key');const b=event.target;if(i.type==='password'){i.type='text';b.textContent='Hide';}else{i.type='password';b.textContent='Show';}}
+document.querySelectorAll('.toggle-group').forEach(group=>{group.querySelectorAll('.toggle-btn').forEach(btn=>{btn.addEventListener('click',()=>{group.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});});});
+function getSelected(groupId){return document.querySelector(`#${groupId} .toggle-btn.active`)?.dataset.value||'';}
+function copyText(text,btn){const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}catch(e){btn.textContent='Failed';}document.body.removeChild(ta);};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}).catch(fallback);}else{fallback();}}
+function setStatus(msg,isError=false){const el=document.getElementById('status');el.textContent=msg;el.className='status visible'+(isError?' error':' pulsing');}
+function clearStatus(){document.getElementById('status').className='status';}
+async function groqCall(messages,temperature=0.95,maxTokens=1200){const key=document.getElementById('api-key').value.trim();if(!key)throw new Error('No API key — paste your Groq key above');const res=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},body:JSON.stringify({model:GROQ_MODEL,messages,max_tokens:maxTokens,temperature,top_p:0.9})});if(!res.ok){const err=await res.json();throw new Error(err?.error?.message||`API error ${res.status}`);}const data=await res.json();return data.choices[0].message.content.trim();}
+function lyricsPrompt(theme,genre,mood,userLines){const sacred=userLines?`\nYOUR LINES — SACRED AND MANDATORY:\nThese lines come from the user's real life and MUST appear verbatim in the final lyrics.\nDo not paraphrase, alter, or remove them. Build the entire song around them:\n${userLines}\n`:'';return `You are one of the greatest living songwriters. Your style sits at the intersection of Hozier's dark literary imagery, Lorde's hyper-specific mundane details, and Phoebe Bridgers' quiet devastation. Write lyrics for Suno AI.\n\nTHEME: ${theme}\nGENRE: ${genre}\nMOOD/VIBE: ${mood}\n${sacred}\nVERSES:\n- Dense, literary, slow-burning — every line earns its place\n- Ground every emotion in a PHYSICAL, SPECIFIC detail\n  Good: "your jacket still smells like the bar on fifth"\n  Bad: "I feel empty without you"\n- Use unexpected comparisons — reference textures, temperatures, sounds, smells, tastes\n- Strange and specific — NOT violent or grotesque\n- Every section must stay in the same sensory world\n\nCHORUS — MOST IMPORTANT RULE:\n- Maximum 4 lines — SHORTER than the verse, never longer\n- Each line under 10 words\n- ONE single image or statement — simple, exposed, devastating\n- The emotional gut-punch the verses build toward\n\nPRE-CHORUS: 2 lines max, build tension into the chorus\n\nBRIDGE: Stay in the same sensory world — shift perspective but keep physical imagery. NO abstract philosophical language.\n\nABSOLUTE BANS: "phoenix", "warrior", "shatter", "chains", "rise up", "wings", "soul"/"heart"/"fire" used generically, lines that explain emotion instead of embodying it, forced rhymes, choruses longer than 4 lines, gore or horror imagery.\n\nSTRUCTURE: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Outro]\nOutput ONLY the lyrics. No commentary.`;}
+function gradePrompt(lyrics,userLines){const sacred=userLines?`\nSACRED LINES — written by the user, not generated:\n${userLines}\nNEVER flag these as weak. NEVER suggest rewriting them. They are untouchable.\n`:'';return `You are a brilliant song editor with the taste of Hozier, Lorde, and Phoebe Bridgers. Give honest, calibrated, structural feedback.\n\nLYRICS:\n${lyrics}\n${sacred}\nSCORE: X/10\n\nCALIBRATION:\n- 4/10 = amateurish, wall-to-wall clichés\n- 5/10 = weak, a couple decent images in filler\n- 6/10 = competent but forgettable\n- 7/10 = genuinely good, one or two weak spots\n- 8/10 = strong professional quality, minor fixes needed\n- 9/10 = near perfect\n- 10/10 = nothing to fix\nMost well-prompted AI lyrics land 6-8. Be fair.\n\nWHAT'S WORKING: (2-3 lines, quote exactly, one sentence why each works)\n\nSTRUCTURAL ANALYSIS:\n- EMOTIONAL ARC: Does the song move somewhere?\n- VERSE CONSISTENCY: Which verse is stronger? Which drifts into abstraction?\n- BRIDGE: Does it stay in the sensory world of the verses?\n- VOICE IDENTITY: What world does this song live in? Does every section stay true?\n- CHORUS FIT: Does the chorus feel like the payoff of the verses?\n\nWHAT NEEDS FIXING: (3-4 weak lines NOT including sacred lines — quote exactly, why it fails, specific rewrite)\n\nCHORUS RULE: Judge chorus by chorus standards. NEVER replace a clean simple chorus with a dense verse metaphor.\n\nOVERALL NOTE: One sentence — the single biggest thing holding this back from a 10.`;}
+function rewritePrompt(lyrics,feedback,userLines){const sacred=userLines?`\nSACRED LINES — from the user's real life. MUST appear verbatim. Do not touch them:\n${userLines}\n`:'';return `You are one of the greatest living songwriters in the style of Hozier, Lorde, and Phoebe Bridgers. Rewrite this song applying every editorial suggestion.\n\nORIGINAL LYRICS:\n${lyrics}\n\nEDITOR FEEDBACK:\n${feedback}\n${sacred}\nRULES:\n- Keep every line the editor praised\n- Completely rewrite every flagged line — visceral, strange, specific\n- Apply every structural note (bridge, verse consistency, arc)\n- Strange does NOT mean violent or grotesque — push toward quiet devastation\n- If chorus is simple and singable — DO NOT CHANGE IT\n- Chorus: 4 lines max, each under 10 words\n- Same structure: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Outro]\n- Output ONLY the rewritten lyrics, no commentary`;}
+function lyricsBox(lyrics,title,id){return `<div class="output-box"><div class="box-header"><div class="box-title">${title}</div><button class="copy-btn" id="copy-${id}">Copy</button></div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;}
+function feedbackBox(feedback,id){return `<div class="output-box feedback-box"><div class="box-header"><div class="box-title" style="color:var(--gold)">✦ Editor Feedback</div><button class="copy-btn" id="copy-${id}">Copy</button></div><div class="feedback-text">${feedback.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;}
+function attachCopy(id,text){const btn=document.getElementById(`copy-${id}`);if(btn)btn.addEventListener('click',()=>copyText(text,btn));}
+function rewriteBox(){return `<button class="rewrite-btn" id="rewrite-btn" onclick="rewrite()">✦ &nbsp; Rewrite With Fixes</button><div id="rewrite-output"></div>`;}
+async function generate(){const theme=document.getElementById('theme').value.trim();const apiKey=document.getElementById('api-key').value.trim();if(!apiKey){setStatus('⚠ Paste your Groq API key first',true);return;}if(!theme){setStatus('⚠ Drop a theme first',true);return;}const genre=getSelected('genre-group');const mood=getSelected('mood-group');const userLines=document.getElementById('user-lines').value.trim();state.userLines=userLines;document.getElementById('generate-btn').disabled=true;document.getElementById('output').innerHTML='';setStatus('✦ Writing your lyrics...');try{const lyrics=await groqCall([{role:'user',content:lyricsPrompt(theme,genre,mood,userLines)}]);state.lyrics=lyrics;setStatus('✦ Grading your lyrics...');const feedback=await groqCall([{role:'user',content:gradePrompt(lyrics,userLines)}],0.7,1000);state.feedback=feedback;clearStatus();document.getElementById('output').innerHTML=lyricsBox(lyrics,'✦ Your Lyrics','lyrics')+feedbackBox(feedback,'feedback')+rewriteBox();attachCopy('lyrics',lyrics);attachCopy('feedback',feedback);}catch(e){setStatus('⚠ '+e.message,true);}document.getElementById('generate-btn').disabled=false;}
+async function rewrite(){if(!state.lyrics||!state.feedback)return;const btn=document.getElementById('rewrite-btn');btn.disabled=true;const rewriteOutput=document.getElementById('rewrite-output');rewriteOutput.innerHTML=`<div class="status visible pulsing" style="margin-top:16px">✦ Rewriting with fixes applied...</div>`;try{const rewritten=await groqCall([{role:'user',content:rewritePrompt(state.lyrics,state.feedback,state.userLines)}]);rewriteOutput.innerHTML=lyricsBox(rewritten,'✦ Rewrite — Final','rewrite');attachCopy('rewrite',rewritten);}catch(e){rewriteOutput.innerHTML=`<div class="status visible error" style="margin-top:16px">⚠ ${e.message}</div>`;}btn.disabled=false;}
+</script>
+</body>
+</html>
