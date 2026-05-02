@@ -107,7 +107,7 @@
     <button class="toggle-btn" data-value="EDM">EDM</button>
     <button class="toggle-btn" data-value="Soul">Soul</button>
     <button class="toggle-btn" data-value="Indie">Indie</button>
-    <button class="toggle-btn" data-value="Christian Rock">✝ Christian Rock</button>
+    <button class="toggle-btn" data-value="Christian Rock">✝️ Christian Rock</button>
     <button class="toggle-btn" data-value="Christian Worship">🙏 Christian Worship</button>
   </div>
   <div class="section-label">Mood / Vibe</div>
@@ -142,10 +142,8 @@ function saveKeys(){
   document.getElementById('api-saved').style.display='block';
 }
 function getKey(k){return document.getElementById(`api-${k}`).value.trim();}
-
 document.querySelectorAll('.toggle-group').forEach(group=>{group.querySelectorAll('.toggle-btn').forEach(btn=>{btn.addEventListener('click',()=>{group.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});});});
 function getSelected(id){return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.value||'';}
-
 function copyText(text,btn){const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}catch(e){btn.textContent='Failed';}document.body.removeChild(ta);};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}).catch(fallback);}else{fallback();}}
 function setStatus(msg,isError=false){const el=document.getElementById('status');el.textContent=msg;el.className='status visible'+(isError?' error':' pulsing');}
 function clearStatus(){document.getElementById('status').className='status';}
@@ -163,54 +161,35 @@ const GENRE_STYLES={
   "Christian Worship":"Devotional, reverent, intimate. Direct conversation with God. Simple and singable with deep emotional weight. Personally and spiritually honest."
 };
 
-async function aiCall(messages,temperature=0.95,maxTokens=1000){
+async function aiCall(messages,temperature=0.95,maxTokens=1200){
   const groqKey=getKey('groq');
   const geminiKey=getKey('gemini');
-
-  // Try Groq first
   if(groqKey){
     try{
       const res=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${groqKey}`},body:JSON.stringify({model:GROQ_MODEL,messages,max_tokens:maxTokens,temperature,top_p:0.9})});
-      if(res.ok){
-        const data=await res.json();
-        showModel('✦ Using Groq');
-        return data.choices[0].message.content.trim();
-      }
+      if(res.ok){const data=await res.json();showModel('✦ Using Groq');return data.choices[0].message.content.trim();}
       const err=await res.json();
-      // If rate limited fall through to Gemini
-      if(!err?.error?.message?.includes('rate limit')&&!err?.error?.message?.includes('Rate limit')){
-        throw new Error(err?.error?.message||`Groq error ${res.status}`);
-      }
+      if(!err?.error?.message?.toLowerCase().includes('rate limit')&&!String(res.status).startsWith('429')){throw new Error(err?.error?.message||`Groq error ${res.status}`);}
       showModel('⚡ Groq limit reached — switching to Gemini');
     }catch(e){
-      if(!e.message.includes('rate limit')&&!e.message.includes('Rate limit')&&!e.message.includes('429')){
-        if(!geminiKey) throw e;
-      }
+      if(!e.message.toLowerCase().includes('rate limit')&&!e.message.includes('429')){if(!geminiKey)throw e;}
     }
   }
-
-  // Fallback to Gemini
   if(geminiKey){
     const prompt=messages.map(m=>m.content).join('\n\n');
     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature,maxOutputTokens:maxTokens}})});
     if(!res.ok){const err=await res.json();throw new Error(err?.error?.message||`Gemini error ${res.status}`);}
     const data=await res.json();
+    const candidate=data.candidates?.[0];
+    const text=candidate?.content?.parts?.[0]?.text||candidate?.output||'';
+    if(!text)throw new Error('Empty response from Gemini');
     showModel('✦ Using Gemini');
-    const candidate = data.candidates?.[0];
-const text = candidate?.content?.parts?.[0]?.text || candidate?.output || '';
-if(!text) throw new Error('Empty response from Gemini');
-return text.trim();
+    return text.trim();
   }
-
-
   throw new Error('No API key — add your Groq or Gemini key above');
 }
 
-function showModel(msg){
-  const el=document.getElementById('active-model');
-  el.textContent=msg;
-  el.style.display='block';
-}
+function showModel(msg){const el=document.getElementById('active-model');el.textContent=msg;el.style.display='block';}
 
 function buildPrompt(theme,genre,mood,userLines){
   const sacred=userLines?`\nSACRED LINES — appear verbatim, build the song around them:\n${userLines}\n`:'';
@@ -231,7 +210,7 @@ RULES:
 - No forced rhymes, no gore, no lines that explain instead of show
 
 STRUCTURE: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Outro]
-Output ONLY lyrics. No commentary.`;
+Output ONLY the complete full lyrics from start to finish. No commentary. Do not cut off early.`;
 }
 
 function buildGradePrompt(lyrics,userLines,genre){
@@ -262,7 +241,7 @@ OVERALL NOTE: One sentence — biggest thing holding this back from a 10.`;
 function buildRewritePrompt(lyrics,feedback,userLines,genre){
   const sacred=userLines?`\nSACRED LINES — verbatim, untouchable:\n${userLines}\n`:'';
   const style=GENRE_STYLES[genre]||'';
-  return `World class songwriter. Rewrite applying all feedback. Keep what works, fix what doesn't.
+  return `You are a world class songwriter. Rewrite the COMPLETE song applying all feedback. Output every section in full — do not skip, summarize or cut off any part.
 
 GENRE: ${genre} — ${style}
 ORIGINAL:\n${lyrics}
@@ -271,7 +250,7 @@ ${sacred}
 - Fix flagged lines — more specific, more genre-authentic
 - Strengthen narrative if weak
 - DO NOT change a clean simple chorus
-- Same structure, output ONLY lyrics`;
+- Output the COMPLETE rewritten song from [Verse 1] to [Outro] — every line, no truncating`;
 }
 
 function lyricsBox(lyrics,title,id){return `<div class="output-box"><div class="box-header"><div class="box-title">${title}</div><button class="copy-btn" id="copy-${id}">Copy</button></div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;}
@@ -291,7 +270,7 @@ async function generate(){
   document.getElementById('output').innerHTML='';
   setStatus('✦ Writing your lyrics...');
   try{
-    const lyrics=await aiCall([{role:'user',content:buildPrompt(theme,genre,mood,userLines)}]);
+    const lyrics=await aiCall([{role:'user',content:buildPrompt(theme,genre,mood,userLines)}],0.95,1200);
     state.lyrics=lyrics;
     setStatus('✦ Grading your lyrics...');
     const feedback=await aiCall([{role:'user',content:buildGradePrompt(lyrics,userLines,genre)}],0.7,800);
@@ -311,7 +290,7 @@ async function rewrite(){
   const out=document.getElementById('rewrite-output');
   out.innerHTML=`<div class="status visible pulsing" style="margin-top:16px">✦ Rewriting with fixes applied...</div>`;
   try{
-    const rewritten=await aiCall([{role:'user',content:buildRewritePrompt(state.lyrics,state.feedback,state.userLines,state.genre)}]);
+    const rewritten=await aiCall([{role:'user',content:buildRewritePrompt(state.lyrics,state.feedback,state.userLines,state.genre)}],0.95,1400);
     out.innerHTML=lyricsBox(rewritten,'✦ Rewrite — Final','rewrite');
     attachCopy('rewrite',rewritten);
   }catch(e){out.innerHTML=`<div class="status visible error" style="margin-top:16px">⚠ ${e.message}</div>`;}
