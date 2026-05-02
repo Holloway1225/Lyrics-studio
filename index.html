@@ -87,7 +87,7 @@
     <div class="api-saved" id="api-saved">✓ Key saved to this browser</div>
   </div>
   <div class="section-label">Song Theme *</div>
-  <textarea id="theme" rows="3" placeholder="e.g. Moving on after a toxic relationship, finally feeling free..."></textarea>
+  <textarea id="theme" rows="3" placeholder="e.g. Going through trials and coming out stronger on the other side..."></textarea>
   <div class="section-label">Genre</div>
   <div class="toggle-group" id="genre-group">
     <button class="toggle-btn active" data-value="Pop">Pop</button>
@@ -98,6 +98,8 @@
     <button class="toggle-btn" data-value="EDM">EDM</button>
     <button class="toggle-btn" data-value="Soul">Soul</button>
     <button class="toggle-btn" data-value="Indie">Indie</button>
+    <button class="toggle-btn" data-value="Christian Rock">✝️ Christian Rock</button>
+    <button class="toggle-btn" data-value="Christian Worship">🙏 Christian Worship</button>
   </div>
   <div class="section-label">Mood / Vibe</div>
   <div class="toggle-group" id="mood-group">
@@ -120,6 +122,20 @@
 const GROQ_URL="https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL="llama-3.3-70b-versatile";
 let state={lyrics:"",feedback:"",userLines:""};
+
+const GENRE_STYLES={
+  "Pop":"Catchy, melodic, emotionally direct. Verses build tension, choruses explode with the hook. Think Max Martin structure — clear narrative, universal emotion, memorable phrasing.",
+  "Hip-Hop":"Rhythmic, punchy, street-level imagery. Wordplay matters. Verses are dense and specific, choruses are anthemic or hypnotic. Flow and cadence are as important as the words.",
+  "R&B":"Smooth, intimate, sensual. Vulnerable and specific. Slow burn verses, emotionally raw choruses. Details are physical and personal.",
+  "Country":"Storytelling first. Specific places, people, and moments. Conversational and direct. A good country song tells you exactly who, what, where and why.",
+  "Rock":"Driving, bold, anthemic. Verses build pressure, choruses release it. Imagery is visceral and physical. Energy is everything.",
+  "EDM":"Hypnotic, repetitive, euphoric. Simple but powerful phrases that hit hard on the drop. Emotion is conveyed through texture and repetition as much as words.",
+  "Soul":"Raw, gospel-rooted, deeply emotional. Conversational and confessional. Imagery is human and universal. Feels like it comes from lived experience.",
+  "Indie":"Literary, atmospheric, specific. Unexpected imagery and unconventional structure. Values emotional truth over commercial polish.",
+  "Christian Rock":"Anthemic, faith-driven, bold. Themes of struggle, redemption, and spiritual warfare. Powerful and direct without being preachy. Imagery draws from real human experience filtered through faith.",
+  "Christian Worship":"Devotional, reverent, intimate. Written as a direct conversation with God. Simple and singable with deep emotional weight. Imagery is personal and spiritually honest."
+};
+
 window.addEventListener('load',()=>{const s=localStorage.getItem('groq_api_key');if(s){document.getElementById('api-key').value=s;document.getElementById('api-saved').style.display='block';}});
 document.getElementById('api-key').addEventListener('change',()=>{const k=document.getElementById('api-key').value.trim();if(k){localStorage.setItem('groq_api_key',k);document.getElementById('api-saved').style.display='block';}});
 function toggleKey(){const i=document.getElementById('api-key');const b=event.target;if(i.type==='password'){i.type='text';b.textContent='Hide';}else{i.type='password';b.textContent='Show';}}
@@ -132,59 +148,53 @@ async function groqCall(messages,temperature=0.95,maxTokens=1200){const key=docu
 
 function lyricsPrompt(theme,genre,mood,userLines){
   const sacred=userLines?`\nYOUR LINES — SACRED AND MANDATORY:\nThese lines come from the user's real life and MUST appear verbatim in the final lyrics.\nDo not paraphrase, alter, or remove them. Build the entire song around them:\n${userLines}\n`:'';
-  return `You are one of the greatest living songwriters. Your style sits at the intersection of Hozier's dark literary imagery, Lorde's hyper-specific mundane details, and Phoebe Bridgers' quiet devastation. Write lyrics for Suno AI.
+  const genreStyle=GENRE_STYLES[genre]||"Write in the most authentic voice for this genre.";
+  return `You are a world class songwriter with mastery across all genres. You do not have a signature sound — you adapt completely to the genre and mood requested. Your job is to write the most authentic, powerful song possible for the specific genre selected.
 
 THEME: ${theme}
 GENRE: ${genre}
 MOOD/VIBE: ${mood}
 ${sacred}
-NARRATIVE STRUCTURE — this is as important as the imagery:
-- The song must tell ONE clear story with a beginning, middle and end
-- A listener should be able to describe what this song is about in one sentence
-- Verse 1: establish the specific situation — where are we, what just happened, ground us in a moment
-- Verse 2: something has shifted — deepen or complicate the situation, show how things have changed
-- Bridge: the turning point — a realization, a memory, a moment of clarity or collapse
-- Chorus: the emotional truth the whole story is building toward — not a list of feelings, ONE central statement
-- Every image must serve the story — if a line is beautiful but disconnected, cut it
-- The song should feel like it goes somewhere, not just describe a mood
+GENRE STYLE GUIDE — write authentically to this:
+${genreStyle}
 
-VERSES:
-- Dense, literary, slow-burning — every line earns its place
-- Ground every emotion in a PHYSICAL, SPECIFIC detail that serves the narrative
-  Good: "your jacket still smells like the bar on fifth" — tells us where we are and who we lost
-  Bad: "I feel the weight of all these memories" — vague, serves no story
-- Use unexpected comparisons that advance the story
-- Reference textures, temperatures, sounds, smells, tastes — but always in service of the narrative
-- Strange and specific — NOT violent or grotesque
+NARRATIVE STRUCTURE — as important as the imagery:
+- Tell ONE clear story with a beginning, middle and end
+- A listener should describe what this song is about in one sentence
+- Verse 1: establish the specific situation — where are we, what just happened
+- Verse 2: something has shifted — deepen or complicate the situation
+- Bridge: the turning point — a realization, a memory, a moment of clarity
+- Chorus: the emotional truth the whole story builds toward
+- Every line must serve the story — random beautiful images with no narrative connection are not allowed
 
-CHORUS — MOST IMPORTANT RULE:
-- Maximum 4 lines — SHORTER than the verse, never longer
-- Each line under 10 words
-- ONE single emotional truth — the heart of what this song is really about
-- Simple, exposed, devastating — the gut-punch the story has been building toward
-- Should feel inevitable once it hits
+SONGWRITING RULES:
+- Ground every emotion in a PHYSICAL, SPECIFIC detail
+  Good: "your jacket still smells like the bar on fifth"
+  Bad: "I feel the weight of everything"
+- Use imagery and language authentic to the genre — country uses different imagery than hip-hop
+- No forced rhymes that sacrifice meaning
+- Choruses: maximum 4 lines, each under 10 words, ONE central emotional statement
+- Pre-chorus: 2 lines max, build tension
+- Bridge: shift perspective or time, stay in the song's world
 
-PRE-CHORUS: 2 lines max, build tension into the chorus
-
-BRIDGE: Shift perspective or time — reframe the whole story. Stay in the same sensory world. NO abstract philosophical language.
-
-ABSOLUTE BANS:
-- "phoenix", "warrior", "shatter", "chains", "rise up", "wings"
-- "soul", "heart", "fire" used generically
-- Lines that explain emotion instead of embodying it
-- Forced rhymes that sacrifice meaning
+QUALITY BANS — never use these regardless of genre:
+- Vague abstractions with no sensory anchor
+- Lines that explain the emotion instead of embodying it
+- Forced end rhymes that make lines awkward
 - Choruses longer than 4 lines
 - Gore or horror imagery
-- Random beautiful images with no narrative connection
-- Abstract bridge that abandons the song's world
 
 STRUCTURE: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Outro]
 Output ONLY the lyrics. No commentary.`;
 }
 
-function gradePrompt(lyrics,userLines){
+function gradePrompt(lyrics,userLines,genre){
   const sacred=userLines?`\nSACRED LINES — written by the user, not generated:\n${userLines}\nNEVER flag these as weak. NEVER suggest rewriting them. They are untouchable.\n`:'';
-  return `You are a brilliant song editor with the taste of Hozier, Lorde, and Phoebe Bridgers. Give honest, calibrated, structural feedback.
+  const genreStyle=GENRE_STYLES[genre]||"";
+  return `You are a brilliant song editor with expertise across all genres. Grade these lyrics honestly and calibrate your feedback to the specific genre they were written for.
+
+GENRE: ${genre}
+GENRE STANDARD: ${genreStyle}
 
 LYRICS:
 ${lyrics}
@@ -193,34 +203,38 @@ SCORE: X/10
 
 CALIBRATION:
 - 4/10 = amateurish, wall-to-wall clichés
-- 5/10 = weak, a couple decent images in filler
+- 5/10 = weak, a couple decent moments in filler
 - 6/10 = competent but forgettable
 - 7/10 = genuinely good, one or two weak spots
 - 8/10 = strong professional quality, minor fixes needed
 - 9/10 = near perfect
 - 10/10 = nothing to fix
-Most well-prompted AI lyrics land 6-8. Be fair.
+Judge against the standard of the genre — a great country song is different from a great worship song.
 
 WHAT'S WORKING: (2-3 lines, quote exactly, one sentence why each works)
 
 STRUCTURAL ANALYSIS:
-- NARRATIVE: Can you describe what this song is about in one sentence? Does it tell a story with a beginning, middle and end, or does it just describe a mood?
-- EMOTIONAL ARC: Does the song move somewhere emotionally? Where does it start and where does it end up?
-- VERSE CONSISTENCY: Is Verse 1 stronger or weaker than Verse 2? Which drifts into abstraction?
-- BRIDGE: Does it stay in the sensory world of the verses? Does it reframe the story?
-- VOICE IDENTITY: What world does this song live in? Does every section stay true?
-- CHORUS FIT: Does the chorus feel like the emotional payoff of the story the verses are telling?
+- NARRATIVE: Can you describe what this song is about in one sentence? Does it tell a real story?
+- EMOTIONAL ARC: Where does it start and where does it end up?
+- GENRE AUTHENTICITY: Does it sound like it belongs in this genre or does it feel generic?
+- VERSE CONSISTENCY: Which verse is stronger? Which drifts?
+- BRIDGE: Does it reframe the story? Does it stay in the song's world?
+- CHORUS FIT: Does the chorus pay off the story the verses are telling?
 
 WHAT NEEDS FIXING: (3-4 weak lines NOT including sacred lines — quote exactly, why it fails, specific rewrite)
 
-CHORUS RULE: Judge chorus by chorus standards. NEVER replace a clean simple chorus with a dense verse metaphor.
+CHORUS RULE: Judge chorus by chorus standards for this genre. Never replace a clean singable chorus with a dense verse metaphor.
 
 OVERALL NOTE: One sentence — the single biggest thing holding this back from a 10.`;
 }
 
-function rewritePrompt(lyrics,feedback,userLines){
+function rewritePrompt(lyrics,feedback,userLines,genre){
   const sacred=userLines?`\nSACRED LINES — from the user's real life. MUST appear verbatim. Do not touch them:\n${userLines}\n`:'';
-  return `You are one of the greatest living songwriters in the style of Hozier, Lorde, and Phoebe Bridgers. Rewrite this song applying every editorial suggestion.
+  const genreStyle=GENRE_STYLES[genre]||"";
+  return `You are a world class songwriter. Rewrite this song applying every editorial suggestion while keeping everything that was already working.
+
+GENRE: ${genre}
+GENRE STANDARD: ${genreStyle}
 
 ORIGINAL LYRICS:
 ${lyrics}
@@ -230,11 +244,10 @@ ${feedback}
 ${sacred}
 RULES:
 - Keep every line the editor praised
-- Fix every flagged line — make them stranger, more specific, more emotionally precise AND more connected to the narrative
-- Apply every structural note — if the narrative was weak, strengthen the story arc
-- If Verse 2 felt disconnected from Verse 1, make sure it continues and deepens the same story
-- If the bridge abandoned the sensory world, bring it back
-- Strange does NOT mean violent or grotesque — push toward quiet devastation
+- Fix every flagged line — make them more specific, more emotionally precise, more authentic to the genre
+- Strengthen the narrative if it was flagged as weak — make sure the story moves forward
+- Keep the imagery authentic to the genre
+- Strange and specific does NOT mean violent or grotesque
 - If chorus is simple and singable — DO NOT CHANGE IT
 - Chorus: 4 lines max, each under 10 words
 - Same structure: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Pre-Chorus], [Chorus], [Bridge], [Outro]
@@ -255,6 +268,7 @@ async function generate(){
   const mood=getSelected('mood-group');
   const userLines=document.getElementById('user-lines').value.trim();
   state.userLines=userLines;
+  state.genre=genre;
   document.getElementById('generate-btn').disabled=true;
   document.getElementById('output').innerHTML='';
   setStatus('✦ Writing your lyrics...');
@@ -262,7 +276,7 @@ async function generate(){
     const lyrics=await groqCall([{role:'user',content:lyricsPrompt(theme,genre,mood,userLines)}]);
     state.lyrics=lyrics;
     setStatus('✦ Grading your lyrics...');
-    const feedback=await groqCall([{role:'user',content:gradePrompt(lyrics,userLines)}],0.7,1000);
+    const feedback=await groqCall([{role:'user',content:gradePrompt(lyrics,userLines,genre)}],0.7,1000);
     state.feedback=feedback;
     clearStatus();
     document.getElementById('output').innerHTML=lyricsBox(lyrics,'✦ Your Lyrics','lyrics')+feedbackBox(feedback,'feedback')+rewriteBox();
@@ -279,7 +293,7 @@ async function rewrite(){
   const rewriteOutput=document.getElementById('rewrite-output');
   rewriteOutput.innerHTML=`<div class="status visible pulsing" style="margin-top:16px">✦ Rewriting with fixes applied...</div>`;
   try{
-    const rewritten=await groqCall([{role:'user',content:rewritePrompt(state.lyrics,state.feedback,state.userLines)}]);
+    const rewritten=await groqCall([{role:'user',content:rewritePrompt(state.lyrics,state.feedback,state.userLines,state.genre)}]);
     rewriteOutput.innerHTML=lyricsBox(rewritten,'✦ Rewrite — Final','rewrite');
     attachCopy('rewrite',rewritten);
   }catch(e){
