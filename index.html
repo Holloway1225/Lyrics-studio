@@ -196,8 +196,12 @@ async function aiCall(messages,temperature=0.95,maxTokens=1000){
     if(!res.ok){const err=await res.json();throw new Error(err?.error?.message||`Gemini error ${res.status}`);}
     const data=await res.json();
     showModel('✦ Using Gemini');
-    return data.candidates[0].content.parts[0].text.trim();
+    const candidate = data.candidates?.[0];
+const text = candidate?.content?.parts?.[0]?.text || candidate?.output || '';
+if(!text) throw new Error('Empty response from Gemini');
+return text.trim();
   }
+
 
   throw new Error('No API key — add your Groq or Gemini key above');
 }
