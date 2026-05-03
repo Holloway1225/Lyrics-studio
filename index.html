@@ -140,17 +140,56 @@ function copyText(text,btn){const fallback=()=>{const ta=document.createElement(
 function setStatus(msg,isError=false){const el=document.getElementById('status');el.textContent=msg;el.className='status visible'+(isError?' error':' pulsing');}
 function clearStatus(){document.getElementById('status').className='status';}
 
-const GENRE_STYLES={
-  "Pop":"Catchy, melodic, emotionally direct. Clear narrative, universal emotion, memorable phrasing.",
-  "Hip-Hop":"Rhythmic, punchy, street-level imagery. Dense specific verses, anthemic or hypnotic choruses.",
-  "R&B":"Smooth, intimate, vulnerable. Physical and personal details. Slow burn verses, raw choruses.",
-  "Country":"Storytelling first. Specific places, people, moments. Conversational and direct.",
-  "Rock":"Driving, bold, anthemic. Verses build pressure, choruses release it. Visceral physical imagery.",
-  "EDM":"Hypnotic, euphoric. Simple powerful phrases that hit hard. Emotion through texture and repetition.",
-  "Soul":"Raw, gospel-rooted, deeply emotional. Conversational and confessional. Lived experience.",
-  "Indie":"Literary, atmospheric, specific. Unexpected imagery. Values emotional truth over polish.",
-  "Christian Rock":"Anthemic, faith-driven, bold. Struggle, redemption, spiritual warfare. Powerful without being preachy. Real human experience filtered through faith.",
-  "Christian Worship":"Devotional, reverent, intimate. Direct conversation with God. Simple and singable with deep emotional weight. Personally and spiritually honest."
+const GENRE_EXAMPLES={
+  "Pop":`GOOD: "I found your hoodie in the back seat / still smells like the last time we were easy"
+BAD: "I miss you so much it hurts inside"
+GOOD CHORUS: "Maybe I was wrong / maybe you were right / maybe we were just two kids / burning in the night"
+BAD CHORUS: "I will love you forever / you mean everything to me"`,
+
+  "Hip-Hop":`GOOD: "Mama kept the lights on working doubles at the waffle house / I told her I'd buy her a real house / she said boy just get your diploma out"
+BAD: "I came from nothing and now I have everything"
+GOOD CHORUS: "All I got is this moment / can't waste it on your doubt / came too far to fold now / I'm finding my way out"
+BAD CHORUS: "I'm on top of the world / nothing can stop me now"`,
+
+  "R&B":`GOOD: "You left your perfume on my pillow / I still sleep on your side / order takeout for two by habit / then sit alone and cry"
+BAD: "Without you I feel so empty inside"
+GOOD CHORUS: "I keep your number in my phone / can't bring myself to let it go / one text away from falling back / into everything I know"
+BAD CHORUS: "Baby come back to me / I need you in my life"`,
+
+  "Country":`GOOD: "Last day of summer, back of your daddy's truck / radio on, gravel road, twenty bucks of luck / you said let's drive until we run out of road / I didn't know that was the last time I'd let go"
+BAD: "Small town life means everything to me"
+GOOD CHORUS: "That old red barn's still standing / your name's still in the wood / I'd go back and change a thousand things / but none of them I should"
+BAD CHORUS: "Country roads and open skies / that's where my heart will always lie"`,
+
+  "Rock":`GOOD: "Knuckles white on the steering wheel / drove past your street three times / told myself I was just passing through / told myself that lie"
+BAD: "I feel the rage building inside me"
+GOOD CHORUS: "I am not what they made me / I am not what I was / I'm the fire that keeps burning / after everyone gives up"
+BAD CHORUS: "We will rise up and fight / we will never back down"`,
+
+  "EDM":`GOOD: "Neon lights on a wet street / your face in every window / three AM and I'm still moving / can't let this feeling go"
+BAD: "Dance with me all night long"
+GOOD CHORUS: "Let it break / let it breathe / let it take / everything"
+BAD CHORUS: "Put your hands up / feel the beat / tonight we dance / feel the heat"`,
+
+  "Soul":`GOOD: "Sat in my car outside the church / couldn't make myself go in / pastor said God forgives everything / but I ain't forgiven him"
+BAD: "I've been through so much pain in my life"
+GOOD CHORUS: "Still here / still standing / still got two hands worth of fight / still here / still standing / after the longest night"
+BAD CHORUS: "I will survive and overcome / nothing can keep me down"`,
+
+  "Indie":`GOOD: "You always burned the toast and called it caramelized / I believed you every time / now I make it perfect every morning / and I hate how it tastes"
+BAD: "Everything reminds me of you"
+GOOD CHORUS: "I keep finding you in ordinary things / the way the light comes through at four / I don't know what any of this means / I just know I can't ignore"
+BAD CHORUS: "You are always on my mind / I can't leave you behind"`,
+
+  "Christian Rock":`GOOD: "Hit the floor of my bathroom at 2 AM / thought I'd finally run too far / picked up a Bible I hadn't touched in years / found my name written in the scars"
+BAD: "I cried out to you Lord in my darkness"
+GOOD CHORUS: "You didn't wait for me to get it right / you ran to me mid-fall / I thought I had to earn my way back home / but you never left at all"
+BAD CHORUS: "Lord I praise you for your mercy / you are the light of my life"`,
+
+  "Christian Worship":`GOOD: "I've shown you every broken part / the ones I hid for years / and still you call me by my name / and meet me right here"
+BAD: "You are so great and mighty Lord"
+GOOD CHORUS: "Where else would I go / you have the words of life / where else would I go / you hold me in the night"
+BAD CHORUS: "I will worship you forever / you are worthy of my praise"`
 };
 
 async function aiCall(prompt,temperature=0.95,maxTokens=1200){
@@ -185,24 +224,33 @@ function showModel(msg){const el=document.getElementById('active-model');el.text
 
 function buildPrompt(theme,genre,mood,userLines){
   const sacred=userLines?`\nSACRED LINES — include these verbatim, build the song around them:\n${userLines}\n`:'';
-  const style=GENRE_STYLES[genre]||'Write authentically to this genre.';
-  return `You are a world class songwriter. Write a complete, professional song for the genre and mood specified. Output ONLY the lyrics — no stage directions, no asterisks, no markdown, no commentary before or after.
+  const examples=GENRE_EXAMPLES[genre]||'';
+  return `You are a world class songwriter. Write a complete professional song. Output ONLY the lyrics — no stage directions, no asterisks, no markdown, no commentary.
 
 THEME: ${theme}
-GENRE: ${genre} — ${style}
+GENRE: ${genre}
 MOOD: ${mood}
 ${sacred}
-NARRATIVE RULES:
-- Tell ONE clear story: Verse 1 = situation, Verse 2 = shift, Bridge = turning point, Chorus = emotional truth
-- Every line serves the story
-- Specific physical details, not vague emotions
-- Language and imagery authentic to the genre
-- Chorus: max 4 lines, each under 10 words, one central emotional statement
-- Pre-chorus: 2 lines max, build tension
-- No forced rhymes, no lines that explain instead of show
+QUALITY STANDARD — study these examples of good vs bad lines for ${genre}:
+${examples}
 
-FORMAT: Use these section labels on their own line: [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], [Outro]
-Output the complete song from start to finish. Every section. No truncating.`;
+The difference between good and bad:
+- GOOD lines show a specific moment, object, place, or action
+- BAD lines name the emotion directly without showing it
+- GOOD choruses are simple, short, and inevitable
+- BAD choruses are generic and could belong to any song
+- Every line should only be possible in THIS song about THIS theme — if it could appear in a different song it's too generic
+
+STORY STRUCTURE:
+- Verse 1: one specific scene that establishes the situation
+- Verse 2: something has shifted — show how
+- Pre-chorus: 2 lines of tension building into the chorus
+- Chorus: the emotional truth — max 4 lines, each under 10 words
+- Bridge: reframe the story from a new angle
+- Outro: resolve or leave open
+
+FORMAT: Label each section on its own line: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Bridge] [Outro]
+Output the complete song. Every section. No truncating.`;
 }
 
 async function generate(){
@@ -218,8 +266,7 @@ async function generate(){
   try{
     const lyrics=await aiCall(buildPrompt(theme,genre,mood,userLines),0.95,1200);
     clearStatus();
-    const btn=`<button class="copy-btn" id="copy-lyrics">Copy</button>`;
-    document.getElementById('output').innerHTML=`<div class="output-box"><div class="box-header"><div class="box-title">✦ Your Lyrics</div>${btn}</div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;
+    document.getElementById('output').innerHTML=`<div class="output-box"><div class="box-header"><div class="box-title">✦ Your Lyrics</div><button class="copy-btn" id="copy-lyrics">Copy</button></div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;
     document.getElementById('copy-lyrics').addEventListener('click',function(){copyText(lyrics,this);});
   }catch(e){setStatus('⚠ '+e.message,true);}
   document.getElementById('generate-btn').disabled=false;
