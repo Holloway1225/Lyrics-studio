@@ -41,10 +41,12 @@
   .api-saved { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--green); margin-top: 6px; letter-spacing: 1px; display: none; }
   .active-model { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; margin-top: 8px; color: var(--accent); display: none; }
   .section-label { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; margin: 24px 0 8px; }
-  .question-card { background: rgba(168,85,247,0.04); border: 1px solid rgba(168,85,247,0.15); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-  .question-text { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; color: var(--accent); margin-bottom: 10px; line-height: 1.6; }
-  .question-hint { font-family: 'Lora', Georgia, serif; font-size: 12px; color: var(--muted); font-style: italic; margin-bottom: 10px; line-height: 1.5; }
-  textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-family: 'Lora', Georgia, serif; font-size: 14px; resize: none; outline: none; -webkit-appearance: none; transition: border-color 0.2s; line-height: 1.6; }
+  .theme-hint { background: rgba(168,85,247,0.04); border: 1px solid rgba(168,85,247,0.12); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+  .theme-hint-title { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+  .theme-hint-text { font-family: 'Lora', Georgia, serif; font-size: 12px; color: var(--muted); line-height: 1.7; font-style: italic; }
+  .theme-hint-good { color: var(--green); font-style: normal; }
+  .theme-hint-bad { color: var(--error); font-style: normal; text-decoration: line-through; }
+  textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); font-family: 'Lora', Georgia, serif; font-size: 15px; resize: none; outline: none; -webkit-appearance: none; transition: border-color 0.2s; line-height: 1.6; }
   textarea:focus { border-color: rgba(168,85,247,0.6); }
   textarea::placeholder { color: var(--muted); font-style: italic; font-size: 13px; }
   .toggle-group { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -118,50 +120,19 @@
     <button class="toggle-btn" data-value="empowering, confident, bold">💪 Empowerment</button>
   </div>
 
-  <div class="section-label" style="margin-top:28px">Tell Me The Story</div>
-  <p style="font-family:'Lora',Georgia,serif;font-size:13px;color:var(--muted);font-style:italic;margin-bottom:16px;line-height:1.7">Answer as many as you can. The more specific you are, the better the song. Skip anything that doesn't apply.</p>
-
-  <div class="question-card">
-    <div class="question-text">1. WHAT HAPPENED?</div>
-    <div class="question-hint">The core event. One or two sentences. Be specific about what actually occurred.</div>
-    <textarea id="q1" rows="2" placeholder="e.g. I came home from a double shift and she was gone. Car was wrapped around the neighbor's wall and my daughter's car seat was empty."></textarea>
+  <div class="section-label">Your Story</div>
+  <div class="theme-hint">
+    <div class="theme-hint-title">How to get the best song</div>
+    <div class="theme-hint-text">
+      Tell the story in order — what happened first, then next, then how it ended. Include one specific detail only you would know.<br><br>
+      <span class="theme-hint-good">✓ Good: "I came home from a double shift, front door was wide open, her shoes were gone but my daughter's jacket was still on the hook. Found my car wrapped around the neighbor's wall. She came back drunk an hour later trying to leave with my daughter. I ran down the driveway in my work boots and grabbed my daughter out of the car. Called the cops. Watched them arrest her while my daughter slept on my shoulder."</span><br><br>
+      <span class="theme-hint-bad">✗ Too vague: "A song about betrayal and being a good dad"</span>
+    </div>
   </div>
+  <textarea id="theme" rows="5" placeholder="Tell your story in order — what happened first, what happened next, how it ended. The more specific the better."></textarea>
 
-  <div class="question-card">
-    <div class="question-text">2. WHERE WERE YOU AND WHAT DID YOU SEE FIRST?</div>
-    <div class="question-hint">The first physical thing you noticed. A specific object, smell, sound, or image.</div>
-    <textarea id="q2" rows="2" placeholder="e.g. Front door wide open. Keys still in the lock. Her shoes were gone but my daughter's jacket was still on the hook."></textarea>
-  </div>
-
-  <div class="question-card">
-    <div class="question-text">3. WHAT DID YOU DO?</div>
-    <div class="question-hint">Your physical actions in the moment. Not how you felt — what you actually did.</div>
-    <textarea id="q3" rows="2" placeholder="e.g. I ran down the driveway in my work boots and reached into the car to grab my daughter before she could pull away."></textarea>
-  </div>
-
-  <div class="question-card">
-    <div class="question-text">4. WHAT WAS THE HARDEST MOMENT?</div>
-    <div class="question-hint">The single worst second. A specific detail from that moment — something you saw, heard, or said.</div>
-    <textarea id="q4" rows="2" placeholder="e.g. She screamed my name while I was pulling my daughter out. My daughter wasn't crying, she was just completely quiet."></textarea>
-  </div>
-
-  <div class="question-card">
-    <div class="question-text">5. HOW DID IT END OR WHERE ARE YOU NOW?</div>
-    <div class="question-hint">What happened after. Or where you are emotionally now looking back.</div>
-    <textarea id="q5" rows="2" placeholder="e.g. I called the cops and they arrested her that night. I sat on the porch with my daughter asleep on my shoulder waiting for the lights to leave."></textarea>
-  </div>
-
-  <div class="question-card">
-    <div class="question-text">6. ONE DETAIL ONLY YOU WOULD KNOW</div>
-    <div class="question-hint">Something small and specific that nobody else would think to include. A habit, an object, a phrase she used, a smell, anything.</div>
-    <textarea id="q6" rows="2" placeholder="e.g. She always left her keys on the kitchen counter. That night they were gone. That's when I knew."></textarea>
-  </div>
-
-  <div class="question-card">
-    <div class="question-text">7. YOUR LINES — PROTECTED & FEATURED</div>
-    <div class="question-hint">Any lines you've already written that must appear verbatim in the final song.</div>
-    <textarea id="q7" rows="2" placeholder="Your own lines — these will never be changed or removed..."></textarea>
-  </div>
+  <div class="section-label">Your Lines — Protected & Featured <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
+  <textarea id="user-lines" rows="2" placeholder="Any lines you've already written that must appear verbatim..."></textarea>
 
   <button class="generate-btn" id="generate-btn" onclick="generate()">✦ &nbsp; Write My Song</button>
   <div class="status" id="status"></div>
@@ -188,26 +159,46 @@ function setStatus(msg,isError=false){const el=document.getElementById('status')
 function clearStatus(){document.getElementById('status').className='status';}
 
 const GENRE_EXAMPLES={
-  "Pop":`GOOD: "I found your hoodie in the back seat / still smells like the last time we were easy"
-BAD: "I miss you so much it hurts inside"`,
-  "Hip-Hop":`GOOD: "Mama kept the lights on working doubles at the waffle house / I told her I'd buy her a real house"
-BAD: "I came from nothing and now I have everything"`,
-  "R&B":`GOOD: "You left your perfume on my pillow / I still sleep on your side / order takeout for two by habit"
-BAD: "Without you I feel so empty inside"`,
-  "Country":`GOOD: "Last day of summer, back of your daddy's truck / radio on, gravel road, twenty bucks of luck"
-BAD: "Small town life means everything to me"`,
-  "Rock":`GOOD: "Knuckles white on the steering wheel / drove past your street three times / told myself I was just passing through"
-BAD: "I feel the rage building inside me"`,
-  "EDM":`GOOD: "Neon lights on a wet street / your face in every window / three AM and I'm still moving"
-BAD: "Dance with me all night long"`,
-  "Soul":`GOOD: "Sat in my car outside the church / couldn't make myself go in / pastor said God forgives everything / but I ain't forgiven him"
-BAD: "I've been through so much pain in my life"`,
-  "Indie":`GOOD: "You always burned the toast and called it caramelized / I believed you every time / now I make it perfect every morning and I hate how it tastes"
-BAD: "Everything reminds me of you"`,
-  "Christian Rock":`GOOD: "Hit the floor of my bathroom at 2 AM / thought I'd finally run too far / picked up a Bible I hadn't touched in years"
-BAD: "I cried out to you Lord in my darkness"`,
-  "Christian Worship":`GOOD: "I've shown you every broken part / the ones I hid for years / and still you call me by my name"
-BAD: "You are so great and mighty Lord"`
+  "Pop":`GOOD LINE: "I found your hoodie in the back seat / still smells like the last time we were easy"
+BAD LINE: "I miss you so much it hurts inside"
+GOOD CHORUS: "Maybe I was wrong / maybe you were right / maybe we were just two kids / burning in the night"
+BAD CHORUS: "I will love you forever / you mean everything to me"`,
+  "Hip-Hop":`GOOD LINE: "Mama kept the lights on working doubles at the waffle house / I told her I'd buy her a real house / she said boy just get your diploma out"
+BAD LINE: "I came from nothing and now I have everything"
+GOOD CHORUS: "All I got is this moment / can't waste it on your doubt / came too far to fold now / I'm finding my way out"
+BAD CHORUS: "I'm on top of the world / nothing can stop me now"`,
+  "R&B":`GOOD LINE: "You left your perfume on my pillow / I still sleep on your side / order takeout for two by habit / then sit alone and cry"
+BAD LINE: "Without you I feel so empty inside"
+GOOD CHORUS: "I keep your number in my phone / can't bring myself to let it go / one text away from falling back / into everything I know"
+BAD CHORUS: "Baby come back to me / I need you in my life"`,
+  "Country":`GOOD LINE: "Last day of summer, back of your daddy's truck / radio on, gravel road, twenty bucks of luck / you said let's drive until we run out of road / I didn't know that was the last time I'd let go"
+BAD LINE: "Small town life means everything to me"
+GOOD CHORUS: "That old red barn's still standing / your name's still in the wood / I'd go back and change a thousand things / but none of them I should"
+BAD CHORUS: "Country roads and open skies / that's where my heart will always lie"`,
+  "Rock":`GOOD LINE: "Knuckles white on the steering wheel / drove past your street three times / told myself I was just passing through / told myself that lie"
+BAD LINE: "I feel the rage building inside me"
+GOOD CHORUS: "I am not what they made me / I am not what I was / I'm the fire that keeps burning / after everyone gives up"
+BAD CHORUS: "We will rise up and fight / we will never back down"`,
+  "EDM":`GOOD LINE: "Neon lights on a wet street / your face in every window / three AM and I'm still moving / can't let this feeling go"
+BAD LINE: "Dance with me all night long"
+GOOD CHORUS: "Let it break / let it breathe / let it take / everything"
+BAD CHORUS: "Put your hands up / feel the beat / tonight we dance / feel the heat"`,
+  "Soul":`GOOD LINE: "Sat in my car outside the church / couldn't make myself go in / pastor said God forgives everything / but I ain't forgiven him"
+BAD LINE: "I've been through so much pain in my life"
+GOOD CHORUS: "Still here / still standing / still got two hands worth of fight / still here / still standing / after the longest night"
+BAD CHORUS: "I will survive and overcome / nothing can keep me down"`,
+  "Indie":`GOOD LINE: "You always burned the toast and called it caramelized / I believed you every time / now I make it perfect every morning / and I hate how it tastes"
+BAD LINE: "Everything reminds me of you"
+GOOD CHORUS: "I keep finding you in ordinary things / the way the light comes through at four / I don't know what any of this means / I just know I can't ignore"
+BAD CHORUS: "You are always on my mind / I can't leave you behind"`,
+  "Christian Rock":`GOOD LINE: "Hit the floor of my bathroom at 2 AM / thought I'd finally run too far / picked up a Bible I hadn't touched in years / found my name written in the scars"
+BAD LINE: "I cried out to you Lord in my darkness"
+GOOD CHORUS: "You didn't wait for me to get it right / you ran to me mid-fall / I thought I had to earn my way back home / but you never left at all"
+BAD CHORUS: "Lord I praise you for your mercy / you are the light of my life"`,
+  "Christian Worship":`GOOD LINE: "I've shown you every broken part / the ones I hid for years / and still you call me by my name / and meet me right here"
+BAD LINE: "You are so great and mighty Lord"
+GOOD CHORUS: "Where else would I go / you have the words of life / where else would I go / you hold me in the night"
+BAD CHORUS: "I will worship you forever / you are worthy of my praise"`
 };
 
 async function aiCall(prompt,temperature=0.95,maxTokens=1200){
@@ -240,77 +231,61 @@ async function aiCall(prompt,temperature=0.95,maxTokens=1200){
 
 function showModel(msg){const el=document.getElementById('active-model');el.textContent=msg;el.style.display='block';}
 
-function buildPrompt(genre,mood,answers){
-  const{q1,q2,q3,q4,q5,q6,q7}=answers;
+function buildPrompt(theme,genre,mood,userLines){
+  const sacred=userLines?`\nSACRED LINES — these must appear verbatim in the final song, build around them:\n${userLines}\n`:'';
   const examples=GENRE_EXAMPLES[genre]||'';
-  const sacred=q7?`\nSACRED LINES — include these verbatim, the song must be built around them:\n${q7}\n`:'';
-  const storyParts=[];
-  if(q1)storyParts.push(`WHAT HAPPENED: ${q1}`);
-  if(q2)storyParts.push(`FIRST THING THEY SAW: ${q2}`);
-  if(q3)storyParts.push(`WHAT THEY DID: ${q3}`);
-  if(q4)storyParts.push(`HARDEST MOMENT: ${q4}`);
-  if(q5)storyParts.push(`HOW IT ENDED: ${q5}`);
-  if(q6)storyParts.push(`PERSONAL DETAIL ONLY THEY WOULD KNOW: ${q6}`);
-  return `You are a world class songwriter and ghostwriter. Someone has given you the real details of their life experience. Your job is to turn these exact details into a song — not a song about a topic, a song about THIS specific story. Output ONLY the lyrics — no stage directions, no asterisks, no markdown, no commentary.
+  return `You are a world class songwriter and ghostwriter. Someone has told you their real story. Your job is to turn it into a song that follows the exact sequence of events they described — in the order they described them.
 
 GENRE: ${genre}
 MOOD: ${mood}
 ${sacred}
-THE REAL STORY — use these specific details, do not invent replacements:
-${storyParts.join('\n')}
+THE STORY — follow this sequence exactly, in this order:
+${theme}
 
 QUALITY STANDARD for ${genre}:
 ${examples}
 
-YOUR MOST IMPORTANT RULES:
+RULES:
 
-1. USE THE REAL DETAILS
-Every specific detail they gave you is gold. The keys in the lock, the work boots, the daughter's jacket on the hook — these are the song. Do not replace them with generic alternatives. If they told you something specific happened, that specific thing must appear in the lyrics.
+1. FOLLOW THE SEQUENCE
+The story must unfold in the same order as told. What they described first goes in Verse 1. What happened next goes in Verse 2. The turning point or realization goes in the Bridge. How it ended goes in the Outro. Do not reorder events.
 
-2. FINGERPRINT RULE
-Every line must be irreplaceable — it could only exist in this song about this story. Ask: could this line appear in a different song? If yes, rewrite it until it couldn't.
+2. USE THE REAL DETAILS
+Every specific detail in the story is gold — names, objects, places, actions. Use them directly. Do not replace with generic alternatives. "Work boots" stays "work boots." "Daughter's jacket on the hook" stays "daughter's jacket on the hook."
 
-3. BANNED PATTERNS — never write these:
-- "I am the [noun] / I am the [noun]" identity stacking
-- Stock metaphor pairs: storm+fire, dark+light, broken+whole, rise+fall
-- Emotion naming: "I felt empty" "I was devastated" "pain inside"
+3. FINGERPRINT RULE
+Every line must be irreplaceable — it could only exist in this song about this story. If a line could appear in a different song, rewrite it until it couldn't.
+
+4. BANNED PATTERNS:
+- Identity stacking: "I am the [noun] / I am the [noun]"
+- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall
+- Emotion naming: "I felt empty" "I was devastated" "the pain inside"
 - Stock clichés: "heart beating like a drum" "words that cut too deep" "neon lights blurring like tears"
 - Stock rebirth: "wind at my back" "sun on my skin" "dawn after the night"
-- Any line where you name the feeling instead of showing the moment
+- Any line that names the feeling instead of showing the moment
 
-4. CHORUS RULE
-The chorus must contain a specific image from the story — not a summary of the theme. It must feel like it could only come after hearing these specific verses. Max 4 lines, each under 10 words.
+5. CHORUS RULE
+The chorus must contain a specific image or detail from the story — not a summary of the theme. It must feel like it could only come from these specific verses. Max 4 lines, each under 10 words.
 
-5. NARRATIVE CAUSALITY
-Each scene leads directly to the next. We must feel the sequence of events. The bridge is where they finally realize something — use the specific ending detail for this. The outro lands on the last real moment they described.
-
-6. ONE METAPHOR WORLD
-Pick one central image from their story and stay in it. Do not mix multiple unrelated metaphor systems.
+6. BRIDGE AND OUTRO
+The bridge is where the narrator realizes something — use the turning point from the story. The outro lands on the last real moment they described. Do not go abstract. Stay in the scene.
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
-Output the complete song. Every section. No truncating.`;
+Output the complete song. Every section. No truncating. No commentary.`;
 }
 
 async function generate(){
-  const q1=document.getElementById('q1').value.trim();
+  const theme=document.getElementById('theme').value.trim();
   if(!getKey('groq')&&!getKey('gemini')){setStatus('⚠ Add at least one API key above',true);return;}
-  if(!q1){setStatus('⚠ Answer at least the first question to get started',true);return;}
+  if(!theme){setStatus('⚠ Tell your story first',true);return;}
   const genre=getSelected('genre-group');
   const mood=getSelected('mood-group');
-  const answers={
-    q1,
-    q2:document.getElementById('q2').value.trim(),
-    q3:document.getElementById('q3').value.trim(),
-    q4:document.getElementById('q4').value.trim(),
-    q5:document.getElementById('q5').value.trim(),
-    q6:document.getElementById('q6').value.trim(),
-    q7:document.getElementById('q7').value.trim()
-  };
+  const userLines=document.getElementById('user-lines').value.trim();
   document.getElementById('generate-btn').disabled=true;
   document.getElementById('output').innerHTML='';
   setStatus('✦ Writing your song...');
   try{
-    const lyrics=await aiCall(buildPrompt(genre,mood,answers),0.95,1200);
+    const lyrics=await aiCall(buildPrompt(theme,genre,mood,userLines),0.95,1200);
     clearStatus();
     document.getElementById('output').innerHTML=`<div class="output-box"><div class="box-header"><div class="box-title">✦ Your Lyrics</div><button class="copy-btn" id="copy-lyrics">Copy</button></div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;
     document.getElementById('copy-lyrics').addEventListener('click',function(){copyText(lyrics,this);});
