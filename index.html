@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Lyrics Studio">
@@ -38,6 +38,7 @@
   .api-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: 'Inconsolata', monospace; font-size: 13px; outline: none; -webkit-appearance: none; }
   .api-input:focus { border-color: var(--accent); }
   .api-hint { font-family: 'Inconsolata', monospace; font-size: 10px; color: rgba(124,106,154,0.7); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; }
+  .api-warning { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--gold); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 8px; padding: 8px 10px; }
   .api-saved { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--green); margin-top: 6px; letter-spacing: 1px; display: none; }
   .active-model { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; margin-top: 8px; color: var(--accent); display: none; }
   .section-label { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; margin: 24px 0 8px; }
@@ -64,41 +65,48 @@
   .status { font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 2px; color: var(--accent); margin-top: 20px; text-align: center; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); display: none; }
   .status.visible { display: block; }
   .status.error { color: var(--error); border-color: rgba(248,113,113,0.3); }
+  .pipeline-steps { display: none; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .pipeline-steps.visible { display: flex; }
+  .pipeline-step { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); transition: all 0.3s; }
+  .pipeline-step.active { color: var(--accent); border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.07); animation: pulse 1.2s ease infinite; }
+  .pipeline-step.done { color: var(--green); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.04); }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-  .pulsing { animation: pulse 1.2s ease infinite; }
 </style>
 </head>
 <body>
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
 <div class="container">
+
   <div class="header">
     <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
     <h1>Your Lyrics.<br>Your Voice.</h1>
     <p>100% Original · Powered by Groq + Gemini</p>
   </div>
+
   <div class="api-section" style="margin-top:28px">
     <div class="section-label" style="margin-top:0">API Keys</div>
     <div class="api-row">
       <div class="api-label">GROQ</div>
-      <input type="password" id="api-groq" class="api-input" placeholder="gsk_...">
+      <input type="password" id="api-groq" class="api-input" placeholder="gsk_..." aria-label="Groq API key">
     </div>
     <div class="api-row">
       <div class="api-label">GEMINI</div>
-      <input type="password" id="api-gemini" class="api-input" placeholder="AIza...">
+      <input type="password" id="api-gemini" class="api-input" placeholder="AIza..." aria-label="Gemini API key">
     </div>
     <div class="api-hint">Groq is used first. Gemini kicks in automatically if Groq hits its limit.<br>Groq: console.groq.com · Gemini: aistudio.google.com</div>
+    <div class="api-warning">⚠ Keys are stored in your browser only. Do not use on a shared or public device.</div>
     <div class="api-saved" id="api-saved">✓ Keys saved to this browser</div>
     <div class="active-model" id="active-model"></div>
-    <button onclick="saveKeys()" style="margin-top:12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:8px 16px;color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">Save Keys</button>
+    <button id="save-keys-btn" style="margin-top:12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:8px 16px;color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;" aria-label="Save API keys">Save Keys</button>
   </div>
 
   <div class="section-label">Genre</div>
-  <div class="toggle-group" id="genre-group">
+  <div class="toggle-group" id="genre-group" role="group" aria-label="Select genre">
     <button class="toggle-btn active" data-value="Pop">Pop</button>
     <button class="toggle-btn" data-value="Hip-Hop">Hip-Hop</button>
-    <button class="toggle-btn" data-value="R&B">R&B</button>
+    <button class="toggle-btn" data-value="R&B">R&amp;B</button>
     <button class="toggle-btn" data-value="Country">Country</button>
     <button class="toggle-btn" data-value="Rock">Rock</button>
     <button class="toggle-btn" data-value="EDM">EDM</button>
@@ -109,7 +117,7 @@
   </div>
 
   <div class="section-label">Mood / Vibe</div>
-  <div class="toggle-group" id="mood-group">
+  <div class="toggle-group" id="mood-group" role="group" aria-label="Select mood">
     <button class="toggle-btn active" data-value="high-energy, hype, hard-hitting">🔥 Hype</button>
     <button class="toggle-btn" data-value="emotional, heartbreak, melancholic">💔 Heartbreak</button>
     <button class="toggle-btn" data-value="euphoric, uplifting, anthemic">✨ Euphoric</button>
@@ -120,138 +128,338 @@
     <button class="toggle-btn" data-value="empowering, confident, bold">💪 Empowerment</button>
   </div>
 
-  <div class="section-label">Your Story</div>
+  <div class="section-label">Your Idea</div>
   <div class="theme-hint">
-    <div class="theme-hint-title">How to get the best song</div>
+    <div class="theme-hint-title">Anything goes — the more vivid, the better</div>
     <div class="theme-hint-text">
-      Tell the story in order — what happened first, then next, then how it ended. Include one specific detail only you would know.<br><br>
-      <span class="theme-hint-good">✓ Good: "I came home from a double shift, front door was wide open, her shoes were gone but my daughter's jacket was still on the hook. Found my car wrapped around the neighbor's wall. She came back drunk an hour later trying to leave with my daughter. I ran down the driveway in my work boots and grabbed my daughter out of the car. Called the cops. Watched them arrest her while my daughter slept on my shoulder."</span><br><br>
-      <span class="theme-hint-bad">✗ Too vague: "A song about betrayal and being a good dad"</span>
+      Give it a personal story, a Bible story, a metaphor, a concept, a character, a feeling — anything. The tool works from whatever you hand it. The only rule: be specific. Vague input makes vague songs.<br><br>
+      <span class="theme-hint-good">✓ "Abraham takes Isaac up the mountain. Isaac keeps asking where the lamb is. Abraham can't answer. He binds his son, raises the knife — and then hears his name called from heaven. A ram appears in the thicket. He holds his son and weeps."</span><br><br>
+      <span class="theme-hint-good">✓ "Anxiety is a machine bolted to my chest. It hums all night. I've tried every switch and none of them turn it off. Some days I stop fighting it and just carry it around. I want to write about learning to live with the weight instead of being destroyed by it."</span><br><br>
+      <span class="theme-hint-good">✓ "I came home from a double shift, front door was wide open, her shoes were gone but my daughter's jacket was still on the hook. She came back drunk an hour later. I grabbed my daughter out of the car. Called the cops. Watched them arrest her while my daughter slept on my shoulder."</span><br><br>
+      <span class="theme-hint-bad">✗ Too vague: "Write a song about hope and struggle"</span>
     </div>
   </div>
-  <textarea id="theme" rows="5" placeholder="Tell your story in order — what happened first, what happened next, how it ended. The more specific the better."></textarea>
+  <textarea id="theme" rows="5" placeholder="A personal story, a Bible story, a metaphor, a feeling, a concept — anything vivid and specific. The more detail you give, the better the song." aria-label="Your idea or story"></textarea>
 
-  <div class="section-label">Your Lines — Protected & Featured <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
-  <textarea id="user-lines" rows="2" placeholder="Any lines you've already written that must appear verbatim..."></textarea>
+  <div class="section-label">Lines to Protect <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
+  <textarea id="user-lines" rows="2" placeholder="Any lines you've already written that must appear verbatim in the final song..." aria-label="Your protected lines"></textarea>
 
-  <button class="generate-btn" id="generate-btn" onclick="generate()">✦ &nbsp; Write My Song</button>
+  <button class="generate-btn" id="generate-btn" aria-label="Generate song lyrics">✦ &nbsp; Write My Song</button>
+
   <div class="status" id="status"></div>
+  <div class="pipeline-steps" id="pipeline-steps">
+    <div class="pipeline-step" id="step-1">① Studying your story...</div>
+    <div class="pipeline-step" id="step-2">② Writing the song...</div>
+    <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
+  </div>
   <div id="output"></div>
+
 </div>
 <script>
-const GROQ_URL="https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL="llama-3.3-70b-versatile";
-const GEMINI_MODEL="gemini-2.5-flash";
+// ─── Config ────────────────────────────────────────────────────────────────────
+const CONFIG = {
+  GROQ_URL: 'https://api.groq.com/openai/v1/chat/completions',
+  GROQ_MODEL: 'llama-3.3-70b-versatile',
+  GEMINI_MODEL: 'gemini-2.5-flash',
+  TIMEOUT_MS: 60000,
+};
 
-window.addEventListener('load',()=>{
-  ['groq','gemini'].forEach(k=>{const v=localStorage.getItem(`key_${k}`);if(v)document.getElementById(`api-${k}`).value=v;});
-  if(localStorage.getItem('key_groq')||localStorage.getItem('key_gemini')){document.getElementById('api-saved').style.display='block';}
+// ─── AbortController ref ───────────────────────────────────────────────────────
+let currentController = null;
+
+// ─── On load ───────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  // Restore API keys
+  ['groq', 'gemini'].forEach(k => {
+    const v = localStorage.getItem(`key_${k}`);
+    if (v) document.getElementById(`api-${k}`).value = v;
+  });
+  if (localStorage.getItem('key_groq') || localStorage.getItem('key_gemini')) {
+    document.getElementById('api-saved').style.display = 'block';
+  }
+  // Restore genre + mood selections
+  const savedGenre = localStorage.getItem('pref_genre');
+  const savedMood  = localStorage.getItem('pref_mood');
+  if (savedGenre) restoreToggle('genre-group', savedGenre);
+  if (savedMood)  restoreToggle('mood-group',  savedMood);
 });
-function saveKeys(){
-  ['groq','gemini'].forEach(k=>{const v=document.getElementById(`api-${k}`).value.trim();if(v)localStorage.setItem(`key_${k}`,v);});
-  document.getElementById('api-saved').style.display='block';
-}
-function getKey(k){return document.getElementById(`api-${k}`).value.trim();}
-document.querySelectorAll('.toggle-group').forEach(group=>{group.querySelectorAll('.toggle-btn').forEach(btn=>{btn.addEventListener('click',()=>{group.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});});});
-function getSelected(id){return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.value||'';}
-function copyText(text,btn){const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}catch(e){btn.textContent='Failed';}document.body.removeChild(ta);};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}).catch(fallback);}else{fallback();}}
-function setStatus(msg,isError=false){const el=document.getElementById('status');el.textContent=msg;el.className='status visible'+(isError?' error':' pulsing');}
-function clearStatus(){document.getElementById('status').className='status';}
 
-const GENRE_EXAMPLES={
-  "Pop":`GOOD LINE: "I found your hoodie in the back seat / still smells like the last time we were easy"
+function restoreToggle(groupId, value) {
+  document.querySelectorAll(`#${groupId} .toggle-btn`).forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.value === value);
+  });
+}
+
+// ─── Save keys ─────────────────────────────────────────────────────────────────
+document.getElementById('save-keys-btn').addEventListener('click', () => {
+  ['groq', 'gemini'].forEach(k => {
+    const v = document.getElementById(`api-${k}`).value.trim();
+    if (v) localStorage.setItem(`key_${k}`, v);
+  });
+  document.getElementById('api-saved').style.display = 'block';
+});
+
+function getKey(k) {
+  return document.getElementById(`api-${k}`).value.trim();
+}
+
+// ─── Toggle groups ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.toggle-group').forEach(group => {
+  group.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (group.id === 'genre-group') localStorage.setItem('pref_genre', btn.dataset.value);
+      if (group.id === 'mood-group')  localStorage.setItem('pref_mood',  btn.dataset.value);
+    });
+  });
+});
+
+function getSelected(id) {
+  return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.value || '';
+}
+
+// ─── Copy helper ───────────────────────────────────────────────────────────────
+function copyText(text, btn) {
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand('copy');
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    } catch (e) { btn.textContent = 'Failed'; }
+    document.body.removeChild(ta);
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    }).catch(fallback);
+  } else { fallback(); }
+}
+
+// ─── HTML escape ───────────────────────────────────────────────────────────────
+function escapeHTML(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ─── Status UI ─────────────────────────────────────────────────────────────────
+function setStatus(msg, isError = false) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status visible' + (isError ? ' error' : '');
+}
+function clearStatus() {
+  document.getElementById('status').className = 'status';
+}
+function showModel(msg) {
+  const el = document.getElementById('active-model');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ─── Pipeline step UI ──────────────────────────────────────────────────────────
+function setPipelineStep(n) {
+  document.getElementById('pipeline-steps').classList.add('visible');
+  [1, 2, 3].forEach(i => {
+    const el = document.getElementById(`step-${i}`);
+    if (i < n)      el.className = 'pipeline-step done';
+    else if (i === n) el.className = 'pipeline-step active';
+    else            el.className = 'pipeline-step';
+  });
+}
+function hidePipeline() {
+  document.getElementById('pipeline-steps').classList.remove('visible');
+  [1, 2, 3].forEach(i => { document.getElementById(`step-${i}`).className = 'pipeline-step'; });
+}
+
+// ─── Fetch with timeout ────────────────────────────────────────────────────────
+function fetchWithTimeout(url, options, ms) {
+  return Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out — please try again')), ms))
+  ]);
+}
+
+// ─── Core AI call ──────────────────────────────────────────────────────────────
+async function aiCall(prompt, temperature = 0.95, maxTokens = 1200, signal = null) {
+  const groqKey   = getKey('groq');
+  const geminiKey = getKey('gemini');
+
+  if (groqKey) {
+    try {
+      const res = await fetchWithTimeout(CONFIG.GROQ_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+        body: JSON.stringify({
+          model: CONFIG.GROQ_MODEL,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: maxTokens,
+          temperature,
+          top_p: 0.9
+        }),
+        signal
+      }, CONFIG.TIMEOUT_MS);
+
+      if (res.ok) {
+        const data = await res.json();
+        showModel('✦ Using Groq');
+        return data.choices[0].message.content.trim();
+      }
+      const err = await res.json();
+      const isRateLimit = err?.error?.message?.toLowerCase().includes('rate limit') || String(res.status).startsWith('429');
+      if (!isRateLimit) throw new Error(err?.error?.message || `Groq error ${res.status}`);
+      showModel('⚡ Groq limit reached — switching to Gemini');
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      const isRateLimit = e.message.toLowerCase().includes('rate limit') || e.message.includes('429');
+      if (!isRateLimit && !geminiKey) throw e;
+    }
+  }
+
+  if (geminiKey) {
+    const res = await fetchWithTimeout(
+      `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.GEMINI_MODEL}:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature, maxOutputTokens: maxTokens }
+        }),
+        signal
+      },
+      CONFIG.TIMEOUT_MS
+    );
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err?.error?.message || `Gemini error ${res.status}`);
+    }
+    const data = await res.json();
+    const candidate = data.candidates?.[0];
+    let text = candidate?.content?.parts?.[0]?.text || candidate?.output || '';
+    if (!text) throw new Error('Empty response from Gemini');
+    text = text
+      .replace(/\*\*[\s\S]*?\*\*/g, '')
+      .replace(/\*[^*]+\*/g, '')
+      .replace(/_{1,2}[^_]+_{1,2}/g, '')
+      .replace(/^\s*---+\s*$/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    showModel('✦ Using Gemini');
+    return text;
+  }
+
+  throw new Error('No API key — add your Groq or Gemini key above');
+}
+
+// ─── Genre examples ────────────────────────────────────────────────────────────
+const GENRE_EXAMPLES = {
+  "Pop": `GOOD LINE: "I found your hoodie in the back seat / still smells like the last time we were easy"
 BAD LINE: "I miss you so much it hurts inside"
 GOOD CHORUS: "Maybe I was wrong / maybe you were right / maybe we were just two kids / burning in the night"
 BAD CHORUS: "I will love you forever / you mean everything to me"`,
-  "Hip-Hop":`GOOD LINE: "Mama kept the lights on working doubles at the waffle house / I told her I'd buy her a real house / she said boy just get your diploma out"
+  "Hip-Hop": `GOOD LINE: "Mama kept the lights on working doubles at the waffle house / I told her I'd buy her a real house / she said boy just get your diploma out"
 BAD LINE: "I came from nothing and now I have everything"
 GOOD CHORUS: "All I got is this moment / can't waste it on your doubt / came too far to fold now / I'm finding my way out"
 BAD CHORUS: "I'm on top of the world / nothing can stop me now"`,
-  "R&B":`GOOD LINE: "You left your perfume on my pillow / I still sleep on your side / order takeout for two by habit / then sit alone and cry"
+  "R&B": `GOOD LINE: "You left your perfume on my pillow / I still sleep on your side / order takeout for two by habit / then sit alone and cry"
 BAD LINE: "Without you I feel so empty inside"
 GOOD CHORUS: "I keep your number in my phone / can't bring myself to let it go / one text away from falling back / into everything I know"
 BAD CHORUS: "Baby come back to me / I need you in my life"`,
-  "Country":`GOOD LINE: "Last day of summer, back of your daddy's truck / radio on, gravel road, twenty bucks of luck / you said let's drive until we run out of road / I didn't know that was the last time I'd let go"
+  "Country": `GOOD LINE: "Last day of summer, back of your daddy's truck / radio on, gravel road, twenty bucks of luck / you said let's drive until we run out of road / I didn't know that was the last time I'd let go"
 BAD LINE: "Small town life means everything to me"
 GOOD CHORUS: "That old red barn's still standing / your name's still in the wood / I'd go back and change a thousand things / but none of them I should"
 BAD CHORUS: "Country roads and open skies / that's where my heart will always lie"`,
-  "Rock":`GOOD LINE: "Knuckles white on the steering wheel / drove past your street three times / told myself I was just passing through / told myself that lie"
+  "Rock": `GOOD LINE: "Knuckles white on the steering wheel / drove past your street three times / told myself I was just passing through / told myself that lie"
 BAD LINE: "I feel the rage building inside me"
 GOOD CHORUS: "I am not what they made me / I am not what I was / I'm the fire that keeps burning / after everyone gives up"
 BAD CHORUS: "We will rise up and fight / we will never back down"`,
-  "EDM":`GOOD LINE: "Neon lights on a wet street / your face in every window / three AM and I'm still moving / can't let this feeling go"
+  "EDM": `GOOD LINE: "Neon lights on a wet street / your face in every window / three AM and I'm still moving / can't let this feeling go"
 BAD LINE: "Dance with me all night long"
 GOOD CHORUS: "Let it break / let it breathe / let it take / everything"
 BAD CHORUS: "Put your hands up / feel the beat / tonight we dance / feel the heat"`,
-  "Soul":`GOOD LINE: "Sat in my car outside the church / couldn't make myself go in / pastor said God forgives everything / but I ain't forgiven him"
+  "Soul": `GOOD LINE: "Sat in my car outside the church / couldn't make myself go in / pastor said God forgives everything / but I ain't forgiven him"
 BAD LINE: "I've been through so much pain in my life"
 GOOD CHORUS: "Still here / still standing / still got two hands worth of fight / still here / still standing / after the longest night"
 BAD CHORUS: "I will survive and overcome / nothing can keep me down"`,
-  "Indie":`GOOD LINE: "You always burned the toast and called it caramelized / I believed you every time / now I make it perfect every morning / and I hate how it tastes"
+  "Indie": `GOOD LINE: "You always burned the toast and called it caramelized / I believed you every time / now I make it perfect every morning / and I hate how it tastes"
 BAD LINE: "Everything reminds me of you"
 GOOD CHORUS: "I keep finding you in ordinary things / the way the light comes through at four / I don't know what any of this means / I just know I can't ignore"
 BAD CHORUS: "You are always on my mind / I can't leave you behind"`,
-  "Christian Rock":`GOOD LINE: "Hit the floor of my bathroom at 2 AM / thought I'd finally run too far / picked up a Bible I hadn't touched in years / found my name written in the scars"
+  "Christian Rock": `GOOD LINE: "Hit the floor of my bathroom at 2 AM / thought I'd finally run too far / picked up a Bible I hadn't touched in years / found my name written in the scars"
 BAD LINE: "I cried out to you Lord in my darkness"
 GOOD CHORUS: "You didn't wait for me to get it right / you ran to me mid-fall / I thought I had to earn my way back home / but you never left at all"
 BAD CHORUS: "Lord I praise you for your mercy / you are the light of my life"`,
-  "Christian Worship":`GOOD LINE: "I've shown you every broken part / the ones I hid for years / and still you call me by my name / and meet me right here"
+  "Christian Worship": `GOOD LINE: "I've shown you every broken part / the ones I hid for years / and still you call me by my name / and meet me right here"
 BAD LINE: "You are so great and mighty Lord"
 GOOD CHORUS: "Where else would I go / you have the words of life / where else would I go / you hold me in the night"
 BAD CHORUS: "I will worship you forever / you are worthy of my praise"`
 };
 
-async function aiCall(prompt,temperature=0.95,maxTokens=1200){
-  const groqKey=getKey('groq');
-  const geminiKey=getKey('gemini');
-  if(groqKey){
-    try{
-      const res=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${groqKey}`},body:JSON.stringify({model:GROQ_MODEL,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature,top_p:0.9})});
-      if(res.ok){const data=await res.json();showModel('✦ Using Groq');return data.choices[0].message.content.trim();}
-      const err=await res.json();
-      if(!err?.error?.message?.toLowerCase().includes('rate limit')&&!String(res.status).startsWith('429')){throw new Error(err?.error?.message||`Groq error ${res.status}`);}
-      showModel('⚡ Groq limit reached — switching to Gemini');
-    }catch(e){
-      if(!e.message.toLowerCase().includes('rate limit')&&!e.message.includes('429')){if(!geminiKey)throw e;}
-    }
-  }
-  if(geminiKey){
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature,maxOutputTokens:maxTokens}})});
-    if(!res.ok){const err=await res.json();throw new Error(err?.error?.message||`Gemini error ${res.status}`);}
-    const data=await res.json();
-    const candidate=data.candidates?.[0];
-    let text=candidate?.content?.parts?.[0]?.text||candidate?.output||'';
-    if(!text)throw new Error('Empty response from Gemini');
-    text=text.replace(/\*\*[\s\S]*?\*\*/g,'').replace(/\*[^*]+\*/g,'').replace(/_{1,2}[^_]+_{1,2}/g,'').replace(/^\s*---+\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
-    showModel('✦ Using Gemini');
-    return text;
-  }
-  throw new Error('No API key — add your Groq or Gemini key above');
+// ─── Prompts ───────────────────────────────────────────────────────────────────
+function buildStructurePrompt(theme) {
+  return `You are a creative analyst for a world-class songwriter. You have been given raw material — it could be a personal story, a Bible story, a metaphor, a concept, a character, a feeling, or anything else. Your job is to extract what a songwriter needs from it. Do not editorialize. Do not invent details that aren't there. Just organize what already exists.
+
+THE RAW MATERIAL:
+${theme}
+
+Extract and return ONLY this structure, nothing else:
+
+CENTRAL IMAGE OR METAPHOR:
+[The single most vivid or powerful image at the heart of this material. One sentence. If the input is a metaphor (e.g. "anxiety as a machine"), name it explicitly here.]
+
+MOVEMENTS:
+[The stages this material moves through — beginning, escalation, turning point, resolution or landing. List each as a concrete beat, one per line. If it's a Bible story, follow the narrative. If it's a metaphor or concept, map its arc from start to finish.]
+
+KEY IMAGES:
+[6-10 specific physical or sensory details present in the material — objects, places, sounds, actions, textures. Real and concrete only. Do not invent anything not implied by the input.]
+
+TURNING POINT:
+[The single moment where something shifts — a decision, a revelation, a collapse, a surrender, a rescue. One sentence. Stay close to the material.]
+
+CHORUS CANDIDATE:
+[The most emotionally loaded image or moment. Should be a concrete scene or image, not an abstract theme. One or two sentences.]
+
+EMOTIONAL DESTINATION:
+[What should the listener feel at the end of this song? One sentence. Infer from the arc of the material.]`;
 }
 
-function showModel(msg){const el=document.getElementById('active-model');el.textContent=msg;el.style.display='block';}
-
-function buildPrompt(theme,genre,mood,userLines){
-  const sacred=userLines?`\nSACRED LINES — these must appear verbatim in the final song, build around them:\n${userLines}\n`:'';
-  const examples=GENRE_EXAMPLES[genre]||'';
-  return `You are a world class songwriter and ghostwriter. Someone has told you their real story. Your job is to turn it into a song that follows the exact sequence of events they described — in the order they described them.
+function buildPrompt(structuredStory, genre, mood, userLines) {
+  const sacred = userLines
+    ? `\nSACRED LINES — these must appear verbatim in the final song, build around them:\n${userLines}\n`
+    : '';
+  const examples = GENRE_EXAMPLES[genre] || '';
+  return `You are a world class songwriter and ghostwriter. You have been given structured source material — it could be a personal story, a Bible story, a metaphor, a concept, or anything else. Your job is to turn it into a song that follows its arc exactly, in the order it was given.
 
 GENRE: ${genre}
 MOOD: ${mood}
 ${sacred}
-THE STORY — follow this sequence exactly, in this order:
-${theme}
+THE STRUCTURED MATERIAL — follow this arc exactly, in this order:
+${structuredStory}
 
 QUALITY STANDARD for ${genre}:
 ${examples}
 
 RULES:
 
-1. FOLLOW THE SEQUENCE
-The story must unfold in the same order as told. What they described first goes in Verse 1. What happened next goes in Verse 2. The turning point or realization goes in the Bridge. How it ended goes in the Outro. Do not reorder events.
+1. FOLLOW THE ARC
+The song must follow the MOVEMENTS from the structured material in order. What comes first goes in Verse 1. What comes next goes in Verse 2. The turning point goes in the Bridge. The resolution or final beat goes in the Outro. Do not reorder.
 
 2. USE THE REAL DETAILS
-Every specific detail in the story is gold — names, objects, places, actions. Use them directly. Do not replace with generic alternatives. "Work boots" stays "work boots." "Daughter's jacket on the hook" stays "daughter's jacket on the hook."
+Every specific detail in the KEY IMAGES is gold — names, objects, places, actions, textures. Use them directly. Do not swap for generic alternatives. If the input says "a ram in the thicket" that stays a ram in the thicket. If it says "a machine bolted to my chest" that machine stays bolted to the chest.
 
 3. FINGERPRINT RULE
 Every line must be irreplaceable — it could only exist in this song about this story. If a line could appear in a different song, rewrite it until it couldn't.
@@ -263,35 +471,120 @@ Every line must be irreplaceable — it could only exist in this song about this
 - Stock clichés: "heart beating like a drum" "words that cut too deep" "neon lights blurring like tears"
 - Stock rebirth: "wind at my back" "sun on my skin" "dawn after the night"
 - Any line that names the feeling instead of showing the moment
+- Repeating a metaphor or image across multiple sections
 
 5. CHORUS RULE
-The chorus must contain a specific image or detail from the story — not a summary of the theme. It must feel like it could only come from these specific verses. Max 4 lines, each under 10 words.
+The chorus must contain a specific image or detail from the KEY IMAGES — not a summary of the theme. It must feel like it could only come from this specific material. Max 4 lines, each under 10 words.
 
 6. BRIDGE AND OUTRO
-The bridge is where the narrator realizes something — use the turning point from the story. The outro lands on the last real moment they described. Do not go abstract. Stay in the scene.
+The bridge is where the narrator realizes something — use the TURNING POINT from the structured material. The outro lands on the EMOTIONAL DESTINATION. Do not go abstract or motivational. Stay in the imagery.
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
 Output the complete song. Every section. No truncating. No commentary.`;
 }
 
-async function generate(){
-  const theme=document.getElementById('theme').value.trim();
-  if(!getKey('groq')&&!getKey('gemini')){setStatus('⚠ Add at least one API key above',true);return;}
-  if(!theme){setStatus('⚠ Tell your story first',true);return;}
-  const genre=getSelected('genre-group');
-  const mood=getSelected('mood-group');
-  const userLines=document.getElementById('user-lines').value.trim();
-  document.getElementById('generate-btn').disabled=true;
-  document.getElementById('output').innerHTML='';
-  setStatus('✦ Writing your song...');
-  try{
-    const lyrics=await aiCall(buildPrompt(theme,genre,mood,userLines),0.95,1200);
-    clearStatus();
-    document.getElementById('output').innerHTML=`<div class="output-box"><div class="box-header"><div class="box-title">✦ Your Lyrics</div><button class="copy-btn" id="copy-lyrics">Copy</button></div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;
-    document.getElementById('copy-lyrics').addEventListener('click',function(){copyText(lyrics,this);});
-  }catch(e){setStatus('⚠ '+e.message,true);}
-  document.getElementById('generate-btn').disabled=false;
+function buildPolishPrompt(draft, genre, structuredStory) {
+  return `You are a ruthless line editor for a world-class songwriter. You have been given a first draft and the structured story it came from. Your job is to make it consistently great — not to rewrite it, but to find and fix every weak line while leaving strong ones untouched.
+
+GENRE: ${genre}
+
+THE STRUCTURED STORY (source of truth):
+${structuredStory}
+
+THE DRAFT:
+${draft}
+
+YOUR TASK:
+
+Go through every line. Apply these tests in order:
+
+TEST 1 — FINGERPRINT TEST
+Could this line appear in a different song about a different story? If yes, rewrite it using a specific image from the structured story.
+
+TEST 2 — FILLER TEST
+Does this line name an emotion or state the theme directly? ("I felt lost" / "the pain was real" / "I couldn't breathe") If yes, replace it with the concrete action or image that caused that feeling.
+
+TEST 3 — CHORUS TEST
+Does the chorus contain at least one specific physical detail from the KEY IMAGES? If no, rebuild it around the CHORUS CANDIDATE from the structured material.
+
+TEST 4 — REPETITION TEST
+Does any metaphor, image, or phrase appear more than once across different sections? If yes, cut the weaker instance.
+
+TEST 5 — ENDING TEST
+Does the outro stay in the imagery and emotional destination from the structured material, or does it go abstract or generically motivational? If abstract, pull it back to a concrete image from the KEY IMAGES.
+
+RULES:
+- Keep every section label exactly as written: [Verse 1], [Chorus], etc.
+- Do not add sections. Do not remove sections.
+- If a line passes all 5 tests, do not touch it.
+- Do not add commentary, explanations, or notes.
+
+Output the complete revised song. Nothing else.`;
 }
+
+// ─── Main generate function ────────────────────────────────────────────────────
+document.getElementById('generate-btn').addEventListener('click', async () => {
+  const theme = document.getElementById('theme').value.trim();
+
+  if (!getKey('groq') && !getKey('gemini')) { setStatus('⚠ Add at least one API key above', true); return; }
+  if (!theme) { setStatus('⚠ Give it something to work with — a story, a concept, a feeling', true); return; }
+
+  // Cancel any in-flight request
+  if (currentController) currentController.abort();
+  currentController = new AbortController();
+  const signal = currentController.signal;
+
+  const genre     = getSelected('genre-group');
+  const mood      = getSelected('mood-group');
+  const userLines = document.getElementById('user-lines').value.trim();
+  const btn       = document.getElementById('generate-btn');
+
+  btn.disabled = true;
+  document.getElementById('output').innerHTML = '';
+  document.getElementById('active-model').style.display = 'none';
+  clearStatus();
+
+  try {
+    // Step 1 — Structure
+    setPipelineStep(1);
+    const structuredStory = await aiCall(buildStructurePrompt(theme), 0.3, 600, signal);
+
+    // Step 2 — Draft
+    setPipelineStep(2);
+    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines), 0.95, 1400, signal);
+
+    // Step 3 — Polish
+    setPipelineStep(3);
+    const final = await aiCall(buildPolishPrompt(draft, genre, structuredStory), 0.4, 1400, signal);
+
+    hidePipeline();
+    clearStatus();
+
+    document.getElementById('output').innerHTML = `
+      <div class="output-box">
+        <div class="box-header">
+          <div class="box-title">✦ Your Lyrics</div>
+          <button class="copy-btn" id="copy-lyrics" aria-label="Copy lyrics">Copy</button>
+        </div>
+        <div class="lyrics-text">${escapeHTML(final)}</div>
+      </div>`;
+
+    document.getElementById('copy-lyrics').addEventListener('click', function () {
+      copyText(final, this);
+    });
+
+  } catch (e) {
+    hidePipeline();
+    if (e.name === 'AbortError') {
+      clearStatus();
+    } else {
+      setStatus('⚠ ' + e.message, true);
+    }
+  } finally {
+    btn.disabled = false;
+    currentController = null;
+  }
+});
 </script>
 </body>
 </html>
