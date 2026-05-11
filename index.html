@@ -59,6 +59,7 @@
   .output-box { margin-top: 28px; background: rgba(0,0,0,0.3); border: 1px solid rgba(124,77,255,0.3); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
   .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .box-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
+  .score-badge { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; color: var(--green); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); border-radius: 50px; padding: 4px 12px; }
   .copy-btn { padding: 6px 16px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; min-width: 64px; text-align: center; }
   .copy-btn.copied { color: #f0abfc; border-color: var(--accent); }
   .lyrics-text { font-family: 'Lora', Georgia, serif; font-size: 15px; line-height: 2; color: var(--text); white-space: pre-wrap; word-break: break-word; }
@@ -149,6 +150,8 @@
     <div class="pipeline-step" id="step-1">① Studying your material...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
     <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
+    <div class="pipeline-step" id="step-4">④ Grading the draft...</div>
+    <div class="pipeline-step" id="step-5">⑤ Rewriting weak lines...</div>
   </div>
   <div id="output"></div>
 </div>
@@ -159,6 +162,8 @@ const CONFIG = {
   GROQ_MODEL: 'llama-3.3-70b-versatile',
   GEMINI_MODEL: 'gemini-2.5-flash-lite',
   TIMEOUT_MS: 120000,
+  MAX_LOOPS: 3,
+  TARGET_SCORE: 9.0,
 };
 
 let currentController = null;
@@ -249,18 +254,23 @@ function showModel(msg) {
   el.style.display = 'block';
 }
 
+const TOTAL_STEPS = 5;
 function setPipelineStep(n) {
   document.getElementById('pipeline-steps').classList.add('visible');
-  [1, 2, 3].forEach(i => {
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
     const el = document.getElementById(`step-${i}`);
-    if (i < n)       el.className = 'pipeline-step done';
+    if (!el) continue;
+    if (i < n)        el.className = 'pipeline-step done';
     else if (i === n) el.className = 'pipeline-step active';
-    else             el.className = 'pipeline-step';
-  });
+    else              el.className = 'pipeline-step';
+  }
 }
 function hidePipeline() {
   document.getElementById('pipeline-steps').classList.remove('visible');
-  [1, 2, 3].forEach(i => { document.getElementById(`step-${i}`).className = 'pipeline-step'; });
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const el = document.getElementById(`step-${i}`);
+    if (el) el.className = 'pipeline-step';
+  }
 }
 
 function fetchWithTimeout(url, options, ms) {
@@ -340,6 +350,19 @@ async function aiCall(prompt, temperature = 0.95, maxTokens = 1200, signal = nul
   throw new Error('No API key — add your Groq or Gemini key above');
 }
 
+// FIX 2: Hardened score extractor — only matches the dedicated FINAL SCORE line,
+// never a dimension sub-score like "Chorus Impact: 1.5/2" or any inline X/10 mention.
+function extractScore(text) {
+  if (!text) return 0;
+  // Only match a line that starts with FINAL SCORE (allows optional colon/space variants)
+  const m = text.match(/^FINAL\s+SCORE\s*:?\s*(\d+(?:\.\d+)?)\s*\/\s*10\s*$/im);
+  return m ? parseFloat(m[1]) : 0;
+}
+
+/* ============================================================
+   PROMPTS
+   ============================================================ */
+
 const GENRE_EXAMPLES = {
   "Pop": `GOOD LINE: "I found your hoodie in the back seat / still smells like the last time we were easy"
 BAD LINE: "I miss you so much it hurts inside"
@@ -385,48 +408,59 @@ BAD CHORUS: "I will worship you forever / you are worthy of my praise"`
 
 function buildStructurePrompt(theme, userLines) {
   const sacredNote = userLines
-    ? `\nSACRED LINES — the songwriter has provided these lines that MUST appear verbatim in the final song. Your job is to find the best structural home for each one:\n${userLines}\n`
+    ? `\nSACRED LINES — the songwriter has provided these lines that MUST appear verbatim in the final song. Find the best structural home for each one:\n${userLines}\n`
     : '';
   return `You are a creative analyst for a world-class songwriter. You have been given raw material — it could be a personal story, a Bible story, a metaphor, a concept, a character, a feeling, or poetic imagery. Your job is to extract what a songwriter needs from it. Preserve the original language and imagery as much as possible — do NOT flatten poetic input into plain language.
 ${sacredNote}
 THE RAW MATERIAL:
 ${theme}
 
+IMPORTANT CONSTRAINTS:
+- Do not introduce generic themes (love conquers all, hope prevails, etc.) that aren't present in the material.
+- If the input has no clear turning point, invent one that FITS THE SPECIFIC IMAGERY — not a generic revelation.
+- Do not sanitize dark, specific, or unusual imagery. Preserve it.
+- If a section is unclear, make a specific creative choice rather than hedging.
+
 Extract and return ONLY this structure, nothing else:
 
 CENTRAL IMAGE OR METAPHOR:
 [The single most vivid or powerful image at the heart of this material. One sentence. Preserve the exact language from the input if it is already poetic or evocative.]
 
-MOVEMENTS:
-[The stages this material moves through — beginning, escalation, turning point, resolution or landing. List each as a concrete beat, one per line. Preserve specific imagery from the input in each beat.]
+NARRATIVE SPINE:
+VERSE 1 — SITUATION: [The opening state of the world. What exists before anything changes. One concrete beat.]
+VERSE 2 — SHIFT: [What changes, deepens, or complicates the situation. One concrete beat that builds on Verse 1.]
+BRIDGE — TURNING POINT: [The single moment where something breaks, cracks, or transforms. One concrete beat.]
+CHORUS — EMOTIONAL TRUTH: [The recurring emotional core. Not a theme — a physical moment or image that carries the feeling.]
+OUTRO — LANDING: [Where the listener is left. Not resolution — placement. One image.]
 
 KEY IMAGES:
 [8-12 specific physical or sensory details present in the material — objects, places, sounds, actions, textures. Pull directly from the input language. If the input uses poetic or unusual phrasing, keep that phrasing here.]
 
-TURNING POINT:
-[The single moment where something shifts. One sentence. Use the exact language from the input if possible.]
-
-CHORUS CANDIDATE:
-[The most emotionally loaded image or moment from the material. Should be a concrete scene or image. If the user provided a tagline or protected line, that goes here as the primary chorus candidate.]
-
-${userLines ? `SACRED LINES PLACEMENT:\n[For each sacred line, suggest which section it belongs in and why. These MUST appear verbatim in the final song.]\n` : ''}
+${userLines ? `SACRED LINES PLACEMENT:\n[For each sacred line, specify exactly which section it belongs in — Verse 1, Pre-Chorus, Chorus, Verse 2, Bridge, or Outro — and why that placement serves the arc.]\n` : ''}
 
 EMOTIONAL DESTINATION:
-[What should the listener feel at the end? One sentence. Infer from the arc of the material.]`;
+[What should the listener feel at the end? One sentence. Infer from the arc of the material — do not state the theme.]`;
 }
 
-function buildPrompt(structuredStory, genre, mood, userLines) {
+function buildWritePrompt(structuredStory, genre, mood, userLines) {
   const sacred = userLines
-    ? `\nSACRED LINES — NON-NEGOTIABLE. These lines MUST appear in the final song EXACTLY as written. Do not paraphrase. Do not reorder the words. Do not omit them. Find the right section for each one based on the SACRED LINES PLACEMENT above and use them verbatim:\n${userLines}\n`
+    ? `\nSACRED LINES — NON-NEGOTIABLE. These lines MUST appear in the final song EXACTLY as written. Do not paraphrase. Do not reorder the words. Do not omit them. Place each one in the section specified in SACRED LINES PLACEMENT above:\n${userLines}\n`
     : '';
   const examples = GENRE_EXAMPLES[genre] || '';
-  return `You are a world class songwriter and ghostwriter. You have been given structured source material. Your job is to turn it into a complete song that follows its arc exactly. You must output the ENTIRE song — every section from Verse 1 to Outro. Do not stop early. Do not truncate.
+  return `You are a world-class songwriter and ghostwriter. You have been given structured source material with a defined narrative spine. Your job is to write a complete song that follows this arc EXACTLY.
 
 GENRE: ${genre}
 MOOD: ${mood}
 ${sacred}
-THE STRUCTURED MATERIAL — follow this arc in order:
+THE STRUCTURED MATERIAL — follow the narrative spine in strict order:
 ${structuredStory}
+
+NARRATIVE SPINE RULE — THIS IS MANDATORY:
+- [Verse 1] must embody VERSE 1 — SITUATION from the structure above. The opening state. Before anything changes.
+- [Verse 2] must embody VERSE 2 — SHIFT. Something deepens or complicates — not a repeat.
+- [Bridge] must embody the TURNING POINT. The crack or break moment.
+- [Chorus] must embody the CHORUS — EMOTIONAL TRUTH. One recurring image that carries the feeling.
+- [Outro] must embody the OUTRO — LANDING. Leave the listener in one specific image, not a motivational statement.
 
 QUALITY STANDARD for ${genre}:
 ${examples}
@@ -434,39 +468,37 @@ ${examples}
 RULES:
 
 1. SACRED LINES ARE ABSOLUTE
-If sacred lines were provided above, they must appear in the song exactly as written — same words, same order, same punctuation. This is not optional.
+If sacred lines were provided above, they must appear exactly as written — same words, same order, same punctuation.
 
-2. FOLLOW THE ARC IN ORDER
-Verse 1 = first movement. Verse 2 = second movement. Bridge = turning point. Outro = emotional destination. Do not reorder.
+2. FINGERPRINT RULE
+Every single line must be irreplaceable — specific to this song, this story, this set of images. If you can imagine the line appearing in a different song, replace it with something that could only come from THIS material.
 
-3. PRESERVE THE INPUT LANGUAGE
-If the structured material uses specific poetic or unusual phrasing — use it. Do not replace vivid input language with generic alternatives.
+3. PRESERVE INPUT LANGUAGE
+If the structured material uses specific poetic or unusual phrasing, use it. Do not replace vivid input language with generic alternatives.
 
-4. FINGERPRINT RULE
-Every line must be irreplaceable — specific to this song and this story only.
-
-5. BANNED PATTERNS:
+4. BANNED PATTERNS — HARD STOP:
 - Identity stacking: "I am the [noun] / I am the [noun]"
-- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall
-- Emotion naming: "I felt empty" "the pain was real"
-- Stock clichés: "heart beating like a drum" "words that cut too deep"
-- Stock endings: "wind at my back" "sun on my skin" "dawn after the night"
+- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall, scars+stars
+- Emotion naming: "I felt empty" "the pain was real" "I felt so lost"
+- Stock clichés: "heart beating like a drum" "words that cut too deep" "breathe again"
+- Stock endings: "wind at my back" "sun on my skin" "dawn after the night" "rise from the ashes"
+- Abstract nouns as landing: hope, love, strength, faith used as an ending without a concrete image attached
 
-6. CHORUS RULE
-If a sacred tagline was provided, it IS the chorus or the final line of the chorus. Max 4 lines, each under 10 words.
+5. CHORUS RULE
+Max 4 lines. Each line under 10 words. Must contain a physical image or moment, not a theme statement.
 
-7. BRIDGE AND OUTRO
-Bridge = turning point. Outro = emotional destination. Stay in the imagery. Do not go abstract.
+6. VERSE 2 MUST NOT REPEAT VERSE 1
+Different images, different moment in the narrative spine. No recycling.
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
-Output the COMPLETE song. Every single section. Do not stop after one verse. Do not truncate under any circumstances.`;
+Output the COMPLETE song — every section, no truncation.`;
 }
 
 function buildPolishPrompt(draft, genre, structuredStory, userLines) {
   const sacred = userLines
     ? `\nSACRED LINES — these must appear verbatim in the final output. If any are missing or altered, restore them exactly:\n${userLines}\n`
     : '';
-  return `You are a ruthless line editor for a world-class songwriter. Your job is to make this song consistently great — fix every weak line while leaving strong ones untouched. You must output the ENTIRE revised song — every section from start to finish.
+  return `You are a ruthless line editor for a world-class songwriter. Your job is to make this song consistently great — fix every weak line while leaving strong ones untouched. Output the ENTIRE revised song.
 
 GENRE: ${genre}
 ${sacred}
@@ -476,34 +508,104 @@ ${structuredStory}
 THE DRAFT:
 ${draft}
 
-YOUR TASK — apply these tests to every line:
+Apply these tests to every line:
 
 TEST 1 — SACRED LINES CHECK
-Are all sacred lines present verbatim? If any are missing or changed, restore them exactly as provided.
+Are all sacred lines present verbatim? If any are missing or changed, restore them exactly.
 
 TEST 2 — FINGERPRINT TEST
-Could this line appear in a different song? If yes, rewrite using a specific image from the source material.
+Could this line appear in a different song? If yes, rewrite it using a specific image from the source material.
 
 TEST 3 — FILLER TEST
 Does this line name an emotion or state the theme directly? Replace with the concrete moment or image that caused that feeling.
 
-TEST 4 — CHORUS TEST
-Does the chorus contain the sacred tagline or a specific physical detail from the KEY IMAGES? If the sacred tagline exists, it must be in the chorus.
+TEST 4 — NARRATIVE SPINE TEST
+Does Verse 1 establish the situation? Does Verse 2 shift or complicate — not repeat? Does the Bridge contain the turning point? Does the Outro land in a specific image rather than a motivational statement? Fix any section that drifts from its assigned arc beat.
 
-TEST 5 — REPETITION TEST
+TEST 5 — CHORUS TEST
+Does the chorus contain a specific physical detail? Is it under 4 lines, each under 10 words? If it names an emotion without an image, replace the offending line.
+
+TEST 6 — REPETITION TEST
 Does any metaphor, image, or phrase appear more than once across different sections? Cut the weaker instance.
 
-TEST 6 — ENDING TEST
-Does the outro stay in the imagery from the source material? If it goes abstract or generically motivational, pull it back to a concrete image.
+TEST 7 — BANNED PATTERNS TEST
+Check every line for: identity stacking, stock pairs (storm+fire, dark+light, scars+stars), emotion naming, stock clichés, abstract landing words used without a concrete image. Rewrite any offender.
 
 RULES:
 - Keep every section label exactly as written
 - Do not add or remove sections
 - If a line passes all tests, do not touch it
-- No commentary or explanations
+- No commentary or explanations — output the complete revised song only
 
-Output the complete revised song from [Verse 1] all the way to [Outro]. Every section. Do not stop early. Do not truncate.`;
+Output the complete revised song from [Verse 1] to [Outro]. Every section. No truncation.`;
 }
+
+// FIX 1: Grader now receives the structured source material so it can distinguish
+// "intentionally preserved input language" from "generic filler" — closing the false-flag gap.
+function buildGradePrompt(song, genre, structuredStory) {
+  return `You are a professional A&R consultant and lyric critic. Grade this ${genre} song honestly against professional standards. Do not be generous — grade as if submitting to a publisher.
+
+SOURCE MATERIAL (the original imagery this song was built from — use this as context when judging whether a line is generic OR intentionally drawn from the source):
+${structuredStory}
+
+THE SONG:
+${song}
+
+IMPORTANT: If a line appears generic but matches specific imagery, phrasing, or language from the SOURCE MATERIAL above, do NOT flag it as a fingerprint failure — it is an intentional preservation of the original voice. Only flag lines that are generic AND have no basis in the source material.
+
+Evaluate these dimensions:
+
+1. FINGERPRINT SCORE (0–2): Are lines irreplaceable to this specific song, or could they appear anywhere? (See source material note above before deducting.)
+2. NARRATIVE ARC (0–2): Does Verse 1 set the situation, Verse 2 shift it, Bridge hit the turning point, Outro land in a specific image?
+3. CHORUS IMPACT (0–2): Is the chorus built on a physical image, not a theme statement? Is it under 4 lines?
+4. BANNED PATTERN VIOLATIONS (0–2): Deduct for any identity stacking, stock pairs, emotion naming, abstract endings. Full 2 = zero violations.
+5. GENRE AUTHENTICITY (0–2): Does this sound like real ${genre}? Are the images grounded in the genre's world?
+
+After scoring each dimension, output exactly this block with no other X/10 patterns before it:
+
+DIMENSION SCORES:
+Fingerprint: X/2
+Narrative Arc: X/2
+Chorus Impact: X/2
+Banned Patterns: X/2
+Genre Authenticity: X/2
+
+FINAL SCORE: X/10
+
+WEAKEST LINES (list each with reason):
+LINE: "[exact line]"
+PROBLEM: [specific issue]
+FIX: [concrete rewrite suggestion using the song's own imagery or source material]
+
+If the score is 9.0 or above, write CERTIFIED at the end.`;
+}
+
+function buildRewritePrompt(song, feedback, genre, userLines) {
+  const sacred = userLines
+    ? `\nSACRED LINES — must appear verbatim. Do not alter under any circumstances:\n${userLines}\n`
+    : '';
+  return `You are a world-class songwriter doing a targeted revision. A professional critic has flagged specific weak lines. Your job: fix exactly what is flagged, leave everything else untouched.
+
+GENRE: ${genre}
+${sacred}
+THE SONG:
+${song}
+
+CRITIC FEEDBACK:
+${feedback}
+
+REVISION RULES:
+1. Fix every line flagged in WEAKEST LINES using the critic's suggested approach or better.
+2. Do not touch lines that were not flagged — leave them character-for-character identical.
+3. The fix must use imagery already present in the song or source — do not introduce new metaphors from outside the song's world.
+4. Sacred lines are untouchable regardless of feedback.
+5. Maintain section structure and labels exactly.
+6. No commentary. Output the complete revised song only, from [Verse 1] to [Outro].`;
+}
+
+/* ============================================================
+   MAIN PIPELINE
+   ============================================================ */
 
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const theme     = document.getElementById('theme').value.trim();
@@ -526,29 +628,63 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   clearStatus();
 
   try {
+    // STEP 1 — Structure
     setPipelineStep(1);
-    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines), 0.3, 800, signal);
+    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines), 0.3, 900, signal);
 
+    // STEP 2 — Write
     setPipelineStep(2);
-    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines), 0.95, 2000, signal);
+    const draft = await aiCall(buildWritePrompt(structuredStory, genre, mood, userLines), 0.95, 2000, signal);
 
+    // STEP 3 — Polish
     setPipelineStep(3);
-    const final = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines), 0.4, 2000, signal);
+    const polished = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines), 0.6, 2000, signal);
+
+    // STEP 4 + 5 — Grade / Rewrite Loop
+    // structuredStory is passed to the grader so it has source context (FIX 1)
+    let bestSong    = polished;
+    let bestScore   = 0;
+    let lastScore   = 0;
+    let currentSong = polished;
+
+    for (let i = 0; i < CONFIG.MAX_LOOPS; i++) {
+      setPipelineStep(4);
+      const grade = await aiCall(buildGradePrompt(currentSong, genre, structuredStory), 0.15, 900, signal);
+      const score = extractScore(grade); // FIX 2: hardened regex only reads FINAL SCORE line
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestSong  = currentSong;
+      }
+
+      if (score >= CONFIG.TARGET_SCORE) break;
+      if (i > 0 && score <= lastScore) break;
+
+      lastScore = score;
+
+      setPipelineStep(5);
+      currentSong = await aiCall(buildRewritePrompt(currentSong, grade, genre, userLines), 0.75, 2000, signal);
+    }
 
     hidePipeline();
     clearStatus();
+
+    const scoreDisplay = bestScore > 0 ? `<span class="score-badge">✦ ${bestScore}/10</span>` : '';
 
     document.getElementById('output').innerHTML = `
       <div class="output-box">
         <div class="box-header">
           <div class="box-title">✦ Your Lyrics</div>
-          <button class="copy-btn" id="copy-lyrics">Copy</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${scoreDisplay}
+            <button class="copy-btn" id="copy-lyrics">Copy</button>
+          </div>
         </div>
-        <div class="lyrics-text">${escapeHTML(final)}</div>
+        <div class="lyrics-text">${escapeHTML(bestSong)}</div>
       </div>`;
 
     document.getElementById('copy-lyrics').addEventListener('click', function () {
-      copyText(final, this);
+      copyText(bestSong, this);
     });
 
   } catch (e) {
