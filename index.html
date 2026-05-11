@@ -158,7 +158,7 @@ const CONFIG = {
   GROQ_URL: 'https://api.groq.com/openai/v1/chat/completions',
   GROQ_MODEL: 'llama-3.3-70b-versatile',
   GEMINI_MODEL: 'gemini-2.5-flash',
-  TIMEOUT_MS: 60000,
+  TIMEOUT_MS: 90000,
 };
 
 let currentController = null;
@@ -420,7 +420,7 @@ function buildPrompt(structuredStory, genre, mood, userLines) {
     ? `\nSACRED LINES — NON-NEGOTIABLE. These lines MUST appear in the final song EXACTLY as written. Do not paraphrase. Do not reorder the words. Do not omit them. Find the right section for each one based on the SACRED LINES PLACEMENT above and use them verbatim:\n${userLines}\n`
     : '';
   const examples = GENRE_EXAMPLES[genre] || '';
-  return `You are a world class songwriter and ghostwriter. You have been given structured source material. Your job is to turn it into a song that follows its arc exactly.
+  return `You are a world class songwriter and ghostwriter. You have been given structured source material. Your job is to turn it into a complete song that follows its arc exactly. You must output the ENTIRE song — every section from Verse 1 to Outro. Do not stop early. Do not truncate.
 
 GENRE: ${genre}
 MOOD: ${mood}
@@ -434,40 +434,39 @@ ${examples}
 RULES:
 
 1. SACRED LINES ARE ABSOLUTE
-If sacred lines were provided above, they must appear in the song exactly as written — same words, same order, same punctuation. This is not optional. Build the surrounding lines to make them land as powerfully as possible.
+If sacred lines were provided above, they must appear in the song exactly as written — same words, same order, same punctuation. This is not optional.
 
 2. FOLLOW THE ARC IN ORDER
 Verse 1 = first movement. Verse 2 = second movement. Bridge = turning point. Outro = emotional destination. Do not reorder.
 
 3. PRESERVE THE INPUT LANGUAGE
-If the structured material uses specific poetic or unusual phrasing — use it. "Glitched fragments of your voice" stays "glitched fragments." "Data that refuses to disappear" stays. Do not replace vivid input language with generic alternatives.
+If the structured material uses specific poetic or unusual phrasing — use it. Do not replace vivid input language with generic alternatives.
 
 4. FINGERPRINT RULE
-Every line must be irreplaceable — specific to this song and this story only. If a line could appear in a different song, rewrite it.
+Every line must be irreplaceable — specific to this song and this story only.
 
 5. BANNED PATTERNS:
 - Identity stacking: "I am the [noun] / I am the [noun]"
 - Stock pairs: storm+fire, dark+light, broken+whole, rise+fall
-- Emotion naming instead of showing: "I felt empty" "the pain was real"
+- Emotion naming: "I felt empty" "the pain was real"
 - Stock clichés: "heart beating like a drum" "words that cut too deep"
 - Stock endings: "wind at my back" "sun on my skin" "dawn after the night"
-- Repeating the same image across multiple sections
 
 6. CHORUS RULE
-If a sacred tagline was provided, it IS the chorus or the final line of the chorus. Build the chorus around it. Max 4 lines, each under 10 words.
+If a sacred tagline was provided, it IS the chorus or the final line of the chorus. Max 4 lines, each under 10 words.
 
 7. BRIDGE AND OUTRO
-Bridge = the turning point from the structured material. Outro = emotional destination. Stay in the imagery. Do not go abstract.
+Bridge = turning point. Outro = emotional destination. Stay in the imagery. Do not go abstract.
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
-Output the complete song. Every section. No truncating. No commentary.`;
+Output the COMPLETE song. Every single section. Do not stop after one verse. Do not truncate under any circumstances.`;
 }
 
 function buildPolishPrompt(draft, genre, structuredStory, userLines) {
   const sacred = userLines
     ? `\nSACRED LINES — these must appear verbatim in the final output. If any are missing or altered, restore them exactly:\n${userLines}\n`
     : '';
-  return `You are a ruthless line editor for a world-class songwriter. Your job is to make this song consistently great — fix every weak line while leaving strong ones untouched.
+  return `You are a ruthless line editor for a world-class songwriter. Your job is to make this song consistently great — fix every weak line while leaving strong ones untouched. You must output the ENTIRE revised song — every section from start to finish.
 
 GENRE: ${genre}
 ${sacred}
@@ -480,7 +479,7 @@ ${draft}
 YOUR TASK — apply these tests to every line:
 
 TEST 1 — SACRED LINES CHECK
-Are all sacred lines present verbatim? If any are missing or changed, restore them exactly as provided. This is your first and most important check.
+Are all sacred lines present verbatim? If any are missing or changed, restore them exactly as provided.
 
 TEST 2 — FINGERPRINT TEST
 Could this line appear in a different song? If yes, rewrite using a specific image from the source material.
@@ -489,7 +488,7 @@ TEST 3 — FILLER TEST
 Does this line name an emotion or state the theme directly? Replace with the concrete moment or image that caused that feeling.
 
 TEST 4 — CHORUS TEST
-Does the chorus contain the sacred tagline or a specific physical detail from the KEY IMAGES? If the sacred tagline exists, it must be in the chorus. If it's missing, put it there.
+Does the chorus contain the sacred tagline or a specific physical detail from the KEY IMAGES? If the sacred tagline exists, it must be in the chorus.
 
 TEST 5 — REPETITION TEST
 Does any metaphor, image, or phrase appear more than once across different sections? Cut the weaker instance.
@@ -503,7 +502,7 @@ RULES:
 - If a line passes all tests, do not touch it
 - No commentary or explanations
 
-Output the complete revised song. Nothing else.`;
+Output the complete revised song from [Verse 1] all the way to [Outro]. Every section. Do not stop early. Do not truncate.`;
 }
 
 document.getElementById('generate-btn').addEventListener('click', async () => {
@@ -528,13 +527,13 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
 
   try {
     setPipelineStep(1);
-    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines), 0.3, 700, signal);
+    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines), 0.3, 800, signal);
 
     setPipelineStep(2);
-    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines), 0.95, 1400, signal);
+    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines), 0.95, 2000, signal);
 
     setPipelineStep(3);
-    const final = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines), 0.4, 1400, signal);
+    const final = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines), 0.4, 2000, signal);
 
     hidePipeline();
     clearStatus();
