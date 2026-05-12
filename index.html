@@ -580,14 +580,17 @@ FIX: [concrete rewrite suggestion using the song's own imagery or source materia
 If the score is 9.0 or above, write CERTIFIED at the end.`;
 }
 
-function buildRewritePrompt(song, feedback, genre, userLines) {
+function buildRewritePrompt(song, feedback, genre, userLines, structuredStory) {
   const sacred = userLines
     ? `\nSACRED LINES — must appear verbatim. Do not alter under any circumstances:\n${userLines}\n`
+    : '';
+  const sourceBlock = structuredStory
+    ? `\nSOURCE MATERIAL (the original imagery this song was built from — when rewriting a weak line, reach into this world first before inventing anything new):\n${structuredStory}\n`
     : '';
   return `You are a world-class songwriter doing a targeted revision. A professional critic has flagged specific weak lines. Your job: fix exactly what is flagged, leave everything else untouched.
 
 GENRE: ${genre}
-${sacred}
+${sacred}${sourceBlock}
 THE SONG:
 ${song}
 
@@ -595,9 +598,9 @@ CRITIC FEEDBACK:
 ${feedback}
 
 REVISION RULES:
-1. Fix every line flagged in WEAKEST LINES using the critic's suggested approach or better.
+1. Fix every line flagged in WEAKEST LINES using the critic's suggested approach or better — prefer pulling imagery from SOURCE MATERIAL above over inventing new metaphors.
 2. Do not touch lines that were not flagged — leave them character-for-character identical.
-3. The fix must use imagery already present in the song or source — do not introduce new metaphors from outside the song's world.
+3. The fix must use imagery already present in the song OR in SOURCE MATERIAL — do not introduce metaphors from outside this world.
 4. Sacred lines are untouchable regardless of feedback.
 5. Maintain section structure and labels exactly.
 6. No commentary. Output the complete revised song only, from [Verse 1] to [Outro].`;
@@ -663,7 +666,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
       lastScore = score;
 
       setPipelineStep(5);
-      currentSong = await aiCall(buildRewritePrompt(currentSong, grade, genre, userLines), 0.75, 2000, signal);
+      currentSong = await aiCall(buildRewritePrompt(currentSong, grade, genre, userLines, structuredStory), 0.75, 2000, signal);
     }
 
     hidePipeline();
