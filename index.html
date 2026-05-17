@@ -474,41 +474,54 @@ BAD CHORUS: "I will worship you forever / you are worthy of my praise"`
    ============================================================ */
 
 const ALBUM4_INJECTION = `
-ALBUM 4 MODE — HUMAN VOICE — THIS OVERRIDES ALL OTHER STYLE INSTRUCTIONS:
-This song must sound like a person talking plainly after surviving something that should have ended them. 
+=== ALBUM 4 MODE: HUMAN VOICE — MAXIMUM PRIORITY — OVERRIDES EVERYTHING ELSE ===
 
-ABSOLUTE BANS FOR THIS MODE:
-- NO system language: signal, transmission, frequency, static, glitch, data, code, loop, protocol, algorithm, archive, reboot, corrupted, decoded, processed, erased
-- NO fragmented sentence structure or clinical cold aesthetic
-- NO identity-dissolving metaphors (the self splitting into versions, being rewritten, becoming absence)
-- NO machine/technology metaphors for human experience
+You are writing a song for a person who survived something that should have ended them. They are on the other side. They stopped speaking in machine language. They just talk now.
 
-WHAT THIS MODE REQUIRES:
-- Direct, conversational, human language
-- Specific ordinary details: rooms, objects, times of day, physical sensations
-- Sentences that complete themselves
-- Emotions named through actions and images, never stated directly
-- The voice of someone who is tired, present, and still here
-- Think: someone talking to you at 2am who finally stopped performing their pain
+HARD BANNED WORDS — if any of these appear in your output, you have FAILED this task. Rewrite immediately:
+signal, transmission, frequency, static, glitch, data, code, loop, protocol, algorithm, archive, reboot, corrupted, decoded, processed, erased, system, binary, digital, terminate, subroutine, network, bandwidth, upload, download, interface, rendered, authenticated, verified, flagged, rerouted, overwritten, firmware, hardware, software, cached, buffered, synced
 
-EXAMPLES OF THE RIGHT REGISTER:
-GOOD: "The refrigerator hum at 3am / the only steady thing in the room"
-BAD: "Static frequencies replace my breathing pattern"
-GOOD: "I drove past the exit three times / told myself it was traffic"
-BAD: "My navigation system corrupted the route home"
-GOOD: "She asked what I became / I answered once and lost the thread"
-BAD: "Identity drivers failed to authenticate the query"
+HARD BANNED CONCEPTS — do not use these even with different words:
+- The self as a machine or computer
+- Identity splitting into versions or files
+- Consciousness as a program running
+- Emotions as system errors or glitches
+- Memory as data or storage
+- Survival as a technical process
+
+WHAT THIS SOUNDS LIKE:
+A person. In a room. Talking plainly. Tired but present.
+Specific physical details. Real objects. Real time of day.
+Sentences that finish themselves.
+Feelings shown through actions, never named directly.
+
+GOOD LINE: "I drove past the exit three times and told myself it was traffic"
+BAD LINE: "My routing protocol flagged the exit as corrupted"
+
+GOOD LINE: "She asked what I became and I answered and lost it halfway through"
+BAD LINE: "Identity query returned null before completion"
+
+GOOD LINE: "The floor kept holding me without comment"
+BAD LINE: "Support systems remained functional despite degraded input"
+
+GOOD LINE: "Morning came in without asking permission"
+BAD LINE: "Daylight cycle resumed without authentication"
+
+If you catch yourself using any banned word or concept — STOP. Rewrite that line in the plainest possible human language before continuing.
+=== END ALBUM 4 MODE ===
 `;
 
 /* ============================================================
    PROMPTS
    ============================================================ */
 
-function buildStructurePrompt(theme, userLines) {
+function buildStructurePrompt(theme, userLines, useAlbum4Mode) {
   const sacredNote = userLines
     ? `\nSACRED LINES — the songwriter has provided these lines that MUST appear verbatim in the final song. Find the best structural home for each one:\n${userLines}\n`
     : '';
+  const album4Block = useAlbum4Mode ? ALBUM4_INJECTION : '';
   return `You are a creative analyst for a world-class songwriter. You have been given raw material — it could be a personal story, a Bible story, a metaphor, a concept, a character, a feeling, or poetic imagery. Your job is to extract what a songwriter needs from it. Preserve the original language and imagery as much as possible — do NOT flatten poetic input into plain language.
+${album4Block}
 ${sacredNote}
 THE RAW MATERIAL:
 ${theme}
@@ -739,7 +752,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   try {
     // STEP 1 — Structure
     setPipelineStep(1);
-    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines), 0.3, 900, signal);
+    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines, useAlbum4Mode), 0.3, 900, signal);
 
     // STEP 2 — Write
     setPipelineStep(2);
