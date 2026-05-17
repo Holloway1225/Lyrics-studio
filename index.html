@@ -186,8 +186,6 @@
     <div class="pipeline-step" id="step-1">① Studying your material...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
     <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
-    <div class="pipeline-step" id="step-4">④ Grading the draft...</div>
-    <div class="pipeline-step" id="step-5">⑤ Rewriting weak lines...</div>
   </div>
   <div id="output"></div>
 </div>
@@ -311,7 +309,7 @@ function showModel(msg) {
   el.style.display = 'block';
 }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 3;
 function setPipelineStep(n) {
   document.getElementById('pipeline-steps').classList.add('visible');
   for (let i = 1; i <= TOTAL_STEPS; i++) {
@@ -762,35 +760,12 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     setPipelineStep(3);
     const polished = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines, useAlbum4Mode), 0.6, 2000, signal);
 
-    // STEP 4 + 5 — Grade / Rewrite Loop
-    let bestSong    = polished;
-    let bestScore   = 0;
-    let lastScore   = 0;
-    let currentSong = polished;
-
-    for (let i = 0; i < CONFIG.MAX_LOOPS; i++) {
-      setPipelineStep(4);
-      const grade = await aiCall(buildGradePrompt(currentSong, genre, structuredStory, useAlbum4Mode), 0.15, 900, signal);
-      const score = extractScore(grade);
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestSong  = currentSong;
-      }
-
-      if (score >= CONFIG.TARGET_SCORE) break;
-      if (i > 0 && score <= lastScore) break;
-
-      lastScore = score;
-
-      setPipelineStep(5);
-      currentSong = await aiCall(buildRewritePrompt(currentSong, grade, genre, userLines, structuredStory, useAlbum4Mode), 0.75, 2000, signal);
-    }
+    const bestSong = polished;
 
     hidePipeline();
     clearStatus();
 
-    const scoreDisplay = bestScore > 0 ? `<span class="score-badge">✦ ${bestScore}/10</span>` : '';
+    const scoreDisplay = '';
     const modeTag = useAlbum4Mode ? `<span style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan);background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);border-radius:50px;padding:4px 10px;">📡 Album 4</span>` : '';
 
     document.getElementById('output').innerHTML = `
