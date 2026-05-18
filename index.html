@@ -51,12 +51,13 @@
   textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); font-family: 'Lora', Georgia, serif; font-size: 15px; resize: none; outline: none; -webkit-appearance: none; transition: border-color 0.2s; line-height: 1.6; }
   textarea:focus { border-color: rgba(168,85,247,0.6); }
   textarea::placeholder { color: var(--muted); font-style: italic; font-size: 13px; }
+  textarea:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
   .toggle-group { display: flex; flex-wrap: wrap; gap: 8px; }
   .toggle-btn { padding: 8px 14px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 1px; cursor: pointer; transition: all 0.15s; -webkit-appearance: none; }
   .toggle-btn.active { border-color: var(--accent); background: rgba(168,85,247,0.15); color: #f0abfc; transform: scale(1.04); }
   .toggle-btn.cryptid-active { border-color: var(--cyan); background: rgba(34,211,238,0.12); color: var(--cyan); transform: scale(1.04); }
+  .toggle-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
-  /* Album 4 Mode Toggle */
   .mode-toggle-section { margin-top: 24px; }
   .mode-toggle-wrapper { display: flex; align-items: center; gap: 14px; background: rgba(34,211,238,0.04); border: 1px solid rgba(34,211,238,0.15); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; }
   .mode-toggle-wrapper:hover { background: rgba(34,211,238,0.08); }
@@ -73,10 +74,11 @@
   .generate-btn:active { transform: scale(0.98); opacity: 0.9; }
   .generate-btn:disabled { background: rgba(168,85,247,0.2); color: var(--muted); box-shadow: none; cursor: not-allowed; }
   .generate-btn.album4-mode { background: linear-gradient(135deg, #0e7490, #22d3ee); box-shadow: 0 0 30px rgba(34,211,238,0.25); }
+  .cancel-btn { width: 100%; margin-top: 10px; padding: 12px; border-radius: 14px; border: 1.5px solid rgba(248,113,113,0.3); background: transparent; color: var(--error); font-family: 'Inconsolata', monospace; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; display: none; }
+  .cancel-btn:hover { background: rgba(248,113,113,0.08); border-color: var(--error); }
   .output-box { margin-top: 28px; background: rgba(0,0,0,0.3); border: 1px solid rgba(124,77,255,0.3); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
   .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .box-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
-  .score-badge { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; color: var(--green); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); border-radius: 50px; padding: 4px 12px; }
   .copy-btn { padding: 6px 16px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; min-width: 64px; text-align: center; }
   .copy-btn.copied { color: #f0abfc; border-color: var(--accent); }
   .lyrics-text { font-family: 'Lora', Georgia, serif; font-size: 15px; line-height: 2; color: var(--text); white-space: pre-wrap; word-break: break-word; }
@@ -121,36 +123,35 @@
 
   <div class="section-label">Genre</div>
   <div class="toggle-group" id="genre-group" role="group" aria-label="Select genre">
-    <button class="toggle-btn" data-value="Cryptid Static">📡 Cryptid Static</button>
-    <button class="toggle-btn active" data-value="Pop">Pop</button>
-    <button class="toggle-btn" data-value="Hip-Hop">Hip-Hop</button>
-    <button class="toggle-btn" data-value="R&B">R&amp;B</button>
-    <button class="toggle-btn" data-value="Country">Country</button>
-    <button class="toggle-btn" data-value="Rock">Rock</button>
-    <button class="toggle-btn" data-value="EDM">EDM</button>
-    <button class="toggle-btn" data-value="Soul">Soul</button>
-    <button class="toggle-btn" data-value="Indie">Indie</button>
-    <button class="toggle-btn" data-value="Christian Rock">✝️ Christian Rock</button>
-    <button class="toggle-btn" data-value="Christian Worship">🙏 Christian Worship</button>
+    <button class="toggle-btn" data-value="Cryptid Static" aria-pressed="false">📡 Cryptid Static</button>
+    <button class="toggle-btn active" data-value="Pop" aria-pressed="true">Pop</button>
+    <button class="toggle-btn" data-value="Hip-Hop" aria-pressed="false">Hip-Hop</button>
+    <button class="toggle-btn" data-value="R&B" aria-pressed="false">R&amp;B</button>
+    <button class="toggle-btn" data-value="Country" aria-pressed="false">Country</button>
+    <button class="toggle-btn" data-value="Rock" aria-pressed="false">Rock</button>
+    <button class="toggle-btn" data-value="EDM" aria-pressed="false">EDM</button>
+    <button class="toggle-btn" data-value="Soul" aria-pressed="false">Soul</button>
+    <button class="toggle-btn" data-value="Indie" aria-pressed="false">Indie</button>
+    <button class="toggle-btn" data-value="Christian Rock" aria-pressed="false">✝️ Christian Rock</button>
+    <button class="toggle-btn" data-value="Christian Worship" aria-pressed="false">🙏 Christian Worship</button>
   </div>
 
   <div class="section-label">Mood / Vibe</div>
   <div class="toggle-group" id="mood-group" role="group" aria-label="Select mood">
-    <button class="toggle-btn active" data-value="high-energy, hype, hard-hitting">🔥 Hype</button>
-    <button class="toggle-btn" data-value="emotional, heartbreak, melancholic">💔 Heartbreak</button>
-    <button class="toggle-btn" data-value="euphoric, uplifting, anthemic">✨ Euphoric</button>
-    <button class="toggle-btn" data-value="angry, intense, aggressive, raw">😤 Rage</button>
-    <button class="toggle-btn" data-value="chill, introspective, late night">🌙 Late Night</button>
-    <button class="toggle-btn" data-value="romantic, smooth, sensual">💘 Romantic</button>
-    <button class="toggle-btn" data-value="dreamy, ethereal, atmospheric">🌊 Dreamy</button>
-    <button class="toggle-btn" data-value="empowering, confident, bold">💪 Empowerment</button>
-    <button class="toggle-btn" data-value="dark, brooding, suffocating, heavy">🖤 Dark/Brooding</button>
-    <button class="toggle-btn" data-value="defiant, raw, unpolished, human">⚡ Defiant/Raw</button>
-    <button class="toggle-btn" data-value="dissociative, fractured, identity-dissolving, glitch">📡 Glitch/Dissociative</button>
-    <button class="toggle-btn" data-value="haunting, cinematic, eerie, atmospheric dread">👁 Haunting</button>
+    <button class="toggle-btn active" data-value="high-energy, hype, hard-hitting" aria-pressed="true">🔥 Hype</button>
+    <button class="toggle-btn" data-value="emotional, heartbreak, melancholic" aria-pressed="false">💔 Heartbreak</button>
+    <button class="toggle-btn" data-value="euphoric, uplifting, anthemic" aria-pressed="false">✨ Euphoric</button>
+    <button class="toggle-btn" data-value="angry, intense, aggressive, raw" aria-pressed="false">😤 Rage</button>
+    <button class="toggle-btn" data-value="chill, introspective, late night" aria-pressed="false">🌙 Late Night</button>
+    <button class="toggle-btn" data-value="romantic, smooth, sensual" aria-pressed="false">💘 Romantic</button>
+    <button class="toggle-btn" data-value="dreamy, ethereal, atmospheric" aria-pressed="false">🌊 Dreamy</button>
+    <button class="toggle-btn" data-value="empowering, confident, bold" aria-pressed="false">💪 Empowerment</button>
+    <button class="toggle-btn" data-value="dark, brooding, suffocating, heavy" aria-pressed="false">🖤 Dark/Brooding</button>
+    <button class="toggle-btn" data-value="defiant, raw, unpolished, human" aria-pressed="false">⚡ Defiant/Raw</button>
+    <button class="toggle-btn" data-value="dissociative, fractured, identity-dissolving, glitch" aria-pressed="false">📡 Glitch/Dissociative</button>
+    <button class="toggle-btn" data-value="haunting, cinematic, eerie, atmospheric dread" aria-pressed="false">👁 Haunting</button>
   </div>
 
-  <!-- Album 4 Mode Toggle -->
   <div class="mode-toggle-section">
     <div class="section-label">Writing Mode</div>
     <div class="mode-toggle-wrapper" id="album4-toggle-wrapper">
@@ -180,6 +181,7 @@
   <textarea id="user-lines" rows="2" placeholder="Any lines or a tagline that must appear verbatim in the final song..." aria-label="Your protected lines"></textarea>
 
   <button class="generate-btn" id="generate-btn" aria-label="Generate song lyrics">✦ &nbsp; Write My Song</button>
+  <button class="cancel-btn" id="cancel-btn" aria-label="Cancel generation">✕ &nbsp; Cancel</button>
 
   <div class="status" id="status"></div>
   <div class="pipeline-steps" id="pipeline-steps">
@@ -196,8 +198,6 @@ const CONFIG = {
   GROQ_MODEL: 'llama-3.3-70b-versatile',
   GEMINI_MODEL: 'gemini-2.5-flash-lite',
   TIMEOUT_MS: 120000,
-  MAX_LOOPS: 3,
-  TARGET_SCORE: 9.0,
 };
 
 let currentController = null;
@@ -227,8 +227,6 @@ window.addEventListener('load', () => {
   const savedMood  = localStorage.getItem('pref_mood');
   if (savedGenre) restoreToggle('genre-group', savedGenre);
   if (savedMood)  restoreToggle('mood-group',  savedMood);
-
-  // Restore album4 mode
   if (localStorage.getItem('album4_mode') === '1') {
     album4ModeOn = true;
     document.getElementById('album4-switch').classList.add('on');
@@ -239,7 +237,9 @@ window.addEventListener('load', () => {
 
 function restoreToggle(groupId, value) {
   document.querySelectorAll(`#${groupId} .toggle-btn`).forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.value === value);
+    const isActive = btn.dataset.value === value;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
 }
 
@@ -256,8 +256,12 @@ function getKey(k) { return document.getElementById(`api-${k}`).value.trim(); }
 document.querySelectorAll('.toggle-group').forEach(group => {
   group.querySelectorAll('.toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+      group.querySelectorAll('.toggle-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
       if (group.id === 'genre-group') localStorage.setItem('pref_genre', btn.dataset.value);
       if (group.id === 'mood-group')  localStorage.setItem('pref_mood',  btn.dataset.value);
     });
@@ -266,6 +270,17 @@ document.querySelectorAll('.toggle-group').forEach(group => {
 
 function getSelected(id) {
   return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.value || '';
+}
+
+function lockUI(locked) {
+  document.getElementById('theme').disabled = locked;
+  document.getElementById('user-lines').disabled = locked;
+  document.getElementById('api-groq').disabled = locked;
+  document.getElementById('api-gemini').disabled = locked;
+  document.querySelectorAll('.toggle-btn').forEach(b => b.disabled = locked);
+  document.getElementById('album4-toggle-wrapper').style.pointerEvents = locked ? 'none' : '';
+  document.getElementById('album4-toggle-wrapper').style.opacity = locked ? '0.5' : '';
+  document.getElementById('cancel-btn').style.display = locked ? 'block' : 'none';
 }
 
 function copyText(text, btn) {
@@ -384,7 +399,7 @@ async function aiCall(prompt, temperature = 0.95, maxTokens = 1200, signal = nul
       CONFIG.TIMEOUT_MS
     );
     if (!res.ok) {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || `Gemini error ${res.status}`);
     }
     const data = await res.json();
@@ -403,12 +418,6 @@ async function aiCall(prompt, temperature = 0.95, maxTokens = 1200, signal = nul
   }
 
   throw new Error('No API key — add your Groq or Gemini key above');
-}
-
-function extractScore(text) {
-  if (!text) return 0;
-  const m = text.match(/^FINAL\s+SCORE\s*:?\s*(\d+(?:\.\d+)?)\s*\/\s*10\s*$/im);
-  return m ? parseFloat(m[1]) : 0;
 }
 
 /* ============================================================
@@ -492,6 +501,7 @@ A person. In a room. Talking plainly. Tired but present.
 Specific physical details. Real objects. Real time of day.
 Sentences that finish themselves.
 Feelings shown through actions, never named directly.
+Occasional poetic lift is allowed — a striking image, an unexpected metaphor — but it must feel human, not mechanical.
 
 GOOD LINE: "I drove past the exit three times and told myself it was traffic"
 BAD LINE: "My routing protocol flagged the exit as corrupted"
@@ -551,13 +561,16 @@ EMOTIONAL DESTINATION:
 [What should the listener feel at the end? One sentence. Infer from the arc of the material — do not state the theme.]`;
 }
 
+// EDIT 1: Write prompt — loosened. Removed most banned patterns (kept only the worst offenders).
+// Removed fingerprint rule (now lives in polish only). Added wow-moment requirement.
+// Added chorus chantability requirement.
 function buildWritePrompt(structuredStory, genre, mood, userLines, useAlbum4Mode) {
   const sacred = userLines
     ? `\nSACRED LINES — NON-NEGOTIABLE. These lines MUST appear in the final song EXACTLY as written. Do not paraphrase. Do not reorder the words. Do not omit them. Place each one in the section specified in SACRED LINES PLACEMENT above:\n${userLines}\n`
     : '';
   const examples = GENRE_EXAMPLES[genre] || '';
   const album4Block = useAlbum4Mode ? ALBUM4_INJECTION : '';
-  return `You are a world-class songwriter and ghostwriter. You have been given structured source material with a defined narrative spine. Your job is to write a complete song that follows this arc EXACTLY.
+  return `You are a world-class songwriter and ghostwriter. You have been given structured source material with a defined narrative spine. Your job is to write a complete song that follows this arc and sounds genuinely great — not just technically correct.
 
 GENRE: ${genre}
 MOOD: ${mood}
@@ -581,30 +594,30 @@ RULES:
 1. SACRED LINES ARE ABSOLUTE
 If sacred lines were provided above, they must appear exactly as written — same words, same order, same punctuation.
 
-2. FINGERPRINT RULE
-Every single line must be irreplaceable — specific to this song, this story, this set of images. If you can imagine the line appearing in a different song, replace it with something that could only come from THIS material.
-
-3. PRESERVE INPUT LANGUAGE
+2. PRESERVE INPUT LANGUAGE
 If the structured material uses specific poetic or unusual phrasing, use it. Do not replace vivid input language with generic alternatives.
 
-4. BANNED PATTERNS — HARD STOP:
-- Identity stacking: "I am the [noun] / I am the [noun]"
-- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall, scars+stars
-- Emotion naming: "I felt empty" "the pain was real" "I felt so lost"
-- Stock clichés: "heart beating like a drum" "words that cut too deep" "breathe again"
-- Stock endings: "wind at my back" "sun on my skin" "dawn after the night" "rise from the ashes"
-- Abstract nouns as landing: hope, love, strength, faith used as an ending without a concrete image attached
+3. HARD-BANNED PATTERNS (worst offenders only — everything else gets fixed in polish):
+- Emotion naming: "I felt empty" "the pain was real" "I felt so lost" — show the moment, not the label
+- Stock clichés: "heart beating like a drum" "words that cut too deep" "breathe again" "rise from the ashes"
+- Abstract landing words used as endings: hope, love, strength, faith used without a concrete image attached
 
-5. CHORUS RULE
-Max 4 lines. Each line under 10 words. Must contain a physical image or moment, not a theme statement.
+4. WOW MOMENT — REQUIRED:
+At least one line in the entire song must be striking, unexpected, or emotionally sharp enough to stand completely alone. A line someone would screenshot. Don't play it safe — earn it.
 
-6. VERSE 2 MUST NOT REPEAT VERSE 1
+5. CHORUS RULE:
+Max 4 lines. Each line under 10 words. Must contain a physical image or moment.
+At least one chorus line should feel repeatable — like something a crowd would chant back or a listener would catch themselves singing alone. Write for the ear, not just the page.
+
+6. VERSE 2 MUST NOT REPEAT VERSE 1:
 Different images, different moment in the narrative spine. No recycling.
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
 Output the COMPLETE song — every section, no truncation.`;
 }
 
+// EDIT 2: Polish prompt — added callback/motif reinforcement instruction.
+// Also added wow-moment check and tightened TEST 7 banned patterns to match write prompt.
 function buildPolishPrompt(draft, genre, structuredStory, userLines, useAlbum4Mode) {
   const sacred = userLines
     ? `\nSACRED LINES — these must appear verbatim in the final output. If any are missing or altered, restore them exactly:\n${userLines}\n`
@@ -627,7 +640,7 @@ TEST 1 — SACRED LINES CHECK
 Are all sacred lines present verbatim? If any are missing or changed, restore them exactly.
 
 TEST 2 — FINGERPRINT TEST
-Could this line appear in a different song? If yes, rewrite it using a specific image from the source material.
+Could this line appear in a different song? If yes, rewrite it using a specific image from the source material. Exception: if a line matches specific imagery or phrasing from the source material, it is intentional — do not flag it.
 
 TEST 3 — FILLER TEST
 Does this line name an emotion or state the theme directly? Replace with the concrete moment or image that caused that feeling.
@@ -636,15 +649,21 @@ TEST 4 — NARRATIVE SPINE TEST
 Does Verse 1 establish the situation? Does Verse 2 shift or complicate — not repeat? Does the Bridge contain the turning point? Does the Outro land in a specific image rather than a motivational statement? Fix any section that drifts from its assigned arc beat.
 
 TEST 5 — CHORUS TEST
-Does the chorus contain a specific physical detail? Is it under 4 lines, each under 10 words? If it names an emotion without an image, replace the offending line.
+Does the chorus contain a specific physical detail? Is it under 4 lines, each under 10 words? Does at least one line feel repeatable or chantable — something a listener would catch themselves singing? If not, rewrite the flattest chorus line to give it that quality.
 
 TEST 6 — REPETITION TEST
 Does any metaphor, image, or phrase appear more than once across different sections? Cut the weaker instance.
 
 TEST 7 — BANNED PATTERNS TEST
-Check every line for: identity stacking, stock pairs (storm+fire, dark+light, scars+stars), emotion naming, stock clichés, abstract landing words used without a concrete image. Rewrite any offender.
+Check every line for: emotion naming (naming feelings instead of showing them), stock clichés ("breathe again", "rise from the ashes", "heart like a drum"), abstract landing words used without a concrete image. Rewrite any offender.
 
-${useAlbum4Mode ? 'TEST 8 — ALBUM 4 MODE TEST\nCheck every line for system/transmission/signal/static/glitch language. If found, rewrite in plain human language using concrete physical details instead.\n' : ''}
+TEST 8 — WOW MOMENT TEST
+Is there at least one line in the song that is striking or emotionally sharp enough to stand completely alone? If not, find the strongest line in the song and push it further — make it unforgettable.
+
+TEST 9 — CALLBACK TEST
+Do any key images from Verse 1 or the Chorus reappear — transformed or echoed — in the Bridge or Outro? If not, identify the strongest image from the early sections and reintroduce it in a later section in a way that deepens its meaning. This is what separates a song from a list of moments.
+
+${useAlbum4Mode ? 'TEST 10 — ALBUM 4 MODE TEST\nCheck every line for system/transmission/signal/static/glitch language. If found, rewrite in plain human language using concrete physical details instead.\n' : ''}
 
 RULES:
 - Keep every section label exactly as written
@@ -654,74 +673,6 @@ RULES:
 
 Output the complete revised song from [Verse 1] to [Outro]. Every section. No truncation.`;
 }
-
-function buildGradePrompt(song, genre, structuredStory, useAlbum4Mode) {
-  const album4Block = useAlbum4Mode ? `\nALBUM 4 MODE IS ON. Additionally penalize any use of system/transmission/signal/static/glitch language. Award full Fingerprint score only if every line sounds human and direct.\n` : '';
-  return `You are a professional A&R consultant and lyric critic. Grade this ${genre} song honestly against professional standards. Do not be generous — grade as if submitting to a publisher.
-${album4Block}
-SOURCE MATERIAL (the original imagery this song was built from — use this as context when judging whether a line is generic OR intentionally drawn from the source):
-${structuredStory}
-
-THE SONG:
-${song}
-
-IMPORTANT: If a line appears generic but matches specific imagery, phrasing, or language from the SOURCE MATERIAL above, do NOT flag it as a fingerprint failure — it is an intentional preservation of the original voice. Only flag lines that are generic AND have no basis in the source material.
-
-Evaluate these dimensions:
-
-1. FINGERPRINT SCORE (0–2): Are lines irreplaceable to this specific song, or could they appear anywhere?
-2. NARRATIVE ARC (0–2): Does Verse 1 set the situation, Verse 2 shift it, Bridge hit the turning point, Outro land in a specific image?
-3. CHORUS IMPACT (0–2): Is the chorus built on a physical image, not a theme statement? Is it under 4 lines?
-4. BANNED PATTERN VIOLATIONS (0–2): Deduct for any identity stacking, stock pairs, emotion naming, abstract endings. Full 2 = zero violations.
-5. GENRE AUTHENTICITY (0–2): Does this sound like real ${genre}? Are the images grounded in the genre's world?
-
-After scoring each dimension, output exactly this block with no other X/10 patterns before it:
-
-DIMENSION SCORES:
-Fingerprint: X/2
-Narrative Arc: X/2
-Chorus Impact: X/2
-Banned Patterns: X/2
-Genre Authenticity: X/2
-
-FINAL SCORE: X/10
-
-WEAKEST LINES (list each with reason):
-LINE: "[exact line]"
-PROBLEM: [specific issue]
-FIX: [concrete rewrite suggestion using the song's own imagery or source material]
-
-If the score is 9.0 or above, write CERTIFIED at the end.`;
-}
-
-function buildRewritePrompt(song, feedback, genre, userLines, structuredStory, useAlbum4Mode) {
-  const sacred = userLines
-    ? `\nSACRED LINES — must appear verbatim. Do not alter under any circumstances:\n${userLines}\n`
-    : '';
-  const sourceBlock = structuredStory
-    ? `\nSOURCE MATERIAL (the original imagery this song was built from — when rewriting a weak line, reach into this world first before inventing anything new):\n${structuredStory}\n`
-    : '';
-  const album4Block = useAlbum4Mode ? ALBUM4_INJECTION : '';
-  return `You are a world-class songwriter doing a targeted revision. A professional critic has flagged specific weak lines. Your job: fix exactly what is flagged, leave everything else untouched.
-
-GENRE: ${genre}
-${album4Block}
-${sacred}${sourceBlock}
-THE SONG:
-${song}
-
-CRITIC FEEDBACK:
-${feedback}
-
-REVISION RULES:
-1. Fix every line flagged in WEAKEST LINES using the critic's suggested approach or better — prefer pulling imagery from SOURCE MATERIAL above over inventing new metaphors.
-2. Do not touch lines that were not flagged — leave them character-for-character identical.
-3. The fix must use imagery already present in the song OR in SOURCE MATERIAL — do not introduce metaphors from outside this world.
-4. Sacred lines are untouchable regardless of feedback.
-5. Maintain section structure and labels exactly.
-6. No commentary. Output the complete revised song only, from [Verse 1] to [Outro].`;
-}
-
 /* ============================================================
    MAIN PIPELINE
    ============================================================ */
@@ -743,6 +694,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   const btn   = document.getElementById('generate-btn');
 
   btn.disabled = true;
+  lockUI(true);
   document.getElementById('output').innerHTML = '';
   document.getElementById('active-model').style.display = 'none';
   clearStatus();
@@ -752,20 +704,17 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     setPipelineStep(1);
     const structuredStory = await aiCall(buildStructurePrompt(theme, userLines, useAlbum4Mode), 0.3, 900, signal);
 
-    // STEP 2 — Write
+    // STEP 2 — Write (loosened — creativity first)
     setPipelineStep(2);
     const draft = await aiCall(buildWritePrompt(structuredStory, genre, mood, userLines, useAlbum4Mode), 0.95, 2000, signal);
 
-    // STEP 3 — Polish
+    // STEP 3 — Polish (strict — all enforcement here)
     setPipelineStep(3);
     const polished = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines, useAlbum4Mode), 0.6, 2000, signal);
-
-    const bestSong = polished;
 
     hidePipeline();
     clearStatus();
 
-    const scoreDisplay = '';
     const modeTag = useAlbum4Mode ? `<span style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan);background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);border-radius:50px;padding:4px 10px;">📡 Album 4</span>` : '';
 
     document.getElementById('output').innerHTML = `
@@ -774,15 +723,14 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
           <div class="box-title">✦ Your Lyrics</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             ${modeTag}
-            ${scoreDisplay}
             <button class="copy-btn" id="copy-lyrics">Copy</button>
           </div>
         </div>
-        <div class="lyrics-text">${escapeHTML(bestSong)}</div>
+        <div class="lyrics-text">${escapeHTML(polished)}</div>
       </div>`;
 
     document.getElementById('copy-lyrics').addEventListener('click', function () {
-      copyText(bestSong, this);
+      copyText(polished, this);
     });
 
   } catch (e) {
@@ -791,8 +739,20 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     else { setStatus('⚠ ' + e.message, true); }
   } finally {
     btn.disabled = false;
+    lockUI(false);
     currentController = null;
   }
+});
+
+document.getElementById('cancel-btn').addEventListener('click', () => {
+  if (currentController) {
+    currentController.abort();
+    currentController = null;
+  }
+  hidePipeline();
+  clearStatus();
+  document.getElementById('generate-btn').disabled = false;
+  lockUI(false);
 });
 </script>
 </body>
