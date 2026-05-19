@@ -247,6 +247,28 @@ function setPipelineStep(n) {
   });
 }
 
+  /* =========================
+   TOGGLE BUTTON FIX
+========================= */
+
+function getSelected(id) {
+  return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.value || '';
+}
+
+document.querySelectorAll('.toggle-group').forEach(group => {
+  group.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.toggle-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
+
+      btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
+    });
+  });
+});
+  
 /* =========================
    CLAUDE CALL (ONLY AI)
 ========================= */
