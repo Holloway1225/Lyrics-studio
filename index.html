@@ -32,8 +32,6 @@
   .header-eyebrow { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 6px; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
   .header h1 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 8vw, 3rem); font-weight: 900; line-height: 1.1; background: linear-gradient(135deg, #f0abfc, #c084fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .header p { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 3px; color: var(--muted); margin-top: 10px; text-transform: uppercase; }
-
-  /* API Section */
   .api-section { margin-top: 28px; background: rgba(168,85,247,0.06); border: 1px solid rgba(168,85,247,0.2); border-radius: 14px; padding: 18px; }
   .api-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   .api-row:last-of-type { margin-bottom: 0; }
@@ -46,30 +44,21 @@
   .api-warning { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--gold); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 8px; padding: 8px 10px; }
   .api-saved { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--green); margin-top: 6px; letter-spacing: 1px; display: none; }
   .active-model { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; margin-top: 8px; color: var(--accent); display: none; }
-
-  /* Section labels */
   .section-label { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; margin: 24px 0 8px; }
   .section-label.optional-section { margin-top: 16px; }
-
-  /* Theme hint */
   .theme-hint { background: rgba(168,85,247,0.04); border: 1px solid rgba(168,85,247,0.12); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
   .theme-hint-title { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
   .theme-hint-text { font-family: 'Lora', Georgia, serif; font-size: 13px; color: rgba(124,106,154,0.9); line-height: 1.7; font-style: italic; }
   .theme-hint-good { color: rgba(52,211,153,0.95); font-style: normal; }
   .theme-hint-bad { color: var(--error); font-style: normal; text-decoration: line-through; }
-
-  /* Presets */
   .presets-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .preset-btn { padding: 7px 13px; border-radius: 8px; border: 1px solid rgba(168,85,247,0.2); background: rgba(168,85,247,0.05); color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 1px; cursor: pointer; transition: all 0.15s; -webkit-appearance: none; text-align: left; }
   .preset-btn:hover { border-color: var(--accent); color: #f0abfc; background: rgba(168,85,247,0.1); }
   .preset-btn .preset-label { color: var(--accent); font-size: 9px; letter-spacing: 2px; display: block; margin-bottom: 2px; text-transform: uppercase; }
-
   textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); font-family: 'Lora', Georgia, serif; font-size: 15px; resize: none; outline: none; -webkit-appearance: none; transition: border-color 0.2s; line-height: 1.6; }
   textarea:focus { border-color: rgba(168,85,247,0.6); }
   textarea::placeholder { color: var(--muted); font-style: italic; font-size: 13px; }
   textarea:disabled, input:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  /* Input quality gate */
   .quality-gate { display: none; margin-top: 8px; border-radius: 10px; padding: 12px 14px; font-family: 'Inconsolata', monospace; font-size: 11px; line-height: 1.7; letter-spacing: 1px; }
   .quality-gate.warn { background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.25); color: var(--gold); }
   .quality-gate.ask { background: rgba(34,211,238,0.05); border: 1px solid rgba(34,211,238,0.2); color: var(--cyan); }
@@ -77,21 +66,15 @@
   .quality-gate-q { margin-top: 8px; font-style: italic; }
   .quality-gate-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(34,211,238,0.2); border-radius: 8px; padding: 9px 12px; color: var(--text); font-family: 'Lora', serif; font-size: 13px; outline: none; margin-top: 8px; resize: none; -webkit-appearance: none; line-height: 1.5; }
   .quality-gate-input:focus { border-color: var(--cyan); }
-
-  /* Toggles */
   .toggle-group { display: flex; flex-wrap: wrap; gap: 8px; }
   .toggle-btn { padding: 8px 14px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 1px; cursor: pointer; transition: all 0.15s; -webkit-appearance: none; }
   .toggle-btn.active { border-color: var(--accent); background: rgba(168,85,247,0.15); color: #f0abfc; transform: scale(1.04); }
   .toggle-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
-
-  /* Buttons */
   .generate-btn { width: 100%; margin-top: 28px; padding: 18px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; font-family: 'Inconsolata', monospace; font-size: 14px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 30px rgba(168,85,247,0.3); transition: all 0.2s; -webkit-appearance: none; }
   .generate-btn:active { transform: scale(0.98); opacity: 0.9; }
   .generate-btn:disabled { background: rgba(168,85,247,0.2); color: var(--muted); box-shadow: none; cursor: not-allowed; }
   .cancel-btn { width: 100%; margin-top: 10px; padding: 12px; border-radius: 14px; border: 1.5px solid rgba(248,113,113,0.3); background: transparent; color: var(--error); font-family: 'Inconsolata', monospace; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; display: none; }
   .cancel-btn:hover { background: rgba(248,113,113,0.08); border-color: var(--error); }
-
-  /* ── Blueprint / Draft checkpoint panels ── */
   .checkpoint-panel { display: none; margin-top: 24px; border-radius: 16px; overflow: hidden; animation: fadeUp 0.4s ease both; }
   .checkpoint-panel.visible { display: block; }
   .checkpoint-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -120,13 +103,9 @@
   .cp-btn.edit-toggle:hover { background: rgba(168,85,247,0.08); }
   .cp-btn.regenerate { background: transparent; border-color: var(--border); color: var(--muted); }
   .cp-btn.regenerate:hover { border-color: var(--muted); color: var(--text); }
-
-  /* Weak section flag */
   .weak-flag { display: none; margin-top: 12px; background: rgba(251,191,36,0.05); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; padding: 11px 14px; font-family: 'Inconsolata', monospace; font-size: 11px; color: var(--gold); letter-spacing: 1px; line-height: 1.6; }
   .weak-flag.visible { display: block; }
   .weak-flag-section { color: #fff; font-weight: 600; }
-
-  /* Song history */
   .history-section { margin-top: 32px; }
   .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .history-clear { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 4px 0; }
@@ -139,8 +118,6 @@
   .history-item-sub { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1px; }
   .history-item-del { font-size: 14px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0 4px; flex-shrink: 0; line-height: 1; }
   .history-item-del:hover { color: var(--error); }
-
-  /* Output */
   .output-box { margin-top: 28px; background: rgba(0,0,0,0.3); border: 1px solid rgba(124,77,255,0.3); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
   .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
   .box-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
@@ -150,8 +127,6 @@
   .download-btn { padding: 6px 16px; border-radius: 50px; border: 1.5px solid rgba(52,211,153,0.3); background: transparent; color: var(--green); font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
   .download-btn:hover { background: rgba(52,211,153,0.06); border-color: var(--green); }
   .lyrics-text { font-family: 'Lora', Georgia, serif; font-size: 15px; line-height: 2; color: var(--text); white-space: pre-wrap; word-break: break-word; }
-
-  /* Rewrite section */
   .rewrite-section { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px; }
   .rewrite-label { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
   .rewrite-row { display: flex; gap: 8px; }
@@ -160,8 +135,6 @@
   .rewrite-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(168,85,247,0.3); background: rgba(168,85,247,0.08); color: var(--accent); font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .rewrite-btn:hover { background: rgba(168,85,247,0.15); border-color: var(--accent); }
   .rewrite-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  /* Status / pipeline */
   .status { font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 2px; color: var(--accent); margin-top: 20px; text-align: center; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); display: none; }
   .status.visible { display: block; }
   .status.error { color: var(--error); border-color: rgba(248,113,113,0.3); }
@@ -186,7 +159,6 @@
     <p>100% Original · Powered by Claude + Groq</p>
   </div>
 
-  <!-- API Keys -->
   <div class="api-section" style="margin-top:28px">
     <div class="section-label" style="margin-top:0">API Keys</div>
     <div class="api-row">
@@ -208,7 +180,6 @@
     <button id="save-keys-btn" style="margin-top:12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:8px 16px;color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">Save Keys</button>
   </div>
 
-  <!-- Genre -->
   <div class="section-label">Genre</div>
   <div class="toggle-group" id="genre-group" role="group" aria-label="Select genre">
     <button class="toggle-btn active" data-value="Pop" aria-pressed="true">Pop</button>
@@ -224,7 +195,6 @@
     <button class="toggle-btn" data-value="Christian Worship" aria-pressed="false">🙏 Christian Worship</button>
   </div>
 
-  <!-- Mood -->
   <div class="section-label">Mood / Vibe</div>
   <div class="toggle-group" id="mood-group" role="group" aria-label="Select mood">
     <button class="toggle-btn active" data-value="high-energy, hype, hard-hitting" aria-pressed="true">🔥 Hype</button>
@@ -241,7 +211,6 @@
     <button class="toggle-btn" data-value="haunting, cinematic, eerie, atmospheric dread" aria-pressed="false">👁 Haunting</button>
   </div>
 
-  <!-- Your Idea -->
   <div class="section-label">Your Idea</div>
   <div class="theme-hint">
     <div class="theme-hint-title">Anything goes — the more vivid, the better</div>
@@ -253,7 +222,6 @@
     </div>
   </div>
 
-  <!-- Presets -->
   <div class="section-label" style="margin-top:0;margin-bottom:6px">Try An Example <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(CLICK TO FILL)</span></div>
   <div class="presets-row" id="presets-row">
     <button class="preset-btn" data-preset="prodigal"><span class="preset-label">Bible story</span>Prodigal Son</button>
@@ -264,14 +232,12 @@
 
   <textarea id="theme" rows="5" placeholder="A personal story, a Bible story, a metaphor, a feeling, a concept — anything vivid and specific..." aria-label="Your idea or story"></textarea>
 
-  <!-- Quality gate -->
   <div class="quality-gate" id="quality-gate">
     <span id="quality-gate-msg"></span>
     <div class="quality-gate-q" id="quality-gate-q"></div>
     <textarea class="quality-gate-input" id="quality-gate-input" rows="2" placeholder="Add that detail here..."></textarea>
   </div>
 
-  <!-- Protected lines -->
   <div class="section-label optional-section">Lines to Protect <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
   <textarea id="user-lines" rows="2" placeholder="Any lines or a tagline that must appear verbatim in the final song..." aria-label="Your protected lines"></textarea>
 
@@ -285,7 +251,6 @@
     <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
   </div>
 
-  <!-- Blueprint checkpoint -->
   <div class="checkpoint-panel" id="blueprint-panel">
     <div class="checkpoint-header blueprint">
       <div>
@@ -304,7 +269,6 @@
     </div>
   </div>
 
-  <!-- Draft checkpoint -->
   <div class="checkpoint-panel" id="draft-panel">
     <div class="checkpoint-header draft">
       <div>
@@ -325,12 +289,10 @@
 
   <div id="output"></div>
 
-  <!-- Weak section flag -->
   <div class="weak-flag" id="weak-flag">
     ⚠ Weakest section detected: <span class="weak-flag-section" id="weak-flag-section"></span> — consider using the rewrite tool on this section first.
   </div>
 
-  <!-- Song history -->
   <div class="history-section" id="history-section" style="display:none">
     <div class="history-header">
       <div class="section-label" style="margin:0">Recent Songs</div>
@@ -345,7 +307,7 @@ const CONFIG = {
   GROQ_URL: 'https://api.groq.com/openai/v1/chat/completions',
   GROQ_MODEL: 'llama-3.3-70b-versatile',
   GEMINI_MODEL: 'gemini-2.5-flash-lite',
-  CLAUDE_MODEL: 'claude-sonnet-4-5-20251022',
+  CLAUDE_MODEL: 'claude-sonnet-4-6', // FIX #1: updated model string
   TIMEOUT_MS: 120000,
   SLOW_STEP_MS: 15000,
   MAX_HISTORY: 10,
@@ -353,13 +315,8 @@ const CONFIG = {
 
 let currentController = null;
 let currentSong = null;
-
-// Pipeline state machine
-// States: idle | step1 | blueprint_review | step2 | draft_review | step3 | done
 let pipelineState = 'idle';
-let pipelineContext = {}; // holds theme, genre, mood, userLines, structuredStory, draft
-
-// ─── Presets ──────────────────────────────────────────────────────────────────
+let pipelineContext = {};
 
 const PRESETS = {
   prodigal: `A son demands his inheritance early — essentially telling his father "I wish you were dead." He blows it all on parties and ends up starving, feeding pigs in a foreign country, jealous of what the pigs are eating. He rehearses a speech to give his dad. His father sees him coming from far away and runs to him before he can even finish the speech. Throws a party. The older brother, who stayed and did everything right, refuses to come inside. The father goes out to him too.`,
@@ -379,8 +336,6 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
   });
 });
 
-// ─── Input quality gate ───────────────────────────────────────────────────────
-
 const VAGUE_KEYWORDS = ['hope','struggle','love','pain','better','broken','strong','rise','fall','healing','journey','overcome','survive','through it all','meant to be','lost and found'];
 const CONCRETE_OBJECTS = /\b(door|window|phone|car|road|table|bed|hand|shoe|glass|bottle|letter|photo|ring|key|knife|clock|chair|floor|mirror|bridge|field|river|street|exit|toast|pig|lamb|thicket|barn|porch|coat|shirt|kitchen|bathroom|parking|highway|motel|diner|receipt|voicemail|text|inbox|drawer|box|cigarette|lighter|wallet|ticket|scar|tattoo|tree|fence|gate|roof|attic|basement)\b/i;
 
@@ -393,7 +348,6 @@ function assessInputQuality(text) {
   const hasNumber = /\d/.test(text);
   const wordCount = text.split(/\s+/).length;
   const sentenceCount = (text.match(/[.!?]+/g) || []).length;
-
   let score = 5;
   if (vagueHits >= 4) score -= 3;
   else if (vagueHits >= 2) score -= 1;
@@ -404,13 +358,9 @@ function assessInputQuality(text) {
   else if (wordCount >= 25) score += 1;
   else if (wordCount < 12) score -= 3;
   if (sentenceCount >= 3) score += 1;
-
   return { score, vagueHits, hasObject, wordCount, reason: null };
 }
 
-// Gate states: none | soft | hard
-// soft: show suggestion but allow generation
-// hard: block generation, require improvement
 function getGateState(q) {
   if (q.wordCount < 10) return 'hard';
   if (q.score <= 2) return 'hard';
@@ -420,21 +370,9 @@ function getGateState(q) {
 }
 
 const GATE_MESSAGES = {
-  hard_short: {
-    msg: "⛔ This is too short to build from.",
-    q: "What's the actual story, moment, or image? Give it at least a few sentences — a person, a place, a specific thing that happened.",
-    cls: 'block'
-  },
-  hard_vague: {
-    msg: "⛔ Too many abstract emotion words, no concrete anchor.",
-    q: "What's one specific physical thing — an object, a place, a time of day — that belongs in this song? Add it before generating.",
-    cls: 'block'
-  },
-  soft: {
-    msg: "⚠ The input has feeling but no physical anchors yet.",
-    q: "What's one concrete object, place, or moment from this story that you can see in your head right now? (Optional — you can still generate as-is.)",
-    cls: 'ask'
-  }
+  hard_short: { msg: "⛔ This is too short to build from.", q: "What's the actual story, moment, or image? Give it at least a few sentences — a person, a place, a specific thing that happened.", cls: 'block' },
+  hard_vague: { msg: "⛔ Too many abstract emotion words, no concrete anchor.", q: "What's one specific physical thing — an object, a place, a time of day — that belongs in this song? Add it before generating.", cls: 'block' },
+  soft: { msg: "⚠ The input has feeling but no physical anchors yet.", q: "What's one concrete object, place, or moment from this story that you can see in your head right now? (Optional — you can still generate as-is.)", cls: 'ask' }
 };
 
 let gateState = 'none';
@@ -446,30 +384,17 @@ document.getElementById('theme').addEventListener('blur', () => {
   const state = getGateState(q);
   gateState = state;
   const gate = document.getElementById('quality-gate');
-
-  if (state === 'none') {
-    gate.style.display = 'none';
-    return;
-  }
-
-  let config;
-  if (state === 'hard') {
-    config = q.wordCount < 10 ? GATE_MESSAGES.hard_short : GATE_MESSAGES.hard_vague;
-  } else {
-    config = GATE_MESSAGES.soft;
-  }
-
+  if (state === 'none') { gate.style.display = 'none'; return; }
+  let config = state === 'hard' ? (q.wordCount < 10 ? GATE_MESSAGES.hard_short : GATE_MESSAGES.hard_vague) : GATE_MESSAGES.soft;
   document.getElementById('quality-gate-msg').textContent = config.msg;
   document.getElementById('quality-gate-q').textContent = config.q;
-
   const gateInput = document.getElementById('quality-gate-input');
-  gateInput.style.display = state === 'hard' ? 'block' : 'block';
+  gateInput.style.display = 'block';
   gate.className = 'quality-gate ' + config.cls;
   gate.style.display = 'block';
   gateInput.value = '';
 });
 
-// Re-assess on gate input change (lets hard gate unlock if user adds detail)
 document.getElementById('quality-gate-input').addEventListener('input', () => {
   const base = document.getElementById('theme').value.trim();
   const extra = document.getElementById('quality-gate-input').value.trim();
@@ -480,26 +405,14 @@ document.getElementById('quality-gate-input').addEventListener('input', () => {
     gateState = newState;
     const gate = document.getElementById('quality-gate');
     const config = newState === 'soft' ? GATE_MESSAGES.soft : null;
-    if (config) {
-      document.getElementById('quality-gate-msg').textContent = config.msg;
-      document.getElementById('quality-gate-q').textContent = config.q;
-      gate.className = 'quality-gate ask';
-    } else {
-      gate.style.display = 'none';
-    }
+    if (config) { document.getElementById('quality-gate-msg').textContent = config.msg; document.getElementById('quality-gate-q').textContent = config.q; gate.className = 'quality-gate ask'; }
+    else { gate.style.display = 'none'; }
   }
 });
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-
 window.addEventListener('load', () => {
-  ['anthropic', 'groq', 'gemini'].forEach(k => {
-    const v = localStorage.getItem(`key_${k}`);
-    if (v) document.getElementById(`api-${k}`).value = v;
-  });
-  if (localStorage.getItem('key_anthropic') || localStorage.getItem('key_groq') || localStorage.getItem('key_gemini')) {
-    document.getElementById('api-saved').style.display = 'block';
-  }
+  ['anthropic', 'groq', 'gemini'].forEach(k => { const v = localStorage.getItem(`key_${k}`); if (v) document.getElementById(`api-${k}`).value = v; });
+  if (localStorage.getItem('key_anthropic') || localStorage.getItem('key_groq') || localStorage.getItem('key_gemini')) { document.getElementById('api-saved').style.display = 'block'; }
   const savedGenre = localStorage.getItem('pref_genre');
   const savedMood  = localStorage.getItem('pref_mood');
   if (savedGenre) restoreToggle('genre-group', savedGenre);
@@ -516,10 +429,7 @@ function restoreToggle(groupId, value) {
 }
 
 document.getElementById('save-keys-btn').addEventListener('click', () => {
-  ['anthropic', 'groq', 'gemini'].forEach(k => {
-    const v = document.getElementById(`api-${k}`).value.trim();
-    if (v) localStorage.setItem(`key_${k}`, v);
-  });
+  ['anthropic', 'groq', 'gemini'].forEach(k => { const v = document.getElementById(`api-${k}`).value.trim(); if (v) localStorage.setItem(`key_${k}`, v); });
   document.getElementById('api-saved').style.display = 'block';
 });
 
@@ -528,8 +438,7 @@ function getKey(k) { return document.getElementById(`api-${k}`).value.trim(); }
 document.querySelectorAll('#genre-group .toggle-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#genre-group .toggle-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
-    btn.classList.add('active');
-    btn.setAttribute('aria-pressed','true');
+    btn.classList.add('active'); btn.setAttribute('aria-pressed','true');
     localStorage.setItem('pref_genre', btn.dataset.value);
   });
 });
@@ -537,15 +446,12 @@ document.querySelectorAll('#genre-group .toggle-btn').forEach(btn => {
 document.querySelectorAll('#mood-group .toggle-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#mood-group .toggle-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
-    btn.classList.add('active');
-    btn.setAttribute('aria-pressed','true');
+    btn.classList.add('active'); btn.setAttribute('aria-pressed','true');
     localStorage.setItem('pref_mood', btn.dataset.value);
   });
 });
 
-function getSelected(id) {
-  return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.value || '';
-}
+function getSelected(id) { return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.value || ''; }
 
 function lockUI(locked) {
   document.getElementById('theme').disabled = locked;
@@ -556,26 +462,10 @@ function lockUI(locked) {
   document.getElementById('cancel-btn').style.display = locked ? 'block' : 'none';
 }
 
-// ─── Copy / Download ──────────────────────────────────────────────────────────
-
 function copyText(text, btn) {
-  const resetBtn = (label, cls) => {
-    btn.textContent = label;
-    if (cls) btn.classList.add(cls);
-    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-  };
-  const fallback = () => {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
-    document.body.appendChild(ta); ta.focus(); ta.select();
-    try { document.execCommand('copy'); resetBtn('✓ Copied!','copied'); }
-    catch (e) { resetBtn('Failed', null); }
-    document.body.removeChild(ta);
-  };
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(() => resetBtn('✓ Copied!','copied')).catch(fallback);
-  } else { fallback(); }
+  const resetBtn = (label, cls) => { btn.textContent = label; if (cls) btn.classList.add(cls); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000); };
+  const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); try { document.execCommand('copy'); resetBtn('✓ Copied!','copied'); } catch (e) { resetBtn('Failed', null); } document.body.removeChild(ta); };
+  if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(() => resetBtn('✓ Copied!','copied')).catch(fallback); } else { fallback(); }
 }
 
 function downloadLyrics(text, genre, theme) {
@@ -590,15 +480,9 @@ function downloadLyrics(text, genre, theme) {
   URL.revokeObjectURL(url);
 }
 
-function escapeHTML(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-}
+function escapeHTML(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 
-// ─── Song history ─────────────────────────────────────────────────────────────
-
-function getHistory() {
-  try { return JSON.parse(localStorage.getItem('song_history') || '[]'); } catch { return []; }
-}
+function getHistory() { try { return JSON.parse(localStorage.getItem('song_history') || '[]'); } catch { return []; } }
 
 function saveToHistory(entry) {
   const h = getHistory();
@@ -608,11 +492,7 @@ function saveToHistory(entry) {
   renderHistory();
 }
 
-function deleteFromHistory(id) {
-  const h = getHistory().filter(e => e.id !== id);
-  localStorage.setItem('song_history', JSON.stringify(h));
-  renderHistory();
-}
+function deleteFromHistory(id) { const h = getHistory().filter(e => e.id !== id); localStorage.setItem('song_history', JSON.stringify(h)); renderHistory(); }
 
 function renderHistory() {
   const h = getHistory();
@@ -624,13 +504,7 @@ function renderHistory() {
   h.forEach(entry => {
     const div = document.createElement('div');
     div.className = 'history-item';
-    div.innerHTML = `
-      <div class="history-item-meta">
-        <div class="history-item-title">${escapeHTML(entry.theme.substring(0,60))}${entry.theme.length > 60 ? '…' : ''}</div>
-        <div class="history-item-sub">${escapeHTML(entry.genre)} · ${escapeHTML(entry.mood.split(',')[0])} · ${entry.savedAt}</div>
-      </div>
-      <button class="history-item-del" aria-label="Delete this song" data-id="${entry.id}">✕</button>
-    `;
+    div.innerHTML = `<div class="history-item-meta"><div class="history-item-title">${escapeHTML(entry.theme.substring(0,60))}${entry.theme.length > 60 ? '…' : ''}</div><div class="history-item-sub">${escapeHTML(entry.genre)} · ${escapeHTML(entry.mood.split(',')[0])} · ${entry.savedAt}</div></div><button class="history-item-del" aria-label="Delete this song" data-id="${entry.id}">✕</button>`;
     div.querySelector('.history-item-meta').addEventListener('click', () => loadFromHistory(entry));
     div.querySelector('.history-item-del').addEventListener('click', (e) => { e.stopPropagation(); deleteFromHistory(entry.id); });
     list.appendChild(div);
@@ -647,25 +521,11 @@ function loadFromHistory(entry) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-document.getElementById('history-clear-btn').addEventListener('click', () => {
-  localStorage.removeItem('song_history');
-  renderHistory();
-});
+document.getElementById('history-clear-btn').addEventListener('click', () => { localStorage.removeItem('song_history'); renderHistory(); });
 
-// ─── Status / pipeline ───────────────────────────────────────────────────────
-
-function setStatus(msg, isError = false) {
-  const el = document.getElementById('status');
-  el.textContent = msg;
-  el.className = 'status visible' + (isError ? ' error' : '');
-}
+function setStatus(msg, isError = false) { const el = document.getElementById('status'); el.textContent = msg; el.className = 'status visible' + (isError ? ' error' : ''); }
 function clearStatus() { document.getElementById('status').className = 'status'; }
-
-function showModel(msg) {
-  const el = document.getElementById('active-model');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
+function showModel(msg) { const el = document.getElementById('active-model'); el.textContent = msg; el.style.display = 'block'; }
 
 const TOTAL_STEPS = 3;
 const slowTimers = {};
@@ -682,34 +542,19 @@ function setPipelineStep(n, paused = false) {
   }
   if (!paused) {
     const el = document.getElementById(`step-${n}`);
-    if (el) {
-      slowTimers[n] = setTimeout(() => {
-        if (el.classList.contains('active')) {
-          el.classList.add('slow');
-          setStatus(`Step ${n} is taking longer than expected — still running...`);
-        }
-      }, CONFIG.SLOW_STEP_MS);
-    }
+    if (el) { slowTimers[n] = setTimeout(() => { if (el.classList.contains('active')) { el.classList.add('slow'); setStatus(`Step ${n} is taking longer than expected — still running...`); } }, CONFIG.SLOW_STEP_MS); }
   }
 }
 
 function hidePipeline() {
   Object.keys(slowTimers).forEach(k => { clearTimeout(slowTimers[k]); delete slowTimers[k]; });
   document.getElementById('pipeline-steps').classList.remove('visible');
-  for (let i = 1; i <= TOTAL_STEPS; i++) {
-    const el = document.getElementById(`step-${i}`);
-    if (el) el.className = 'pipeline-step';
-  }
+  for (let i = 1; i <= TOTAL_STEPS; i++) { const el = document.getElementById(`step-${i}`); if (el) el.className = 'pipeline-step'; }
 }
 
 function fetchWithTimeout(url, options, ms) {
-  return Promise.race([
-    fetch(url, options),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out — please try again')), ms))
-  ]);
+  return Promise.race([fetch(url, options), new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out — please try again')), ms))]);
 }
-
-// ─── Checkpoints ─────────────────────────────────────────────────────────────
 
 function showBlueprint(text) {
   document.getElementById('blueprint-content').textContent = text;
@@ -717,7 +562,7 @@ function showBlueprint(text) {
   document.getElementById('blueprint-edit').style.display = 'none';
   document.getElementById('blueprint-content').style.display = 'block';
   document.getElementById('blueprint-panel').classList.add('visible');
-  setPipelineStep(1, true); // paused
+  setPipelineStep(1, true);
   setStatus('① Blueprint ready — review before writing starts');
   document.getElementById('blueprint-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -728,7 +573,7 @@ function showDraft(text) {
   document.getElementById('draft-edit').style.display = 'none';
   document.getElementById('draft-content').style.display = 'block';
   document.getElementById('draft-panel').classList.add('visible');
-  setPipelineStep(2, true); // paused
+  setPipelineStep(2, true);
   setStatus('② Draft ready — review before polish');
   document.getElementById('draft-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -736,7 +581,6 @@ function showDraft(text) {
 function hideCheckpoints() {
   document.getElementById('blueprint-panel').classList.remove('visible');
   document.getElementById('draft-panel').classList.remove('visible');
-  // reset edit toggles
   ['blueprint','draft'].forEach(id => {
     const content = document.getElementById(`${id}-content`);
     const edit = document.getElementById(`${id}-edit`);
@@ -764,11 +608,9 @@ function setupEditToggle(id) {
 setupEditToggle('blueprint');
 setupEditToggle('draft');
 
-// Blueprint approve
 document.getElementById('blueprint-approve').addEventListener('click', () => {
   const editEl = document.getElementById('blueprint-edit');
   const contentEl = document.getElementById('blueprint-content');
-  // Use edited version if edit mode was active, else use displayed content
   const editVisible = editEl.style.display !== 'none';
   const finalBlueprint = editVisible ? editEl.value.trim() : contentEl.textContent.trim();
   if (!finalBlueprint) return;
@@ -777,13 +619,8 @@ document.getElementById('blueprint-approve').addEventListener('click', () => {
   continueFromBlueprint();
 });
 
-// Blueprint re-analyze
-document.getElementById('blueprint-regenerate').addEventListener('click', async () => {
-  document.getElementById('blueprint-panel').classList.remove('visible');
-  await runStep1();
-});
+document.getElementById('blueprint-regenerate').addEventListener('click', async () => { document.getElementById('blueprint-panel').classList.remove('visible'); await runStep1(); });
 
-// Draft approve
 document.getElementById('draft-approve').addEventListener('click', () => {
   const editEl = document.getElementById('draft-edit');
   const contentEl = document.getElementById('draft-content');
@@ -795,13 +632,7 @@ document.getElementById('draft-approve').addEventListener('click', () => {
   continueFromDraft();
 });
 
-// Draft rewrite
-document.getElementById('draft-regenerate').addEventListener('click', async () => {
-  document.getElementById('draft-panel').classList.remove('visible');
-  await runStep2();
-});
-
-// ─── API calls ────────────────────────────────────────────────────────────────
+document.getElementById('draft-regenerate').addEventListener('click', async () => { document.getElementById('draft-panel').classList.remove('visible'); await runStep2(); });
 
 async function callClaude(prompt, temperature, maxTokens, signal) {
   const key = getKey('anthropic');
@@ -814,7 +645,7 @@ async function callClaude(prompt, temperature, maxTokens, signal) {
   }, 30000);
   if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || `Anthropic error ${res.status}`); }
   const data = await res.json();
-  showModel('✦ Using Claude Sonnet');
+  showModel('✦ Using Claude Sonnet 4.6');
   return data.content.filter(b => b.type==='text').map(b => b.text).join('').trim();
 }
 
@@ -837,8 +668,7 @@ async function callGemini(prompt, temperature, maxTokens, signal) {
   const key = getKey('gemini');
   if (!key) throw new Error('No Gemini key');
   const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.GEMINI_MODEL}:generateContent?key=${key}`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
+    method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{temperature,maxOutputTokens:maxTokens} }),
     signal
   }, 30000);
@@ -854,32 +684,15 @@ async function callGemini(prompt, temperature, maxTokens, signal) {
 
 async function aiCall(prompt, temperature = 0.85, maxTokens = 2400, signal = null) {
   const errors = [];
-  if (getKey('anthropic')) {
-    try { return await callClaude(prompt, temperature, maxTokens, signal); }
-    catch (e) { if (e.name==='AbortError') throw e; errors.push(`Claude: ${e.message}`); }
-  }
+  if (getKey('anthropic')) { try { return await callClaude(prompt, temperature, maxTokens, signal); } catch (e) { if (e.name==='AbortError') throw e; errors.push(`Claude: ${e.message}`); } }
   if (getKey('groq')) {
     try { return await callGroq(prompt, temperature, maxTokens, signal); }
-    catch (e) {
-      if (e.name==='AbortError') throw e;
-      const isRL = e.message.toLowerCase().includes('rate limit') || e.message.includes('429');
-      if (isRL) showModel('⚡ Groq limit reached — switching to Gemini');
-      errors.push(`Groq: ${e.message}`);
-    }
+    catch (e) { if (e.name==='AbortError') throw e; const isRL = e.message.toLowerCase().includes('rate limit') || e.message.includes('429'); if (isRL) showModel('⚡ Groq limit reached — switching to Gemini'); errors.push(`Groq: ${e.message}`); }
   }
-  if (getKey('gemini')) {
-    try { return await callGemini(prompt, temperature, maxTokens, signal); }
-    catch (e) { if (e.name==='AbortError') throw e; errors.push(`Gemini: ${e.message}`); }
-  }
-  if (!getKey('anthropic') && !getKey('groq') && !getKey('gemini')) {
-    throw new Error('No API key — add your Anthropic, Groq, or Gemini key above');
-  }
+  if (getKey('gemini')) { try { return await callGemini(prompt, temperature, maxTokens, signal); } catch (e) { if (e.name==='AbortError') throw e; errors.push(`Gemini: ${e.message}`); } }
+  if (!getKey('anthropic') && !getKey('groq') && !getKey('gemini')) { throw new Error('No API key — add your Anthropic, Groq, or Gemini key above'); }
   throw new Error(errors[errors.length-1] || 'All API calls failed');
 }
-
-/* ============================================================
-   GENRE STYLE MAPS
-   ============================================================ */
 
 const GENRE_EXAMPLES_WRITE = {
   "Dark Glitch Metal": `STYLE: Cold and clinical when the material calls for distance. Raw and devastating when it calls for presence. Short declarative lines. No metaphor that isn't earned by something physical first.
@@ -891,131 +704,54 @@ GOOD: "They took the way my daughter says my name so I don't hear it right again
 WHY: Hyper-specific physical detail. The loss lives in one sensory moment, not a statement about grief.
 
 RHYTHM NOTE: Verses should feel like pressure — short, clipped lines. The bridge should break the pattern entirely — longer, more fractured, or suddenly sparse.`,
-
   "Pop": `STYLE: Relatable but specific. The detail has to be universal enough to sing along to and precise enough to feel real.
-
 GOOD: "I found your hoodie in the back seat / still smells like the last time we were easy"
-WHY: "The last time we were easy" earns its abstraction because the hoodie is concrete first.
-
-GOOD: "Maybe I was wrong / maybe you were right / maybe we were just two kids / burning in the night"
-WHY: "Two kids" and "burning" are images. Uncertainty stated, not explained. Compact and singable.`,
-
+WHY: "The last time we were easy" earns its abstraction because the hoodie is concrete first.`,
   "Hip-Hop": `STYLE: Narrative is everything. The listener should be able to see the scene.
-
 GOOD: "Mama kept the lights on working doubles at the waffle house / I told her I'd buy her a real house / she said boy just get your diploma out"
-WHY: Three distinct beats in three lines. The Waffle House is specific. The mother's response is character, not archetype.
-
-GOOD: "All I got is this moment / can't waste it on your doubt / came too far to fold now / I'm finding my way out"
-WHY: "Finding my way out" is motion, not conclusion. Leaves space. Not triumphant — determined.`,
-
+WHY: Three distinct beats in three lines. The Waffle House is specific. The mother's response is character, not archetype.`,
   "R&B": `STYLE: Sensory and intimate. The emotional truth lives in behavior — what the person does, not what they declare.
-
 GOOD: "You left your perfume on my pillow / I still sleep on your side / order takeout for two by habit / then sit alone and cry"
-WHY: Four consecutive behavioral details. "Order takeout for two by habit" — unconscious loyalty is the whole song.
-
-GOOD: "I keep your number in my phone / can't bring myself to let it go / one text away from falling back / into everything I know"
-WHY: "One text away" is a physical threshold. The temptation is specific and present-tense.`,
-
+WHY: Four consecutive behavioral details. "Order takeout for two by habit" — unconscious loyalty is the whole song.`,
   "Country": `STYLE: Time and place matter. Nostalgia is earned through precision, not declared.
-
 GOOD: "Last day of summer, back of your daddy's truck / radio on, gravel road, twenty bucks of luck / you said let's drive until we run out of road / I didn't know that was the last time I'd let go"
-WHY: Every detail is specific. "Twenty bucks of luck" is character in three words.
-
-GOOD: "That old red barn's still standing / your name's still in the wood / I'd go back and change a thousand things / but none of them I should"
-WHY: The barn is a physical anchor. The final paradox is honest — not resolved, just stated.`,
-
+WHY: Every detail is specific. "Twenty bucks of luck" is character in three words.`,
   "Rock": `STYLE: Tension and release. The verse should feel like pressure building; the chorus should feel like it breaks through.
-
 GOOD: "Knuckles white on the steering wheel / drove past your street three times / told myself I was just passing through / told myself that lie"
-WHY: Repetition of "told myself" is the structure doing emotional work. Self-deception shown through action.
-
-GOOD: "I am not what they made me / I am not what I was / I'm the fire that keeps burning / after everyone gives up"
-WHY: Negation first — defines by contrast. "After everyone gives up" is a specific relational moment.`,
-
+WHY: Repetition of "told myself" is the structure doing emotional work. Self-deception shown through action.`,
   "EDM": `STYLE: Repetition and build are structural tools. The chorus should hit harder at measure 3 than measure 1.
-
 GOOD: "Neon lights on a wet street / your face in every window / three AM and I'm still moving / can't let this feeling go"
-WHY: Visual progression (lights → windows → motion) creates cinematic movement.
-
-GOOD: "Let it break / let it breathe / let it take / everything"
-WHY: Each phrase is its own beat. "Everything" earns its place by stripping everything else down first.`,
-
+WHY: Visual progression (lights → windows → motion) creates cinematic movement.`,
   "Soul": `STYLE: Vulnerability without sentimentality. The singer has been somewhere dark and is reporting back.
-
 GOOD: "Sat in my car outside the church / couldn't make myself go in / pastor said God forgives everything / but I ain't forgiven him"
-WHY: Specific location. The theology is in the reversal, not the explanation.
-
-GOOD: "Still here / still standing / still got two hands worth of fight / still here / still standing / after the longest night"
-WHY: "Two hands worth of fight" is physical — not metaphorical strength, but actual hands.`,
-
+WHY: Specific location. The theology is in the reversal, not the explanation.`,
   "Indie": `STYLE: Ordinary objects carrying extraordinary weight. Emotional intelligence worn lightly.
-
 GOOD: "You always burned the toast and called it caramelized / I believed you every time / now I make it perfect every morning / and I hate how it tastes"
-WHY: "I hate how it tastes" lands because "I believed you every time" earned it. Grief displaced onto competence.
-
-GOOD: "I keep finding you in ordinary things / the way the light comes through at four / I don't know what any of this means / I just know I can't ignore"
-WHY: "The way the light comes through at four" — a specific time, a specific quality of light.`,
-
+WHY: "I hate how it tastes" lands because "I believed you every time" earned it. Grief displaced onto competence.`,
   "Christian Rock": `STYLE: Testimony, not doctrine. God shows up in the specific and human, not the grand and abstract.
-
 GOOD: "Hit the floor of my bathroom at 2 AM / thought I'd finally run too far / picked up a Bible I hadn't touched in years / found my name written in the scars"
-WHY: The bathroom floor at 2 AM is a real location. The metaphor earns its place because the physical scene preceded it.
-
-GOOD: "You didn't wait for me to get it right / you ran to me mid-fall / I thought I had to earn my way back home / but you never left at all"
-WHY: "Mid-fall" — not after the fall, during it. The theology is in the timing, not the explanation.`,
-
+WHY: The bathroom floor at 2 AM is a real location. The metaphor earns its place because the physical scene preceded it.`,
   "Christian Worship": `STYLE: Intimate and direct. The congregation singing to God, not about God. Second-person address.
-
 GOOD: "I've shown you every broken part / the ones I hid for years / and still you call me by my name / and meet me right here"
-WHY: "Call me by my name" is biblical echo without being a quote. "Meet me right here" — present tense.
-
-GOOD: "Where else would I go / you have the words of life / where else would I go / you hold me in the night"
-WHY: The question is the worship — not declaration but arrival.`
+WHY: "Call me by my name" is biblical echo without being a quote. "Meet me right here" — present tense.`
 };
 
 const GENRE_EXAMPLES_POLISH = {
-  "Dark Glitch Metal": `MEDIOCRE (sounds right, carries nothing):
-"I'm breaking down inside" — names an emotion state rather than showing a behavioral moment.
-"The darkness calls to me" — genre atmosphere without a specific anchor.`,
-  "Pop": `MEDIOCRE (sounds right, carries nothing):
-"You're always on my mind lately" — relatable claim, zero image.
-"We could've been something great" — nostalgic assertion with no concrete scene.`,
-  "Hip-Hop": `MEDIOCRE (sounds right, carries nothing):
-"I been grinding every single day" — effort claimed, not shown.
-"They never believed in me back then" — antagonist present but unnamed and faceless.`,
-  "R&B": `MEDIOCRE (sounds right, carries nothing):
-"I think about you when I'm lonely" — behavioral, but the image could be anyone.
-"Every time I hear our song I break" — the song is unspecified, so the listener can't enter.`,
-  "Country": `MEDIOCRE (sounds right, carries nothing):
-"Back home everything was simpler then" — nostalgia declared, not placed.
-"We used to drive around for hours" — motion without destination or detail.`,
-  "Rock": `MEDIOCRE (sounds right, carries nothing):
-"I'm done playing by your rules" — defiance announced, not earned.
-"You never knew how much I gave" — sacrifice implied, no scene.`,
-  "EDM": `MEDIOCRE (sounds right, carries nothing):
-"Dancing till the morning light" — genre-functional but purely atmospheric.
-"Tonight we forget everything" — escape theme with no specific thing being escaped.`,
-  "Soul": `MEDIOCRE (sounds right, carries nothing):
-"I've been through so much in my life" — range implied, nothing landed.
-"You were the one who kept me strong" — tribute without a specific moment of it being true.`,
-  "Indie": `MEDIOCRE (sounds right, carries nothing):
-"You always find a way to make me smile" — warm sentiment, no image.
-"There's something about the way you move" — observation category without the observation.`,
-  "Christian Rock": `MEDIOCRE (sounds right, carries nothing):
-"You picked me up when I was falling down" — the rescue is asserted, never placed.
-"Your love is stronger than my fear" — theological comparison with no scene to make it felt.`,
-  "Christian Worship": `MEDIOCRE (sounds right, carries nothing):
-"I just want to be close to you" — sincere but could be any relationship song.
-"You are worthy of all my praise" — correct but zero encounter with why.`
+  "Dark Glitch Metal": `MEDIOCRE (sounds right, carries nothing):\n"I'm breaking down inside" — names an emotion state rather than showing a behavioral moment.\n"The darkness calls to me" — genre atmosphere without a specific anchor.`,
+  "Pop": `MEDIOCRE (sounds right, carries nothing):\n"You're always on my mind lately" — relatable claim, zero image.\n"We could've been something great" — nostalgic assertion with no concrete scene.`,
+  "Hip-Hop": `MEDIOCRE (sounds right, carries nothing):\n"I been grinding every single day" — effort claimed, not shown.\n"They never believed in me back then" — antagonist present but unnamed and faceless.`,
+  "R&B": `MEDIOCRE (sounds right, carries nothing):\n"I think about you when I'm lonely" — behavioral, but the image could be anyone.\n"Every time I hear our song I break" — the song is unspecified, so the listener can't enter.`,
+  "Country": `MEDIOCRE (sounds right, carries nothing):\n"Back home everything was simpler then" — nostalgia declared, not placed.\n"We used to drive around for hours" — motion without destination or detail.`,
+  "Rock": `MEDIOCRE (sounds right, carries nothing):\n"I'm done playing by your rules" — defiance announced, not earned.\n"You never knew how much I gave" — sacrifice implied, no scene.`,
+  "EDM": `MEDIOCRE (sounds right, carries nothing):\n"Dancing till the morning light" — genre-functional but purely atmospheric.\n"Tonight we forget everything" — escape theme with no specific thing being escaped.`,
+  "Soul": `MEDIOCRE (sounds right, carries nothing):\n"I've been through so much in my life" — range implied, nothing landed.\n"You were the one who kept me strong" — tribute without a specific moment of it being true.`,
+  "Indie": `MEDIOCRE (sounds right, carries nothing):\n"You always find a way to make me smile" — warm sentiment, no image.\n"There's something about the way you move" — observation category without the observation.`,
+  "Christian Rock": `MEDIOCRE (sounds right, carries nothing):\n"You picked me up when I was falling down" — the rescue is asserted, never placed.\n"Your love is stronger than my fear" — theological comparison with no scene to make it felt.`,
+  "Christian Worship": `MEDIOCRE (sounds right, carries nothing):\n"I just want to be close to you" — sincere but could be any relationship song.\n"You are worthy of all my praise" — correct but zero encounter with why.`
 };
-
-/* ============================================================
-   PROMPTS
-   ============================================================ */
 
 function buildStructurePrompt(theme, userLines) {
   const sacredNote = userLines ? `\nSACRED LINES — must appear verbatim in the final song. Identify which structural section each belongs in and why:\n${userLines}\n` : '';
-
   return `You are a creative analyst for a world-class songwriter. Your job is to extract a structural blueprint from the raw material below — faithfully preserving the original imagery and language, then making bold creative choices ONLY where the material leaves genuine gaps.
 
 ${sacredNote}
@@ -1053,7 +789,6 @@ ${userLines ? `\nSACRED LINES PLACEMENT:\n[For each sacred line, name exactly wh
 function buildWritePrompt(structuredStory, genre, mood, userLines) {
   const sacred = userLines ? `\nSACRED LINES — NON-NEGOTIABLE. These must appear EXACTLY as written:\n${userLines}\n` : '';
   const examples = GENRE_EXAMPLES_WRITE[genre] || '';
-
   return `You are a world-class songwriter. Write a complete song from the structured material below.
 
 GENRE: ${genre}
@@ -1070,7 +805,7 @@ NARRATIVE SPINE — MANDATORY:
 [Verse 1] = SITUATION. Opening state. Before anything changes.
 [Pre-Chorus] = TENSION. What makes the chorus necessary. Pressure before release.
 [Verse 2] = SHIFT. Something deepens or complicates. Different images from Verse 1. Different moment in the arc.
-[Bridge] = TURNING POINT. The crack or break moment. This section must feel tonally different from everything else — different rhythm, different emotional register, higher stakes. Take the biggest creative risk here. Ask: what is the one thing no other song would say in this moment?
+[Bridge] = TURNING POINT. 4-6 lines maximum. No speeches, no explanations, no statements of feeling. Show the emotional shift through ONE physical action or image — something the narrator does, notices, or catches themselves doing. The listener should feel the turn without being told what it means. Ask: what is the single physical moment that changes everything?
 [Chorus] = EMOTIONAL TRUTH. One recurring image. Max 4 lines, each under 10 words.
 [Outro] = LANDING. One specific image. Not a motivational statement.
 
@@ -1087,7 +822,7 @@ RULES:
 5. Chorus: max 4 lines, each under 10 words, contains a physical image, at least one line chantable
 6. Verse 2 must use different images and a different moment in the arc than Verse 1
 7. WOW MOMENT required: one line using an unexpected verb OR naming a specific object no other song would name
-8. Bridge: take the single biggest creative risk in the song here — the moment that reframes everything before it. Change the rhythm, the perspective, the temperature. Make it earn its place.
+8. BRIDGE HARD RULES: maximum 6 lines. Zero direct statements of feeling. Zero lines beginning with "I know", "I feel", "I need", "I am", "I'm the one". If the bridge explains the emotion it has failed — rewrite it as a physical action.
 9. Tonal consistency: if Verse 1 establishes a specific emotional register, maintain it through the song unless the bridge deliberately breaks it for effect
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
@@ -1096,15 +831,11 @@ Output the complete song — every section, no truncation.`;
 
 function buildPolishPrompt(draft, genre, structuredStory, userLines) {
   const sacred = userLines ? `\nSACRED LINES — must appear verbatim in the final output. Restore any that are missing or altered:\n${userLines}\n` : '';
-
   const keyImagesMatch = structuredStory.match(/KEY IMAGES:([\s\S]*?)(?:\nSACRED|\nSEED|\n[A-Z]{4}|$)/i);
   const keyImages = keyImagesMatch ? `KEY IMAGES (source ground truth):\n${keyImagesMatch[1].trim()}` : `SOURCE MATERIAL SUMMARY:\n${structuredStory.substring(0,400)}...`;
-
   const seedMatch = structuredStory.match(/SEED PHRASES[\s\S]*?\n([\s\S]*?)(?:\nNARRATIVE|$)/i);
   const seedBlock = seedMatch ? `\nSEED PHRASES (verbatim from source — must survive into final song):\n${seedMatch[1].trim()}\n` : '';
-
   const badExamples = GENRE_EXAMPLES_POLISH[genre] || '';
-
   return `You are a ruthless line editor. Make this song consistently great — fix every weak line, leave strong ones untouched. Then identify the single weakest section.
 
 GENRE: ${genre}
@@ -1124,13 +855,17 @@ Apply every test. Fix only what fails. Leave passing lines untouched.
 
 3. SPECIFICITY TEST: Could this line be lifted into a completely different song without changing its meaning? If yes, it's generic — rewrite using specific imagery from KEY IMAGES.
 
-4. NARRATIVE SPINE: Verse 1 = situation (not shift). Verse 2 = shift (not repeat of Verse 1). Pre-Chorus = tension building toward chorus. Bridge = turning point (tonally distinct from everything else, biggest creative risk, earns its place by reframing what came before). Outro = one specific image, not motivation or summary.
+4. NARRATIVE SPINE: Verse 1 = situation (not shift). Verse 2 = shift (not repeat of Verse 1). Pre-Chorus = tension building toward chorus. Bridge = turning point (tonally distinct, physical action only, 4-6 lines max). Outro = one specific image, not motivation or summary.
 
 5. CHORUS TEST: Contains a specific physical detail? Under 4 lines, each under 10 words? At least one line chantable?
 
-6. BRIDGE TEST: Does the bridge feel tonally different from the verses? Does it take a creative risk that pays off? Does it change the meaning of what came before? If it reads like a third verse, rewrite it — the bridge has to break something open.
+6. BRIDGE TEST — STRICT:
+   - Is it 6 lines or fewer? If longer, cut it.
+   - Does it contain ANY direct statement of feeling (I know, I feel, I need, I am, I'm the one)? If yes, rewrite those lines as physical actions.
+   - Does it show the emotional turn through ONE physical action or image rather than explaining it? If not, rewrite until it does.
+   - A bridge that reads like a third verse or a speech has failed. The bridge must show, not tell — always.
 
-7. CALLBACK VERIFICATION: Do key images from Verse 1 or the Chorus reappear — transformed or echoed — in the Bridge or Outro? If missing, add the minimum necessary: take the strongest early image and reintroduce it with deepened meaning.
+7. CALLBACK VERIFICATION: Do key images from Verse 1 or the Chorus reappear — transformed or echoed — in the Bridge or Outro? If missing, add the minimum necessary.
 
 8. TONAL CONSISTENCY: Is the emotional register consistent across sections (except for deliberate breaks in the bridge)? Flag and fix any lines that feel like they belong in a different song.
 
@@ -1139,10 +874,6 @@ WEAKEST_SECTION: [section name only — Verse 1, Pre-Chorus, Chorus, Verse 2, Br
 
 Output the complete revised song from [Verse 1] to [Outro], then the WEAKEST_SECTION line. No other commentary.`;
 }
-
-/* ============================================================
-   SECTION REWRITE
-   ============================================================ */
 
 async function rewriteSection(section, currentLyrics, genre, mood, structuredStory) {
   const keyImagesMatch = structuredStory.match(/KEY IMAGES:([\s\S]*?)(?:\nSACRED|\nSEED|\n[A-Z]{4}|$)/i);
@@ -1155,7 +886,7 @@ async function rewriteSection(section, currentLyrics, genre, mood, structuredSto
     'Pre-Chorus': 'TENSION — what makes the chorus necessary. Pressure before release.',
     'Chorus': 'EMOTIONAL TRUTH — the recurring core. One physical image. Max 4 lines, each under 10 words. At least one line chantable.',
     'Verse 2': 'SHIFT — something deepens or complicates. Different images and a different moment in the arc from Verse 1.',
-    'Bridge': 'TURNING POINT — the crack or break moment. Must feel tonally different from everything else. The biggest creative risk in the song. The moment that reframes everything before it. Change the rhythm, the register, or the perspective. Ask: what is the one thing no other song would say here?',
+    'Bridge': 'TURNING POINT — 4-6 lines maximum. No speeches. No direct statements of feeling. No lines beginning with "I know", "I feel", "I need", "I am", "I\'m the one". Show the emotional turn through ONE physical action or image — something the narrator does, notices, or catches themselves doing that they didn\'t before. The listener should feel the shift without being told what it means. A callback to an earlier image, transformed, often works perfectly here.',
     'Outro': 'LANDING — one specific image. Not a motivational statement. Not a summary. Where the listener is left.',
   };
 
@@ -1176,41 +907,26 @@ ${keyImages}
 SEED PHRASES (verbatim from source — weave in if natural):
 ${seedPhrases}
 
-Write a new version of [${section}] only. Make it stronger — more specific, more surprising, truer to the arc. Maintain tonal consistency with the rest of the song unless this is the Bridge (which should deliberately break the pattern). Output ONLY the new section content with its label, nothing else. No commentary.`;
+Write a new version of [${section}] only. Make it stronger — more specific, more surprising, truer to the arc. Output ONLY the new section content with its label, nothing else. No commentary.`;
 
   return await aiCall(prompt, 0.88, 800, null);
 }
 
-/* ============================================================
-   WEAK SECTION FLAG
-   ============================================================ */
-
 function extractAndFlagWeakSection(polishedText) {
   const match = polishedText.match(/WEAKEST_SECTION:\s*(.+)/i);
   if (!match) return polishedText;
-
   const section = match[1].trim();
   const lyrics = polishedText.replace(/\nWEAKEST_SECTION:.*$/i, '').trim();
-
   const flagEl = document.getElementById('weak-flag');
   const sectionEl = document.getElementById('weak-flag-section');
   if (section) {
     sectionEl.textContent = section;
     flagEl.classList.add('visible');
-    // Pre-select the rewrite dropdown to this section
     const select = document.getElementById('rewrite-select');
-    if (select) {
-      const option = Array.from(select.options).find(o => o.value === section);
-      if (option) select.value = section;
-    }
+    if (select) { const option = Array.from(select.options).find(o => o.value === section); if (option) select.value = section; }
   }
-
   return lyrics;
 }
-
-/* ============================================================
-   OUTPUT RENDERING
-   ============================================================ */
 
 function renderOutputBox(lyrics, genre, theme, structuredStory) {
   document.getElementById('output').innerHTML = `
@@ -1239,26 +955,18 @@ function renderOutputBox(lyrics, genre, theme, structuredStory) {
       </div>
     </div>`;
 
-  document.getElementById('copy-lyrics').addEventListener('click', function () {
-    copyText(lyrics, this);
-  });
-
-  document.getElementById('download-lyrics').addEventListener('click', () => {
-    downloadLyrics(lyrics, genre, theme);
-  });
+  document.getElementById('copy-lyrics').addEventListener('click', function () { copyText(lyrics, this); });
+  document.getElementById('download-lyrics').addEventListener('click', () => { downloadLyrics(lyrics, genre, theme); });
 
   document.getElementById('rewrite-btn').addEventListener('click', async () => {
     const section = document.getElementById('rewrite-select').value;
     const btn = document.getElementById('rewrite-btn');
-    btn.disabled = true;
-    btn.textContent = '...';
+    btn.disabled = true; btn.textContent = '...';
     document.getElementById('weak-flag').classList.remove('visible');
-
     try {
       const currentLyrics = document.getElementById('lyrics-display').innerText || lyrics;
       const mood = getSelected('mood-group');
       const newSection = await rewriteSection(section, currentLyrics, genre, mood, structuredStory);
-
       const display = document.getElementById('lyrics-display');
       const currentText = display.innerText || lyrics;
       const sectionLabel = `[${section}]`;
@@ -1266,10 +974,7 @@ function renderOutputBox(lyrics, genre, theme, structuredStory) {
       const startIdx = currentText.indexOf(sectionLabel);
       if (startIdx !== -1) {
         let endIdx = currentText.length;
-        for (const label of nextLabels) {
-          const idx = currentText.indexOf(label, startIdx + sectionLabel.length);
-          if (idx !== -1 && idx < endIdx) endIdx = idx;
-        }
+        for (const label of nextLabels) { const idx = currentText.indexOf(label, startIdx + sectionLabel.length); if (idx !== -1 && idx < endIdx) endIdx = idx; }
         const before = currentText.substring(0, startIdx);
         const after = currentText.substring(endIdx);
         const newFull = before + newSection.trim() + '\n\n' + after.trim();
@@ -1278,87 +983,53 @@ function renderOutputBox(lyrics, genre, theme, structuredStory) {
         document.getElementById('copy-lyrics').onclick = function () { copyText(newFull, this); };
         document.getElementById('download-lyrics').onclick = () => downloadLyrics(newFull, genre, theme);
       }
-    } catch (e) {
-      if (e.name !== 'AbortError') setStatus('⚠ Rewrite failed: ' + e.message, true);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '↻ Rewrite';
-    }
+    } catch (e) { if (e.name !== 'AbortError') setStatus('⚠ Rewrite failed: ' + e.message, true); }
+    finally { btn.disabled = false; btn.textContent = '↻ Rewrite'; }
   });
 }
-
-/* ============================================================
-   PIPELINE STEPS (separated so checkpoints can resume them)
-   ============================================================ */
 
 async function runStep1() {
   const { theme, userLines } = pipelineContext;
   setPipelineStep(1);
   setStatus('① Studying your material...');
   try {
-    const structuredStory = await aiCall(
-      buildStructurePrompt(theme, userLines),
-      0.25, 1400, currentController?.signal
-    );
+    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines), 0.5, 1400, currentController?.signal);
     pipelineContext.structuredStory = structuredStory;
     showBlueprint(structuredStory);
-  } catch (e) {
-    handlePipelineError(e);
-  }
+  } catch (e) { handlePipelineError(e); }
 }
 
-async function continueFromBlueprint() {
-  await runStep2();
-}
+async function continueFromBlueprint() { await runStep2(); }
 
 async function runStep2() {
   const { structuredStory, genre, mood, userLines } = pipelineContext;
   setPipelineStep(2);
   setStatus('② Writing the song...');
   try {
-    const draft = await aiCall(
-      buildWritePrompt(structuredStory, genre, mood, userLines),
-      0.72, 2400, currentController?.signal
-    );
+    const draft = await aiCall(buildWritePrompt(structuredStory, genre, mood, userLines), 0.82, 2400, currentController?.signal);
     pipelineContext.draft = draft;
     showDraft(draft);
-  } catch (e) {
-    handlePipelineError(e);
-  }
+  } catch (e) { handlePipelineError(e); }
 }
 
-async function continueFromDraft() {
-  await runStep3();
-}
+async function continueFromDraft() { await runStep3(); }
 
 async function runStep3() {
   const { draft, genre, structuredStory, userLines, theme, mood } = pipelineContext;
   setPipelineStep(3);
   setStatus('③ Sharpening every line...');
   try {
-    const polishedRaw = await aiCall(
-      buildPolishPrompt(draft, genre, structuredStory, userLines),
-      0.45, 2400, currentController?.signal
-    );
-
-    hidePipeline();
-    clearStatus();
-
+    const polishedRaw = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines), 0.45, 2400, currentController?.signal);
+    hidePipeline(); clearStatus();
     const polished = extractAndFlagWeakSection(polishedRaw);
-
     currentSong = { lyrics: polished, genre, mood, theme, structuredStory, userLines };
     renderOutputBox(polished, genre, theme, structuredStory);
     saveToHistory({ lyrics: polished, genre, mood, theme, structuredStory, userLines });
-
-    // Unlock UI
     document.getElementById('generate-btn').disabled = false;
     lockUI(false);
     currentController = null;
     pipelineState = 'done';
-
-  } catch (e) {
-    handlePipelineError(e);
-  }
+  } catch (e) { handlePipelineError(e); }
 }
 
 function handlePipelineError(e) {
@@ -1371,38 +1042,19 @@ function handlePipelineError(e) {
   pipelineState = 'idle';
 }
 
-/* ============================================================
-   MAIN ENTRY
-   ============================================================ */
-
 document.getElementById('generate-btn').addEventListener('click', async () => {
-  const themeBase  = document.getElementById('theme').value.trim();
-  const gateInput  = document.getElementById('quality-gate-input').value.trim();
-
-  // Hard gate enforcement
-  if (gateState === 'hard' && !gateInput) {
-    setStatus('⚠ Add more detail before generating — see the prompt above', true);
-    document.getElementById('quality-gate').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
-
-  const theme    = gateInput ? `${themeBase}\n\nADDITIONAL DETAIL: ${gateInput}` : themeBase;
+  const themeBase = document.getElementById('theme').value.trim();
+  const gateInput = document.getElementById('quality-gate-input').value.trim();
+  if (gateState === 'hard' && !gateInput) { setStatus('⚠ Add more detail before generating — see the prompt above', true); document.getElementById('quality-gate').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  const theme = gateInput ? `${themeBase}\n\nADDITIONAL DETAIL: ${gateInput}` : themeBase;
   const userLines = document.getElementById('user-lines').value.trim();
-
-  if (!getKey('anthropic') && !getKey('groq') && !getKey('gemini')) {
-    setStatus('⚠ Add at least one API key above', true); return;
-  }
-  if (!themeBase) {
-    setStatus('⚠ Give it something to work with — a story, a concept, a feeling', true); return;
-  }
-
+  if (!getKey('anthropic') && !getKey('groq') && !getKey('gemini')) { setStatus('⚠ Add at least one API key above', true); return; }
+  if (!themeBase) { setStatus('⚠ Give it something to work with — a story, a concept, a feeling', true); return; }
   if (currentController) currentController.abort();
   currentController = new AbortController();
-
   const genre = getSelected('genre-group');
-  const mood  = getSelected('mood-group');
-  const btn   = document.getElementById('generate-btn');
-
+  const mood = getSelected('mood-group');
+  const btn = document.getElementById('generate-btn');
   btn.disabled = true;
   lockUI(true);
   document.getElementById('output').innerHTML = '';
@@ -1411,18 +1063,14 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   document.getElementById('weak-flag').classList.remove('visible');
   clearStatus();
   hideCheckpoints();
-
   pipelineContext = { theme, userLines, genre, mood };
   pipelineState = 'step1';
-
   await runStep1();
 });
 
 document.getElementById('cancel-btn').addEventListener('click', () => {
   if (currentController) { currentController.abort(); currentController = null; }
-  hidePipeline();
-  hideCheckpoints();
-  clearStatus();
+  hidePipeline(); hideCheckpoints(); clearStatus();
   document.getElementById('generate-btn').disabled = false;
   lockUI(false);
   pipelineState = 'idle';
