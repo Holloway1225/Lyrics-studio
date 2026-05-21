@@ -1347,6 +1347,9 @@ async function runStep6() {
     renderOutputBox(finalSong, genre, theme, structuredStory);
     const outputBox = document.querySelector('#output .output-box');
     if (outputBox) {
+      // Pass 2 weak section banner — shown first, before grade cards
+      const weakSections = (pass2Grades || []).filter(g => g.score < 8);
+      if (weakSections.length) renderWeakBanner(weakSections, outputBox);
       if (pass1Grades?.length) renderGradeCard(pass1Grades, outputBox, 'Pass 1');
       if (pass2Grades?.length) renderGradeCard(pass2Grades, outputBox, 'Pass 2');
       renderSunoCard(sunoPrompt, outputBox);
@@ -1357,6 +1360,47 @@ async function runStep6() {
     currentController = null;
     pipelineState = 'done';
   } catch (e) { handlePipelineError(e); }
+}
+
+function renderWeakBanner(weakSections, container) {
+  const banner = document.createElement('div');
+  banner.style.cssText = 'margin-top:16px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.35);border-radius:12px;padding:14px 18px;';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-family:Inconsolata,monospace;font-size:10px;letter-spacing:4px;color:#f87171;text-transform:uppercase;margin-bottom:10px;';
+  title.textContent = weakSections.length === 1
+    ? '⚠ 1 section still needs work after both passes'
+    : `⚠ ${weakSections.length} sections still need work after both passes`;
+  banner.appendChild(title);
+  weakSections.forEach(g => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;';
+    const scoreColor = g.score >= 6 ? '#fbbf24' : '#f87171';
+    row.innerHTML = `
+      <span style="font-family:Inconsolata,monospace;font-size:12px;color:${scoreColor};font-weight:600;min-width:36px;">${g.score}/10</span>
+      <div>
+        <div style="font-family:Inconsolata,monospace;font-size:11px;color:#ede8f5;letter-spacing:1px;">${g.section}</div>
+        <div style="font-family:Lora,Georgia,serif;font-size:12px;color:rgba(237,232,245,0.6);margin-top:2px;font-style:italic;">${g.reason}</div>
+      </div>`;
+    banner.appendChild(row);
+  });
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-family:Inconsolata,monospace;font-size:10px;color:rgba(248,113,113,0.6);letter-spacing:1px;margin-top:6px;border-top:1px solid rgba(248,113,113,0.15);padding-top:10px;';
+  hint.textContent = 'Use the rewrite tool below to target ' + weakSections.map(g => g.section).join(', ') + '.';
+  banner.appendChild(hint);
+  // Insert banner right after the lyrics box header area, before lyrics text
+  const lyricsDisplay = container.querySelector('#lyrics-display');
+  if (lyricsDisplay) {
+    container.insertBefore(banner, lyricsDisplay.nextSibling);
+  } else {
+    container.appendChild(banner);
+  }
+  // Also pre-select the weakest section in the rewrite dropdown
+  const weakest = weakSections.sort((a, b) => a.score - b.score)[0];
+  const select = document.getElementById('rewrite-select');
+  if (select && weakest) {
+    const option = Array.from(select.options).find(o => o.value === weakest.section);
+    if (option) select.value = weakest.section;
+  }
 }
 
 function handlePipelineError(e) {
