@@ -1357,6 +1357,88 @@ async function getLastFmGenreTags(genre) {
   } catch (e) { return []; }
 }
 
+async function suggestArtistPairings(lyrics, genre, mood, structuredStory) {
+  const centralTension = structuredStory.match(/CENTRAL TENSION[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
+  const trueSubject = structuredStory.match(/ONE TRUE SUBJECT[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
+  const prompt = `You are a music supervisor who knows the sonic world of every artist.
+
+A song has been written with these characteristics:
+GENRE: ${genre}
+MOOD: ${mood}
+CENTRAL TENSION: ${centralTension}
+ONE TRUE SUBJECT: ${trueSubject}
+
+FIRST VERSE:
+${lyrics.substring(0, 400)}
+
+Suggest 5 artist pairings whose COLLISION would produce the ideal sonic world for this specific song. These are not influences — they are sonic ingredients. The tension between them should match the emotional tension of the song.
+
+Rules:
+- Each pairing must be two real artists separated by " meets "
+- No generic pairings — match the emotional register of THIS song specifically
+- Think about contrast: quiet meets loud, intimate meets industrial, acoustic meets electronic
+- The pairing should feel surprising but immediately right for this song
+- No deceased artists
+
+Output ONLY a JSON array of 5 strings. Example format:
+["Artist A meets Artist B", "Artist C meets Artist D", "Artist E meets Artist F", "Artist G meets Artist H", "Artist I meets Artist J"]
+Nothing else.`;
+  const raw = await aiCall(prompt, 0.8, 300, null);
+  try {
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned);
+  } catch { return []; }
+}
+
+async function fetchArtistBlendData(artist1, artist2) {
+  const hasSpotify = getKey('spotify-id') && getKey('spotify-sec');
+  const hasLastFm = getKey('lastfm');
+  if (!hasSpotify && !hasLastFm) return { data1: null, data2: null, tags1: [], tags2: [] };
+  const [data1, data2, tags1, tags2] = await Promise.all([
+    hasSpotify ? getSpotifyGenreData(artist1) : Promise.resolve(null),
+    hasSpotify ? getSpotifyGenreData(artist2) : Promise.resolve(null),
+    hasLastFm ? getLastFmGenreTags(artist1) : Promise.resolve([]),
+    hasLastFm ? getLastFmGenreTags(artist2) : Promise.resolve([])
+  ]);
+  return { data1, data2, tags1, tags2 };
+}
+
+async function buildBlendPrompt(artist1, artist2, lyrics, genre, mood, structuredStory) {
+  const centralTension = structuredStory.match(/CENTRAL TENSION[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
+  const { data1, data2, tags1, tags2 } = await fetchArtistBlendData(artist1, artist2);
+
+  let context = '';
+  if (data1) context += `\n${artist1} audio data: BPM ~${data1.bpm}, ${data1.energy}, ${data1.valence}, ${data1.acoustic}`;
+  if (tags1.length) context += `, tags: ${tags1.slice(0,5).join(', ')}`;
+  if (data2) context += `\n${artist2} audio data: BPM ~${data2.bpm}, ${data2.energy}, ${data2.valence}, ${data2.acoustic}`;
+  if (tags2.length) context += `, tags: ${tags2.slice(0,5).join(', ')}`;
+
+  const prompt = `You are writing a Suno AI style prompt for a song. Two artists are colliding to create its sound.
+
+ARTIST COLLISION: ${artist1} meets ${artist2}
+GENRE: ${genre}
+MOOD: ${mood}
+CENTRAL TENSION: ${centralTension}
+${context}
+
+SONG EXCERPT:
+${lyrics.substring(0, 400)}
+
+Write a Suno style prompt that captures this specific collision for this specific song.
+
+RULES — every one mandatory:
+- Under 200 characters total
+- No artist names, band names, song titles, musician names
+- Comma-separated descriptors only
+- The contrast between the two artists should be audible in the descriptors — quiet vs loud, organic vs synthetic, intimate vs industrial
+- Use actual BPM data if available
+- Match the emotional register of the central tension
+
+Output ONLY the style prompt. Nothing else.`;
+
+  return aiCall(prompt, 0.6, 300, null);
+}
+
 async function buildSunoPromptDataDriven(lyrics, genre, mood, structuredStory) {
   const centralTension = structuredStory.match(/CENTRAL TENSION[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
   const hasSpotify = getKey('spotify-id') && getKey('spotify-sec');
@@ -1379,9 +1461,7 @@ async function buildSunoPromptDataDriven(lyrics, genre, mood, structuredStory) {
     dataContext += `\nSpotify audio reference data for ${genre}:\n`;
     dataContext += `BPM: ${spotifyData.bpm}, Energy: ${spotifyData.energy}, Tone: ${spotifyData.valence}, Acoustic: ${spotifyData.acoustic}, Loudness: ${spotifyData.loudness}, Rhythm: ${spotifyData.danceability}\n`;
   }
-  if (lastFmTags.length) {
-    dataContext += `\nLast.fm genre tags: ${lastFmTags.join(', ')}\n`;
-  }
+  if (lastFmTags.length) dataContext += `\nLast.fm genre tags: ${lastFmTags.join(', ')}\n`;
 
   const prompt = `You are writing a Suno AI style prompt for this song. Use the real audio data below to make it accurate.
 
@@ -1407,9 +1487,11 @@ Output ONLY the style prompt. Nothing else.`;
   return aiCall(prompt, 0.6, 300, null);
 }
 
-function renderSunoCard(sunoPrompt, container, dataSource) {
+function renderSunoCard(sunoPrompt, container, dataSource, pairings, lyrics, genre, mood, structuredStory) {
   const card = document.createElement('div');
   card.style.cssText = 'margin-top:16px;border:1px solid rgba(34,211,238,0.25);border-radius:12px;overflow:hidden;';
+
+  // Header
   const header = document.createElement('div');
   header.style.cssText = 'padding:10px 16px;background:rgba(34,211,238,0.06);border-bottom:1px solid rgba(34,211,238,0.12);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;';
   const badge = dataSource
@@ -1417,30 +1499,86 @@ function renderSunoCard(sunoPrompt, container, dataSource) {
     : '<span style="font-family:Inconsolata,monospace;font-size:9px;color:#7c6a9a;letter-spacing:1px;">paste into Suno\'s style field</span>';
   header.innerHTML = `<span style="font-family:Inconsolata,monospace;font-size:10px;letter-spacing:4px;color:#22d3ee;text-transform:uppercase;">⑥ Suno Style Prompt</span>${badge}`;
   card.appendChild(header);
+
+  // Prompt body
   const body = document.createElement('div');
+  body.id = 'suno-prompt-body';
   body.style.cssText = 'padding:14px 18px;font-family:Lora,Georgia,serif;font-size:14px;line-height:1.7;color:#ede8f5;';
   body.textContent = sunoPrompt;
   card.appendChild(body);
+
+  // Copy + char count
+  let currentPrompt = sunoPrompt;
   const actions = document.createElement('div');
   actions.style.cssText = 'padding:10px 16px 14px;border-top:1px solid rgba(34,211,238,0.12);display:flex;align-items:center;gap:12px;';
   const copyBtn = document.createElement('button');
   copyBtn.textContent = 'Copy Style Prompt';
   copyBtn.style.cssText = 'padding:7px 16px;border-radius:50px;border:1.5px solid rgba(34,211,238,0.3);background:transparent;color:#22d3ee;font-family:Inconsolata,monospace;font-size:11px;letter-spacing:2px;cursor:pointer;transition:all 0.15s;';
-  copyBtn.addEventListener('click', () => {
-    const reset = () => { copyBtn.textContent = 'Copy Style Prompt'; };
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(sunoPrompt).then(() => { copyBtn.textContent = '✓ Copied!'; setTimeout(reset, 2000); });
-    } else {
-      const ta = document.createElement('textarea'); ta.value = sunoPrompt; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-      copyBtn.textContent = '✓ Copied!'; setTimeout(reset, 2000);
-    }
-  });
-  actions.appendChild(copyBtn);
   const charCount = document.createElement('span');
   charCount.style.cssText = 'font-family:Inconsolata,monospace;font-size:10px;color:#7c6a9a;letter-spacing:1px;';
   charCount.textContent = `${sunoPrompt.length} chars`;
+
+  const doCopy = () => {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(currentPrompt).then(() => { copyBtn.textContent = '✓ Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy Style Prompt'; }, 2000); });
+    } else {
+      const ta = document.createElement('textarea'); ta.value = currentPrompt; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      copyBtn.textContent = '✓ Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy Style Prompt'; }, 2000);
+    }
+  };
+  copyBtn.addEventListener('click', doCopy);
+  actions.appendChild(copyBtn);
   actions.appendChild(charCount);
   card.appendChild(actions);
+
+  // Artist pairings section
+  if (pairings && pairings.length) {
+    const pairSection = document.createElement('div');
+    pairSection.style.cssText = 'border-top:1px solid rgba(34,211,238,0.12);padding:14px 16px;';
+    const pairLabel = document.createElement('div');
+    pairLabel.style.cssText = 'font-family:Inconsolata,monospace;font-size:9px;letter-spacing:3px;color:#7c6a9a;text-transform:uppercase;margin-bottom:10px;';
+    pairLabel.textContent = 'Suggested Artist Collisions — tap to rebuild prompt';
+    pairSection.appendChild(pairLabel);
+
+    const pairGrid = document.createElement('div');
+    pairGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;';
+
+    pairings.forEach(pairing => {
+      const btn = document.createElement('button');
+      btn.textContent = pairing;
+      btn.style.cssText = 'padding:7px 13px;border-radius:8px;border:1px solid rgba(34,211,238,0.2);background:rgba(34,211,238,0.04);color:#7c6a9a;font-family:Inconsolata,monospace;font-size:10px;letter-spacing:1px;cursor:pointer;transition:all 0.15s;text-align:left;';
+      btn.addEventListener('mouseenter', () => { btn.style.borderColor = '#22d3ee'; btn.style.color = '#bae6fd'; btn.style.background = 'rgba(34,211,238,0.1)'; });
+      btn.addEventListener('mouseleave', () => { if (!btn.classList.contains('active-pair')) { btn.style.borderColor = 'rgba(34,211,238,0.2)'; btn.style.color = '#7c6a9a'; btn.style.background = 'rgba(34,211,238,0.04)'; } });
+
+      btn.addEventListener('click', async () => {
+        // Mark active
+        pairGrid.querySelectorAll('button').forEach(b => { b.classList.remove('active-pair'); b.style.borderColor = 'rgba(34,211,238,0.2)'; b.style.color = '#7c6a9a'; b.style.background = 'rgba(34,211,238,0.04)'; });
+        btn.classList.add('active-pair');
+        btn.style.borderColor = '#22d3ee'; btn.style.color = '#bae6fd'; btn.style.background = 'rgba(34,211,238,0.1)';
+        btn.textContent = '⟳ Building...';
+
+        const parts = pairing.split(' meets ');
+        const a1 = parts[0]?.trim();
+        const a2 = parts[1]?.trim();
+        try {
+          const newRaw = await buildBlendPrompt(a1, a2, lyrics, genre, mood, structuredStory);
+          const newPrompt = newRaw.replace(/^["']|["']$/g, '').trim();
+          currentPrompt = newPrompt;
+          body.textContent = newPrompt;
+          charCount.textContent = `${newPrompt.length} chars`;
+          header.querySelector('span:last-child').textContent = '';
+          header.querySelector('span:last-child').innerHTML = `<span style="font-family:Inconsolata,monospace;font-size:9px;color:#34d399;letter-spacing:1px;border:1px solid rgba(52,211,153,0.3);border-radius:4px;padding:2px 6px;">✦ ${a1} × ${a2}</span>`;
+        } catch (e) { body.textContent = 'Failed to build blend — try again'; }
+        btn.textContent = pairing;
+      });
+
+      pairGrid.appendChild(btn);
+    });
+
+    pairSection.appendChild(pairGrid);
+    card.appendChild(pairSection);
+  }
+
   container.appendChild(card);
 }
 
@@ -1449,9 +1587,13 @@ async function runStep6() {
   setPipelineStep(6);
   const hasSpotify = getKey('spotify-id') && getKey('spotify-sec');
   const hasLastFm = getKey('lastfm');
-  setStatus(hasSpotify || hasLastFm ? '⑥ Fetching audio data + building Suno prompt...' : '⑥ Building your Suno style prompt...');
+  setStatus(hasSpotify || hasLastFm ? '⑥ Fetching audio data + building Suno prompt...' : '⑥ Building Suno prompt + artist suggestions...');
   try {
-    const sunoRaw = await buildSunoPromptDataDriven(finalSong, genre, mood, structuredStory);
+    // Run base prompt and artist suggestions in parallel
+    const [sunoRaw, pairings] = await Promise.all([
+      buildSunoPromptDataDriven(finalSong, genre, mood, structuredStory),
+      suggestArtistPairings(finalSong, genre, mood, structuredStory)
+    ]);
     const sunoPrompt = sunoRaw.replace(/^["']|["']$/g, '').trim();
     hidePipeline(); clearStatus();
     currentSong = { lyrics: finalSong, genre, mood, theme, structuredStory, userLines };
@@ -1462,7 +1604,7 @@ async function runStep6() {
       if (weakSections.length) renderWeakBanner(weakSections, outputBox);
       if (pass1Grades?.length) renderGradeCard(pass1Grades, outputBox, 'Pass 1');
       if (pass2Grades?.length) renderGradeCard(pass2Grades, outputBox, 'Pass 2');
-      renderSunoCard(sunoPrompt, outputBox, hasSpotify || hasLastFm);
+      renderSunoCard(sunoPrompt, outputBox, hasSpotify || hasLastFm, pairings, finalSong, genre, mood, structuredStory);
     }
     saveToHistory({ lyrics: finalSong, genre, mood, theme, structuredStory, userLines });
     document.getElementById('generate-btn').disabled = false;
