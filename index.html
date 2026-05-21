@@ -854,12 +854,32 @@ const GENRE_EXAMPLES_POLISH = {
 "You are worthy of all my praise" — correct but zero encounter with why.`
 };
 
+// ─── BANNED VOCABULARY ────────────────────────────────────────────────────────
+// These are default AI images that appear across songs regardless of source material.
+// They are only permitted if they appear verbatim in the source material itself.
+
+const BANNED_VOCABULARY = [
+  'coffee', '2AM', '2 AM', 'two AM', 'two a.m.', 'kitchen', 'burning pot',
+  'legal pad', 'clock radio', 'fluorescent light', 'fluorescent hum',
+  'burning coffee', 'coffee ring', 'coffee burns', 'coffee burning',
+  'late night kitchen', '3AM', '3 AM', 'three AM'
+];
+
+function getBannedVocabNote(theme) {
+  // Only ban words not present in the source material
+  const lower = (theme || '').toLowerCase();
+  const activeBanned = BANNED_VOCABULARY.filter(w => !lower.includes(w.toLowerCase()));
+  if (!activeBanned.length) return '';
+  return `\n─── BANNED VOCABULARY ───────────────────────────────────────────────────────────\nThese images are AI defaults that appear across too many songs. Do NOT use them unless they appear verbatim in the source material above:\n${activeBanned.map(w => `- "${w}"`).join('\n')}\nIf you reach for one of these, stop and find the image that actually belongs to THIS song's world.\n`;
+}
+
 // ─── PROMPT BUILDERS ─────────────────────────────────────────────────────────
 
 function buildStructurePrompt(theme, userLines) {
   const sacredNote = userLines
     ? `\nSACRED LINES — must appear verbatim in the final song:\n${userLines}\n`
     : '';
+  const bannedNote = getBannedVocabNote(theme);
 
   return `You are a creative analyst for a songwriter who writes at the level of Phoebe Bridgers, Lana Del Rey, or early Taylor Swift — artists where the lyrics make you stop and think "how did they find those exact words."
 
@@ -868,6 +888,7 @@ Your job is to find the soul of this material before a single lyric is written.
 ${sacredNote}
 RAW MATERIAL:
 ${theme}
+${bannedNote}
 
 ─── WHAT TO FIND ───────────────────────────────────────────────────────────────
 
@@ -907,15 +928,15 @@ function buildWritePrompt(structuredStory, genre, mood, userLines) {
   const sacred = userLines
     ? `\nSACRED LINES — these appear EXACTLY as written, no exceptions:\n${userLines}\n`
     : '';
-
   const examples = GENRE_EXAMPLES_WRITE[genre] || '';
+  const bannedNote = getBannedVocabNote(pipelineContext.theme || '');
 
   return `You are writing a song that a listener will remember for years. Not because it's technically impressive — because it's true. Because somewhere in it there's a line they've never heard before that names something they've always felt.
 
 GENRE: ${genre}
 MOOD: ${mood}
 ${sacred}
-
+${bannedNote}
 YOUR MATERIAL:
 ${structuredStory}
 
@@ -979,12 +1000,13 @@ function buildPolishPrompt(draft, genre, structuredStory, userLines) {
   const trueSubject = structuredStory.match(/ONE TRUE SUBJECT[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
 
   const badExamples = GENRE_EXAMPLES_POLISH[genre] || '';
+  const bannedNote = getBannedVocabNote(pipelineContext.theme || '');
 
   return `You are a ruthless editor. Your only standard is: does this line make the listener feel something they haven't felt before? Not "is it well-crafted." Not "does it follow the rules." Does it land.
 
 GENRE: ${genre}
 ${sacred}
-
+${bannedNote}
 THE SONG'S CENTRAL TENSION: ${centralTension}
 THE SONG'S ONE TRUE SUBJECT: ${trueSubject}
 
