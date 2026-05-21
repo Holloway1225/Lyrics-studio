@@ -250,6 +250,7 @@
     <div class="pipeline-step" id="step-3">③ Killing every weak line...</div>
     <div class="pipeline-step" id="step-4">④ Grading and fixing what's still broken...</div>
     <div class="pipeline-step" id="step-5">⑤ Second pass — grading the fixes...</div>
+    <div class="pipeline-step" id="step-6">⑥ Building your Suno style prompt...</div>
   </div>
 
   <div class="checkpoint-panel" id="blueprint-panel">
@@ -529,7 +530,7 @@ function setStatus(msg, isError = false) { const el = document.getElementById('s
 function clearStatus() { document.getElementById('status').className = 'status'; }
 function showModel(msg) { const el = document.getElementById('active-model'); el.textContent = msg; el.style.display = 'block'; }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 const slowTimers = {};
 
 function setPipelineStep(n, paused = false) {
@@ -1269,13 +1270,86 @@ async function runStep5() {
   try {
     const gradeRaw2 = await aiCall(buildGradePrompt(pass1Song, genre, structuredStory), 0.4, 2800, currentController?.signal);
     const { grades, finalSong } = parseGradeOutput(gradeRaw2);
+    pipelineContext.pass2Grades = grades;
+    pipelineContext.finalSong = finalSong;
+    await runStep6();
+  } catch (e) { handlePipelineError(e); }
+}
+
+function buildSunoPrompt(lyrics, genre, mood, structuredStory) {
+  const centralTension = structuredStory.match(/CENTRAL TENSION[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
+  return `You are writing a Suno AI style prompt for this song. Suno uses style prompts to set the sonic world of a track.
+
+GENRE: ${genre}
+MOOD: ${mood}
+CENTRAL TENSION: ${centralTension}
+
+LYRICS (first verse and chorus only, for reference):
+${lyrics.substring(0, 600)}
+
+YOUR JOB:
+Write a Suno style prompt that captures the exact sonic world this song lives in.
+
+RULES — every one is mandatory:
+- Under 200 characters total (Suno's style field limit)
+- No band names, no artist names, no song titles
+- Comma-separated descriptors only — no sentences, no explanations
+- Include: tempo feel, instrumentation, vocal style, production texture, emotional register
+- Be specific: "distorted drop-tuned guitar" not just "guitar", "cold reverb-heavy vocal" not just "vocals"
+- Match the emotional register of the lyrics exactly — not just the genre label
+
+Output ONLY the style prompt. Nothing else. No preamble, no label, no quotes.`;
+}
+
+function renderSunoCard(sunoPrompt, container) {
+  const card = document.createElement('div');
+  card.style.cssText = 'margin-top:16px;border:1px solid rgba(34,211,238,0.25);border-radius:12px;overflow:hidden;';
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:10px 16px;background:rgba(34,211,238,0.06);border-bottom:1px solid rgba(34,211,238,0.12);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;';
+  header.innerHTML = '<span style="font-family:Inconsolata,monospace;font-size:10px;letter-spacing:4px;color:#22d3ee;text-transform:uppercase;">⑥ Suno Style Prompt</span><span style="font-family:Inconsolata,monospace;font-size:9px;color:#7c6a9a;letter-spacing:1px;">paste into Suno\'s style field</span>';
+  card.appendChild(header);
+  const body = document.createElement('div');
+  body.style.cssText = 'padding:14px 18px;font-family:Lora,Georgia,serif;font-size:14px;line-height:1.7;color:#ede8f5;';
+  body.textContent = sunoPrompt;
+  card.appendChild(body);
+  const actions = document.createElement('div');
+  actions.style.cssText = 'padding:10px 16px 14px;border-top:1px solid rgba(34,211,238,0.12);';
+  const copyBtn = document.createElement('button');
+  copyBtn.textContent = 'Copy Style Prompt';
+  copyBtn.style.cssText = 'padding:7px 16px;border-radius:50px;border:1.5px solid rgba(34,211,238,0.3);background:transparent;color:#22d3ee;font-family:Inconsolata,monospace;font-size:11px;letter-spacing:2px;cursor:pointer;transition:all 0.15s;';
+  copyBtn.addEventListener('click', () => {
+    const reset = () => { copyBtn.textContent = 'Copy Style Prompt'; copyBtn.style.color = '#22d3ee'; };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(sunoPrompt).then(() => { copyBtn.textContent = '✓ Copied!'; setTimeout(reset, 2000); });
+    } else {
+      const ta = document.createElement('textarea'); ta.value = sunoPrompt; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      copyBtn.textContent = '✓ Copied!'; setTimeout(reset, 2000);
+    }
+  });
+  actions.appendChild(copyBtn);
+  const charCount = document.createElement('span');
+  charCount.style.cssText = 'font-family:Inconsolata,monospace;font-size:10px;color:#7c6a9a;letter-spacing:1px;margin-left:12px;';
+  charCount.textContent = `${sunoPrompt.length} chars`;
+  actions.appendChild(charCount);
+  card.appendChild(actions);
+  container.appendChild(card);
+}
+
+async function runStep6() {
+  const { finalSong, genre, mood, structuredStory, userLines, theme, pass1Grades, pass2Grades } = pipelineContext;
+  setPipelineStep(6);
+  setStatus('⑥ Building your Suno style prompt...');
+  try {
+    const sunoRaw = await aiCall(buildSunoPrompt(finalSong, genre, mood, structuredStory), 0.6, 300, currentController?.signal);
+    const sunoPrompt = sunoRaw.replace(/^["']|["']$/g, '').trim();
     hidePipeline(); clearStatus();
     currentSong = { lyrics: finalSong, genre, mood, theme, structuredStory, userLines };
     renderOutputBox(finalSong, genre, theme, structuredStory);
     const outputBox = document.querySelector('#output .output-box');
     if (outputBox) {
-      if (pipelineContext.pass1Grades?.length) renderGradeCard(pipelineContext.pass1Grades, outputBox, 'Pass 1');
-      if (grades.length) renderGradeCard(grades, outputBox, 'Pass 2');
+      if (pass1Grades?.length) renderGradeCard(pass1Grades, outputBox, 'Pass 1');
+      if (pass2Grades?.length) renderGradeCard(pass2Grades, outputBox, 'Pass 2');
+      renderSunoCard(sunoPrompt, outputBox);
     }
     saveToHistory({ lyrics: finalSong, genre, mood, theme, structuredStory, userLines });
     document.getElementById('generate-btn').disabled = false;
