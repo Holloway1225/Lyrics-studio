@@ -249,6 +249,7 @@
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
     <div class="pipeline-step" id="step-3">③ Killing every weak line...</div>
     <div class="pipeline-step" id="step-4">④ Grading and fixing what's still broken...</div>
+    <div class="pipeline-step" id="step-5">⑤ Second pass — grading the fixes...</div>
   </div>
 
   <div class="checkpoint-panel" id="blueprint-panel">
@@ -528,7 +529,7 @@ function setStatus(msg, isError = false) { const el = document.getElementById('s
 function clearStatus() { document.getElementById('status').className = 'status'; }
 function showModel(msg) { const el = document.getElementById('active-model'); el.textContent = msg; el.style.display = 'block'; }
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 const slowTimers = {};
 
 function setPipelineStep(n, paused = false) {
@@ -1226,13 +1227,13 @@ function parseGradeOutput(raw) {
   return { grades, finalSong };
 }
 
-function renderGradeCard(grades, container) {
+function renderGradeCard(grades, container, passLabel) {
   if (!grades.length) return;
   const card = document.createElement('div');
   card.style.cssText = 'margin-top:16px;border:1px solid rgba(168,85,247,0.2);border-radius:12px;overflow:hidden;';
   const header = document.createElement('div');
   header.style.cssText = 'padding:10px 16px;background:rgba(168,85,247,0.06);border-bottom:1px solid rgba(168,85,247,0.12);font-family:Inconsolata,monospace;font-size:10px;letter-spacing:4px;color:#a855f7;text-transform:uppercase;';
-  header.textContent = '④ Section Grades';
+  header.textContent = passLabel ? `④ Grades — ${passLabel}` : '④ Section Grades';
   card.appendChild(header);
   const list = document.createElement('div');
   list.style.cssText = 'padding:12px 16px;display:flex;flex-direction:column;gap:6px;';
@@ -1255,12 +1256,27 @@ async function runStep4() {
   try {
     const gradeRaw = await aiCall(buildGradePrompt(polished, genre, structuredStory), 0.4, 2800, currentController?.signal);
     const { grades, finalSong } = parseGradeOutput(gradeRaw);
+    pipelineContext.pass1Grades = grades;
+    pipelineContext.pass1Song = finalSong;
+    await runStep5();
+  } catch (e) { handlePipelineError(e); }
+}
+
+async function runStep5() {
+  const { pass1Song, genre, structuredStory, userLines, theme, mood } = pipelineContext;
+  setPipelineStep(5);
+  setStatus('⑤ Second pass — grading the fixes...');
+  try {
+    const gradeRaw2 = await aiCall(buildGradePrompt(pass1Song, genre, structuredStory), 0.4, 2800, currentController?.signal);
+    const { grades, finalSong } = parseGradeOutput(gradeRaw2);
     hidePipeline(); clearStatus();
     currentSong = { lyrics: finalSong, genre, mood, theme, structuredStory, userLines };
     renderOutputBox(finalSong, genre, theme, structuredStory);
-    // Append grade card inside the output box
     const outputBox = document.querySelector('#output .output-box');
-    if (outputBox && grades.length) renderGradeCard(grades, outputBox);
+    if (outputBox) {
+      if (pipelineContext.pass1Grades?.length) renderGradeCard(pipelineContext.pass1Grades, outputBox, 'Pass 1');
+      if (grades.length) renderGradeCard(grades, outputBox, 'Pass 2');
+    }
     saveToHistory({ lyrics: finalSong, genre, mood, theme, structuredStory, userLines });
     document.getElementById('generate-btn').disabled = false;
     lockUI(false);
