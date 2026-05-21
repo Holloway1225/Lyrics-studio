@@ -1028,6 +1028,35 @@ No other commentary.`;
 
 // ─── REWRITE SECTION ─────────────────────────────────────────────────────────
 
+async function gradeSingleSection(section, lyrics, genre, structuredStory) {
+  const centralTension = structuredStory.match(/CENTRAL TENSION[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
+  const keyImagesMatch = structuredStory.match(/KEY IMAGES([\s\S]*?)(?:\nSACRED|\nSEED|\n[A-Z]{4,}|$)/i);
+  const keyImages = keyImagesMatch ? keyImagesMatch[1].trim() : '';
+  const prompt = `Grade ONLY the [${section}] section of this song from 1-10. One sentence reason.
+
+GENRE: ${genre}
+CENTRAL TENSION: ${centralTension}
+KEY IMAGES: ${keyImages}
+
+FULL SONG:
+${lyrics}
+
+Ask: does every line orbit the central tension? Is there at least one line only this song could contain? Does it show rather than declare?
+
+Output ONLY this format:
+SCORE: [number]
+REASON: [one sentence]`;
+  try {
+    const raw = await aiCall(prompt, 0.3, 150, null);
+    const scoreMatch = raw.match(/SCORE:\s*(\d+)/i);
+    const reasonMatch = raw.match(/REASON:\s*(.+)/i);
+    return {
+      score: scoreMatch ? parseInt(scoreMatch[1]) : 5,
+      reason: reasonMatch ? reasonMatch[1].trim() : 'No reason given'
+    };
+  } catch { return { score: 5, reason: 'Grade unavailable' }; }
+}
+
 async function rewriteSection(section, currentLyrics, genre, mood, structuredStory) {
   const keyImagesMatch = structuredStory.match(/KEY IMAGES([\s\S]*?)(?:\nSACRED|\nSEED|\n[A-Z]{4,}|$)/i);
   const keyImages = keyImagesMatch ? keyImagesMatch[1].trim() : '';
@@ -1104,6 +1133,7 @@ function renderOutputBox(lyrics, genre, theme, structuredStory) {
           </select>
           <button class="rewrite-btn" id="rewrite-btn">↻ Rewrite</button>
         </div>
+        <div id="rewrite-delta" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-family:Inconsolata,monospace;font-size:11px;letter-spacing:1px;line-height:1.6;"></div>
       </div>
     </div>`;
 
@@ -1113,21 +1143,28 @@ function renderOutputBox(lyrics, genre, theme, structuredStory) {
   document.getElementById('rewrite-btn').addEventListener('click', async () => {
     const section = document.getElementById('rewrite-select').value;
     const btn = document.getElementById('rewrite-btn');
-    btn.disabled = true; btn.textContent = '...';
+    const deltaEl = document.getElementById('rewrite-delta');
+    btn.disabled = true; btn.textContent = 'Grading...';
+    deltaEl.style.display = 'none';
     document.getElementById('weak-flag').classList.remove('visible');
+
     try {
       const currentLyrics = document.getElementById('lyrics-display').innerText || lyrics;
       const mood = getSelected('mood-group');
+
+      // Grade the current section before rewriting
+      btn.textContent = 'Grading original...';
+      const beforeScore = await gradeSingleSection(section, currentLyrics, genre, structuredStory);
+
+      // Now rewrite
+      btn.textContent = 'Rewriting...';
       const newSection = await rewriteSection(section, currentLyrics, genre, mood, structuredStory);
+
       const display = document.getElementById('lyrics-display');
       const currentText = display.innerText || lyrics;
       const sectionLabel = `[${section}]`;
       const nextLabels = ['[Verse 1]','[Pre-Chorus]','[Chorus]','[Verse 2]','[Bridge]','[Outro]'].filter(l => l !== sectionLabel);
-
-      // Extract just the new section content (strip the label line from AI response)
       const newSectionContent = newSection.trim();
-
-      // Replace ALL instances of this section in the song
       let updatedText = currentText;
       const sectionRegex = new RegExp(
         escapeRegex(sectionLabel) + '([\\s\\S]*?)(?=' + nextLabels.map(escapeRegex).join('|') + '|$)',
@@ -1135,13 +1172,30 @@ function renderOutputBox(lyrics, genre, theme, structuredStory) {
       );
       updatedText = updatedText.replace(sectionRegex, newSectionContent + '\n\n');
       updatedText = updatedText.trim();
-
       display.textContent = updatedText;
       if (currentSong) currentSong.lyrics = updatedText;
       document.getElementById('copy-lyrics').onclick = function () { copyText(updatedText, this); };
       document.getElementById('download-lyrics').onclick = () => downloadLyrics(updatedText, genre, theme);
-    } catch (e) { if (e.name !== 'AbortError') setStatus('⚠ Rewrite failed: ' + e.message, true); }
-    finally { btn.disabled = false; btn.textContent = '↻ Rewrite'; }
+
+      // Grade the new section
+      btn.textContent = 'Grading rewrite...';
+      const afterScore = await gradeSingleSection(section, updatedText, genre, structuredStory);
+
+      // Show delta
+      const diff = afterScore.score - beforeScore.score;
+      const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+      const color = diff > 0 ? '#34d399' : diff < 0 ? '#f87171' : '#fbbf24';
+      const bgColor = diff > 0 ? 'rgba(52,211,153,0.06)' : diff < 0 ? 'rgba(248,113,113,0.06)' : 'rgba(251,191,36,0.06)';
+      const borderColor = diff > 0 ? 'rgba(52,211,153,0.3)' : diff < 0 ? 'rgba(248,113,113,0.3)' : 'rgba(251,191,36,0.3)';
+      const verdict = diff > 0 ? 'Better' : diff < 0 ? 'Worse — consider reverting' : 'About the same';
+      deltaEl.style.cssText = `display:block;margin-top:10px;padding:10px 14px;border-radius:8px;font-family:Inconsolata,monospace;font-size:11px;letter-spacing:1px;line-height:1.8;background:${bgColor};border:1px solid ${borderColor};color:${color};`;
+      deltaEl.innerHTML = `<div style="font-size:13px;font-weight:600;margin-bottom:4px;">${section}: ${beforeScore.score}/10 → ${afterScore.score}/10 ${arrow} <span style="font-size:10px;opacity:0.8;">${verdict}</span></div><div style="color:rgba(237,232,245,0.6);font-size:10px;">Before: ${beforeScore.reason}</div><div style="color:rgba(237,232,245,0.6);font-size:10px;margin-top:2px;">After: ${afterScore.reason}</div>`;
+
+    } catch (e) {
+      if (e.name !== 'AbortError') setStatus('⚠ Rewrite failed: ' + e.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = '↻ Rewrite';
+    }
   });
 }
 
@@ -1576,6 +1630,43 @@ function renderSunoCard(sunoPrompt, container, dataSource, pairings, lyrics, gen
     });
 
     pairSection.appendChild(pairGrid);
+
+    // Manual artist input
+    const manualRow = document.createElement('div');
+    manualRow.style.cssText = 'display:flex;gap:8px;margin-top:12px;align-items:center;';
+    const manualInput = document.createElement('input');
+    manualInput.type = 'text';
+    manualInput.placeholder = 'Artist A meets Artist B';
+    manualInput.style.cssText = 'flex:1;background:rgba(0,0,0,0.3);border:1px solid rgba(34,211,238,0.2);border-radius:8px;padding:8px 12px;color:#ede8f5;font-family:Inconsolata,monospace;font-size:11px;outline:none;-webkit-appearance:none;';
+    manualInput.addEventListener('focus', () => { manualInput.style.borderColor = '#22d3ee'; });
+    manualInput.addEventListener('blur', () => { manualInput.style.borderColor = 'rgba(34,211,238,0.2)'; });
+    const manualBtn = document.createElement('button');
+    manualBtn.textContent = '→ Build';
+    manualBtn.style.cssText = 'padding:8px 14px;border-radius:8px;border:1px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.06);color:#22d3ee;font-family:Inconsolata,monospace;font-size:10px;letter-spacing:2px;cursor:pointer;white-space:nowrap;';
+    manualBtn.addEventListener('click', async () => {
+      const val = manualInput.value.trim();
+      if (!val) return;
+      const sep = val.toLowerCase().includes(' meets ') ? ' meets ' : val.includes(' x ') ? ' x ' : val.includes(' + ') ? ' + ' : null;
+      if (!sep) { manualInput.style.borderColor = '#f87171'; setTimeout(() => { manualInput.style.borderColor = 'rgba(34,211,238,0.2)'; }, 1500); return; }
+      const idx = val.toLowerCase().indexOf(sep.toLowerCase());
+      const a1 = val.slice(0, idx).trim();
+      const a2 = val.slice(idx + sep.length).trim();
+      manualBtn.textContent = '⟳ Building...'; manualBtn.disabled = true;
+      try {
+        const newRaw = await buildBlendPrompt(a1, a2, lyrics, genre, mood, structuredStory);
+        const newPrompt = newRaw.replace(/^["']|["']$/g, '').trim();
+        currentPrompt = newPrompt;
+        body.textContent = newPrompt;
+        charCount.textContent = `${newPrompt.length} chars`;
+        header.querySelector('span:last-child').innerHTML = `<span style="font-family:Inconsolata,monospace;font-size:9px;color:#34d399;letter-spacing:1px;border:1px solid rgba(52,211,153,0.3);border-radius:4px;padding:2px 6px;">✦ ${a1} × ${a2}</span>`;
+        pairGrid.querySelectorAll('button').forEach(b => { b.classList.remove('active-pair'); b.style.borderColor = 'rgba(34,211,238,0.2)'; b.style.color = '#7c6a9a'; b.style.background = 'rgba(34,211,238,0.04)'; });
+      } catch (e) { body.textContent = 'Failed to build blend — try again'; }
+      manualBtn.textContent = '→ Build'; manualBtn.disabled = false;
+    });
+    manualRow.appendChild(manualInput);
+    manualRow.appendChild(manualBtn);
+    pairSection.appendChild(manualRow);
+
     card.appendChild(pairSection);
   }
 
