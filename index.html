@@ -173,7 +173,21 @@
       <div class="api-label">GEMINI</div>
       <input type="password" id="api-gemini" class="api-input" placeholder="AIza..." aria-label="Gemini API key">
     </div>
-    <div class="api-hint">Claude Sonnet is used when your Anthropic key is present — best quality. Groq or Gemini used as fallback.<br>Anthropic: console.anthropic.com · Groq: console.groq.com · Gemini: aistudio.google.com</div>
+    <div style="height:1px;background:rgba(168,85,247,0.1);margin:12px 0;"></div>
+    <div style="font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Suno Prompt Keys <span style="color:rgba(124,106,154,0.5);font-size:8px;letter-spacing:1px;">optional — enables data-driven Suno prompts</span></div>
+    <div class="api-row">
+      <div class="api-label">SPOTIFY ID</div>
+      <input type="password" id="api-spotify-id" class="api-input" placeholder="Client ID..." aria-label="Spotify Client ID">
+    </div>
+    <div class="api-row">
+      <div class="api-label">SPOTIFY SEC</div>
+      <input type="password" id="api-spotify-sec" class="api-input" placeholder="Client Secret..." aria-label="Spotify Client Secret">
+    </div>
+    <div class="api-row">
+      <div class="api-label">LAST.FM</div>
+      <input type="password" id="api-lastfm" class="api-input" placeholder="API Key..." aria-label="Last.fm API key">
+    </div>
+    <div class="api-hint">Claude Sonnet is used when your Anthropic key is present — best quality. Groq or Gemini used as fallback.<br>Anthropic: console.anthropic.com · Groq: console.groq.com · Gemini: aistudio.google.com<br>Spotify: developer.spotify.com · Last.fm: last.fm/api</div>
     <div class="api-warning">⚠ Keys are stored in your browser only. Do not use on a shared or public device.</div>
     <div class="api-saved" id="api-saved">✓ Keys saved to this browser</div>
     <div class="active-model" id="active-model"></div>
@@ -413,8 +427,13 @@ document.getElementById('quality-gate-input').addEventListener('input', () => {
 });
 
 window.addEventListener('load', () => {
-  ['anthropic', 'groq', 'gemini'].forEach(k => { const v = localStorage.getItem(`key_${k}`); if (v) document.getElementById(`api-${k}`).value = v; });
-  if (localStorage.getItem('key_anthropic') || localStorage.getItem('key_groq') || localStorage.getItem('key_gemini')) { document.getElementById('api-saved').style.display = 'block'; }
+  ['anthropic', 'groq', 'gemini', 'spotify-id', 'spotify-sec', 'lastfm'].forEach(k => {
+    const el = document.getElementById(`api-${k}`);
+    if (el) { const v = localStorage.getItem(`key_${k}`); if (v) el.value = v; }
+  });
+  if (['anthropic','groq','gemini','spotify-id','spotify-sec','lastfm'].some(k => localStorage.getItem(`key_${k}`))) {
+    document.getElementById('api-saved').style.display = 'block';
+  }
   const savedGenre = localStorage.getItem('pref_genre');
   const savedMood  = localStorage.getItem('pref_mood');
   if (savedGenre) restoreToggle('genre-group', savedGenre);
@@ -431,7 +450,10 @@ function restoreToggle(groupId, value) {
 }
 
 document.getElementById('save-keys-btn').addEventListener('click', () => {
-  ['anthropic', 'groq', 'gemini'].forEach(k => { const v = document.getElementById(`api-${k}`).value.trim(); if (v) localStorage.setItem(`key_${k}`, v); });
+  ['anthropic', 'groq', 'gemini', 'spotify-id', 'spotify-sec', 'lastfm'].forEach(k => {
+    const v = document.getElementById(`api-${k}`).value.trim();
+    if (v) localStorage.setItem(`key_${k}`, v);
+  });
   document.getElementById('api-saved').style.display = 'block';
 });
 
@@ -1276,49 +1298,136 @@ async function runStep5() {
   } catch (e) { handlePipelineError(e); }
 }
 
-function buildSunoPrompt(lyrics, genre, mood, structuredStory) {
+// ─── SPOTIFY + LAST.FM FOR SUNO STEP ─────────────────────────────────────────
+
+async function getSpotifyToken() {
+  const id = getKey('spotify-id');
+  const sec = getKey('spotify-sec');
+  if (!id || !sec) return null;
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Authorization': `Basic ${btoa(`${id}:${sec}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'grant_type=client_credentials'
+    });
+    const data = await res.json();
+    return data.access_token || null;
+  } catch (e) { return null; }
+}
+
+async function getSpotifyGenreData(genreQuery) {
+  try {
+    const token = await getSpotifyToken();
+    if (!token) return null;
+    const headers = { 'Authorization': `Bearer ${token}` };
+    const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(genreQuery)}&type=track&limit=5`, { headers });
+    const data = await res.json();
+    const tracks = data?.tracks?.items;
+    if (!tracks?.length) return null;
+    const trackId = tracks[0].id;
+    const featRes = await fetch(`https://api.spotify.com/v1/audio-features/${trackId}`, { headers });
+    const f = await featRes.json();
+    if (!f) return null;
+    return {
+      bpm: Math.round(f.tempo),
+      energy: f.energy > 0.8 ? 'extremely high energy' : f.energy > 0.6 ? 'high energy' : f.energy > 0.4 ? 'moderate energy' : 'low energy',
+      valence: f.valence > 0.7 ? 'bright and uplifting' : f.valence > 0.5 ? 'positive' : f.valence < 0.3 ? 'dark and melancholic' : 'neutral',
+      acoustic: f.acousticness > 0.7 ? 'highly acoustic' : f.acousticness > 0.3 ? 'semi-acoustic' : 'fully electric/electronic',
+      loudness: `${f.loudness.toFixed(1)} dB`,
+      danceability: f.danceability > 0.7 ? 'highly rhythmic' : f.danceability > 0.4 ? 'moderately rhythmic' : 'non-groove focused'
+    };
+  } catch (e) { return null; }
+}
+
+async function getLastFmGenreTags(genre) {
+  try {
+    const key = getKey('lastfm');
+    if (!key) return [];
+    const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=tag.gettoptracks&tag=${encodeURIComponent(genre)}&api_key=${key}&format=json&limit=3`);
+    const data = await res.json();
+    const tracks = data?.tracks?.track || [];
+    const tagSets = await Promise.all(tracks.slice(0,2).map(async t => {
+      try {
+        const r = await fetch(`https://ws.audioscrobbler.com/2.0/?method=track.gettoptags&artist=${encodeURIComponent(t.artist?.name||'')}&track=${encodeURIComponent(t.name||'')}&api_key=${key}&format=json`);
+        const d = await r.json();
+        return d?.toptags?.tag?.slice(0,5).map(tg => tg.name) || [];
+      } catch { return []; }
+    }));
+    return [...new Set(tagSets.flat())].slice(0, 10);
+  } catch (e) { return []; }
+}
+
+async function buildSunoPromptDataDriven(lyrics, genre, mood, structuredStory) {
   const centralTension = structuredStory.match(/CENTRAL TENSION[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
-  return `You are writing a Suno AI style prompt for this song. Suno uses style prompts to set the sonic world of a track.
+  const hasSpotify = getKey('spotify-id') && getKey('spotify-sec');
+  const hasLastFm = getKey('lastfm');
+
+  let spotifyData = null;
+  let lastFmTags = [];
+
+  if (hasSpotify || hasLastFm) {
+    const [sd, tags] = await Promise.all([
+      hasSpotify ? getSpotifyGenreData(`${genre} ${mood.split(',')[0]}`) : Promise.resolve(null),
+      hasLastFm ? getLastFmGenreTags(genre) : Promise.resolve([])
+    ]);
+    spotifyData = sd;
+    lastFmTags = tags;
+  }
+
+  let dataContext = '';
+  if (spotifyData) {
+    dataContext += `\nSpotify audio reference data for ${genre}:\n`;
+    dataContext += `BPM: ${spotifyData.bpm}, Energy: ${spotifyData.energy}, Tone: ${spotifyData.valence}, Acoustic: ${spotifyData.acoustic}, Loudness: ${spotifyData.loudness}, Rhythm: ${spotifyData.danceability}\n`;
+  }
+  if (lastFmTags.length) {
+    dataContext += `\nLast.fm genre tags: ${lastFmTags.join(', ')}\n`;
+  }
+
+  const prompt = `You are writing a Suno AI style prompt for this song. Use the real audio data below to make it accurate.
 
 GENRE: ${genre}
 MOOD: ${mood}
 CENTRAL TENSION: ${centralTension}
+${dataContext}
+LYRICS (first verse and chorus, for reference):
+${lyrics.substring(0, 500)}
 
-LYRICS (first verse and chorus only, for reference):
-${lyrics.substring(0, 600)}
+RULES — every one mandatory:
+- Under 200 characters total
+- No artist names, band names, song titles, musician names
+- Comma-separated descriptors only — no sentences
+- Include: tempo (use actual BPM if available), instrumentation, vocal style, production texture, emotional register
+- Be specific: "drop-tuned distorted guitar" not "guitar", "cold reverb baritone" not "vocals"
+- Use the Spotify data to inform tempo and energy descriptors
+- Use Last.fm tags to inform genre texture descriptors
+- Match the emotional register of the central tension exactly
 
-YOUR JOB:
-Write a Suno style prompt that captures the exact sonic world this song lives in.
+Output ONLY the style prompt. Nothing else.`;
 
-RULES — every one is mandatory:
-- Under 200 characters total (Suno's style field limit)
-- No band names, no artist names, no song titles
-- Comma-separated descriptors only — no sentences, no explanations
-- Include: tempo feel, instrumentation, vocal style, production texture, emotional register
-- Be specific: "distorted drop-tuned guitar" not just "guitar", "cold reverb-heavy vocal" not just "vocals"
-- Match the emotional register of the lyrics exactly — not just the genre label
-
-Output ONLY the style prompt. Nothing else. No preamble, no label, no quotes.`;
+  return aiCall(prompt, 0.6, 300, null);
 }
 
-function renderSunoCard(sunoPrompt, container) {
+function renderSunoCard(sunoPrompt, container, dataSource) {
   const card = document.createElement('div');
   card.style.cssText = 'margin-top:16px;border:1px solid rgba(34,211,238,0.25);border-radius:12px;overflow:hidden;';
   const header = document.createElement('div');
   header.style.cssText = 'padding:10px 16px;background:rgba(34,211,238,0.06);border-bottom:1px solid rgba(34,211,238,0.12);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;';
-  header.innerHTML = '<span style="font-family:Inconsolata,monospace;font-size:10px;letter-spacing:4px;color:#22d3ee;text-transform:uppercase;">⑥ Suno Style Prompt</span><span style="font-family:Inconsolata,monospace;font-size:9px;color:#7c6a9a;letter-spacing:1px;">paste into Suno\'s style field</span>';
+  const badge = dataSource
+    ? '<span style="font-family:Inconsolata,monospace;font-size:9px;color:#34d399;letter-spacing:1px;border:1px solid rgba(52,211,153,0.3);border-radius:4px;padding:2px 6px;">✦ Spotify + Last.fm data</span>'
+    : '<span style="font-family:Inconsolata,monospace;font-size:9px;color:#7c6a9a;letter-spacing:1px;">paste into Suno\'s style field</span>';
+  header.innerHTML = `<span style="font-family:Inconsolata,monospace;font-size:10px;letter-spacing:4px;color:#22d3ee;text-transform:uppercase;">⑥ Suno Style Prompt</span>${badge}`;
   card.appendChild(header);
   const body = document.createElement('div');
   body.style.cssText = 'padding:14px 18px;font-family:Lora,Georgia,serif;font-size:14px;line-height:1.7;color:#ede8f5;';
   body.textContent = sunoPrompt;
   card.appendChild(body);
   const actions = document.createElement('div');
-  actions.style.cssText = 'padding:10px 16px 14px;border-top:1px solid rgba(34,211,238,0.12);';
+  actions.style.cssText = 'padding:10px 16px 14px;border-top:1px solid rgba(34,211,238,0.12);display:flex;align-items:center;gap:12px;';
   const copyBtn = document.createElement('button');
   copyBtn.textContent = 'Copy Style Prompt';
   copyBtn.style.cssText = 'padding:7px 16px;border-radius:50px;border:1.5px solid rgba(34,211,238,0.3);background:transparent;color:#22d3ee;font-family:Inconsolata,monospace;font-size:11px;letter-spacing:2px;cursor:pointer;transition:all 0.15s;';
   copyBtn.addEventListener('click', () => {
-    const reset = () => { copyBtn.textContent = 'Copy Style Prompt'; copyBtn.style.color = '#22d3ee'; };
+    const reset = () => { copyBtn.textContent = 'Copy Style Prompt'; };
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(sunoPrompt).then(() => { copyBtn.textContent = '✓ Copied!'; setTimeout(reset, 2000); });
     } else {
@@ -1328,7 +1437,7 @@ function renderSunoCard(sunoPrompt, container) {
   });
   actions.appendChild(copyBtn);
   const charCount = document.createElement('span');
-  charCount.style.cssText = 'font-family:Inconsolata,monospace;font-size:10px;color:#7c6a9a;letter-spacing:1px;margin-left:12px;';
+  charCount.style.cssText = 'font-family:Inconsolata,monospace;font-size:10px;color:#7c6a9a;letter-spacing:1px;';
   charCount.textContent = `${sunoPrompt.length} chars`;
   actions.appendChild(charCount);
   card.appendChild(actions);
@@ -1338,21 +1447,22 @@ function renderSunoCard(sunoPrompt, container) {
 async function runStep6() {
   const { finalSong, genre, mood, structuredStory, userLines, theme, pass1Grades, pass2Grades } = pipelineContext;
   setPipelineStep(6);
-  setStatus('⑥ Building your Suno style prompt...');
+  const hasSpotify = getKey('spotify-id') && getKey('spotify-sec');
+  const hasLastFm = getKey('lastfm');
+  setStatus(hasSpotify || hasLastFm ? '⑥ Fetching audio data + building Suno prompt...' : '⑥ Building your Suno style prompt...');
   try {
-    const sunoRaw = await aiCall(buildSunoPrompt(finalSong, genre, mood, structuredStory), 0.6, 300, currentController?.signal);
+    const sunoRaw = await buildSunoPromptDataDriven(finalSong, genre, mood, structuredStory);
     const sunoPrompt = sunoRaw.replace(/^["']|["']$/g, '').trim();
     hidePipeline(); clearStatus();
     currentSong = { lyrics: finalSong, genre, mood, theme, structuredStory, userLines };
     renderOutputBox(finalSong, genre, theme, structuredStory);
     const outputBox = document.querySelector('#output .output-box');
     if (outputBox) {
-      // Pass 2 weak section banner — shown first, before grade cards
       const weakSections = (pass2Grades || []).filter(g => g.score < 8);
       if (weakSections.length) renderWeakBanner(weakSections, outputBox);
       if (pass1Grades?.length) renderGradeCard(pass1Grades, outputBox, 'Pass 1');
       if (pass2Grades?.length) renderGradeCard(pass2Grades, outputBox, 'Pass 2');
-      renderSunoCard(sunoPrompt, outputBox);
+      renderSunoCard(sunoPrompt, outputBox, hasSpotify || hasLastFm);
     }
     saveToHistory({ lyrics: finalSong, genre, mood, theme, structuredStory, userLines });
     document.getElementById('generate-btn').disabled = false;
