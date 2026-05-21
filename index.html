@@ -248,6 +248,7 @@
     <div class="pipeline-step" id="step-1">① Finding the soul of your material...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
     <div class="pipeline-step" id="step-3">③ Killing every weak line...</div>
+    <div class="pipeline-step" id="step-4">④ Grading and fixing what's still broken...</div>
   </div>
 
   <div class="checkpoint-panel" id="blueprint-panel">
@@ -480,6 +481,7 @@ function downloadLyrics(text, genre, theme) {
 }
 
 function escapeHTML(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+function escapeRegex(str) { return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 function getHistory() { try { return JSON.parse(localStorage.getItem('song_history') || '[]'); } catch { return []; } }
 
@@ -526,7 +528,7 @@ function setStatus(msg, isError = false) { const el = document.getElementById('s
 function clearStatus() { document.getElementById('status').className = 'status'; }
 function showModel(msg) { const el = document.getElementById('active-model'); el.textContent = msg; el.style.display = 'block'; }
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 const slowTimers = {};
 
 function setPipelineStep(n, paused = false) {
@@ -1097,18 +1099,23 @@ function renderOutputBox(lyrics, genre, theme, structuredStory) {
       const currentText = display.innerText || lyrics;
       const sectionLabel = `[${section}]`;
       const nextLabels = ['[Verse 1]','[Pre-Chorus]','[Chorus]','[Verse 2]','[Bridge]','[Outro]'].filter(l => l !== sectionLabel);
-      const startIdx = currentText.indexOf(sectionLabel);
-      if (startIdx !== -1) {
-        let endIdx = currentText.length;
-        for (const label of nextLabels) { const idx = currentText.indexOf(label, startIdx + sectionLabel.length); if (idx !== -1 && idx < endIdx) endIdx = idx; }
-        const before = currentText.substring(0, startIdx);
-        const after = currentText.substring(endIdx);
-        const newFull = before + newSection.trim() + '\n\n' + after.trim();
-        display.textContent = newFull;
-        if (currentSong) currentSong.lyrics = newFull;
-        document.getElementById('copy-lyrics').onclick = function () { copyText(newFull, this); };
-        document.getElementById('download-lyrics').onclick = () => downloadLyrics(newFull, genre, theme);
-      }
+
+      // Extract just the new section content (strip the label line from AI response)
+      const newSectionContent = newSection.trim();
+
+      // Replace ALL instances of this section in the song
+      let updatedText = currentText;
+      const sectionRegex = new RegExp(
+        escapeRegex(sectionLabel) + '([\\s\\S]*?)(?=' + nextLabels.map(escapeRegex).join('|') + '|$)',
+        'g'
+      );
+      updatedText = updatedText.replace(sectionRegex, newSectionContent + '\n\n');
+      updatedText = updatedText.trim();
+
+      display.textContent = updatedText;
+      if (currentSong) currentSong.lyrics = updatedText;
+      document.getElementById('copy-lyrics').onclick = function () { copyText(updatedText, this); };
+      document.getElementById('download-lyrics').onclick = () => downloadLyrics(updatedText, genre, theme);
     } catch (e) { if (e.name !== 'AbortError') setStatus('⚠ Rewrite failed: ' + e.message, true); }
     finally { btn.disabled = false; btn.textContent = '↻ Rewrite'; }
   });
@@ -1148,11 +1155,113 @@ async function runStep3() {
   setStatus('③ Killing every weak line...');
   try {
     const polishedRaw = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines), 0.45, 2400, currentController?.signal);
-    hidePipeline(); clearStatus();
     const polished = extractAndFlagWeakSection(polishedRaw);
-    currentSong = { lyrics: polished, genre, mood, theme, structuredStory, userLines };
-    renderOutputBox(polished, genre, theme, structuredStory);
-    saveToHistory({ lyrics: polished, genre, mood, theme, structuredStory, userLines });
+    pipelineContext.polished = polished;
+    await runStep4();
+  } catch (e) { handlePipelineError(e); }
+}
+
+function buildGradePrompt(lyrics, genre, structuredStory) {
+  const centralTension = structuredStory.match(/CENTRAL TENSION[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
+  const trueSubject = structuredStory.match(/ONE TRUE SUBJECT[:\s]+([\s\S]*?)(?:\n[A-Z])/i)?.[1]?.trim() || '';
+  const keyImagesMatch = structuredStory.match(/KEY IMAGES([\s\S]*?)(?:\nSACRED|\nSEED|\n[A-Z]{4,}|$)/i);
+  const keyImages = keyImagesMatch ? keyImagesMatch[1].trim() : '';
+
+  return `You are grading and fixing a song. Your standard: does each section make a listener feel something they haven't felt before?
+
+GENRE: ${genre}
+CENTRAL TENSION: ${centralTension}
+ONE TRUE SUBJECT: ${trueSubject}
+KEY IMAGES: ${keyImages}
+
+SONG:
+${lyrics}
+
+─── STEP 1: GRADE ───────────────────────────────────────────────────────────────
+
+Grade each section from 1–10. One line of honest reasoning per section.
+Ask for each:
+- Does every line orbit the central tension?
+- Is there at least one line only this song could contain?
+- Does it show rather than declare?
+- Is it consistent with itself — no lines that sound like a different song?
+
+─── STEP 2: FIX ─────────────────────────────────────────────────────────────────
+
+Rewrite every section that scores 7 or below. Leave sections scoring 8+ exactly as written.
+
+For sections you rewrite:
+- Stay in the song's vocabulary (KEY IMAGES)
+- Keep the same emotional purpose as the original
+- Do not explain — show
+- Bridge: max 6 lines, no direct emotion statements, one physical action or image
+- Chorus: max 4 lines each under 10 words, physical image, at least one singable line
+
+CRITICAL — CONSISTENCY: Every section labeled [Chorus] must be identical. Every section labeled [Pre-Chorus] must be identical. If you rewrite a Chorus or Pre-Chorus, apply that rewrite to ALL instances of it in the song.
+
+─── OUTPUT FORMAT ───────────────────────────────────────────────────────────────
+
+GRADES:
+Verse 1: [score]/10 — [one line reason]
+Pre-Chorus: [score]/10 — [one line reason]
+Chorus: [score]/10 — [one line reason]
+Verse 2: [score]/10 — [one line reason]
+Bridge: [score]/10 — [one line reason]
+Outro: [score]/10 — [one line reason]
+
+FINAL_SONG:
+[complete song — every section from Verse 1 to Outro — with all fixes applied and all duplicate sections made consistent]`;
+}
+
+function parseGradeOutput(raw) {
+  const gradesMatch = raw.match(/GRADES:([\s\S]*?)(?=FINAL_SONG:)/i);
+  const songMatch = raw.match(/FINAL_SONG:([\s\S]*)/i);
+  const gradesRaw = gradesMatch ? gradesMatch[1].trim() : '';
+  const finalSong = songMatch ? songMatch[1].trim() : raw;
+  const grades = [];
+  gradesRaw.split('\n').forEach(line => {
+    const m = line.match(/^(.+?):\s*(\d+)\/10\s*[—-]\s*(.+)/);
+    if (m) grades.push({ section: m[1].trim(), score: parseInt(m[2]), reason: m[3].trim() });
+  });
+  return { grades, finalSong };
+}
+
+function renderGradeCard(grades, container) {
+  if (!grades.length) return;
+  const card = document.createElement('div');
+  card.style.cssText = 'margin-top:16px;border:1px solid rgba(168,85,247,0.2);border-radius:12px;overflow:hidden;';
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:10px 16px;background:rgba(168,85,247,0.06);border-bottom:1px solid rgba(168,85,247,0.12);font-family:Inconsolata,monospace;font-size:10px;letter-spacing:4px;color:#a855f7;text-transform:uppercase;';
+  header.textContent = '④ Section Grades';
+  card.appendChild(header);
+  const list = document.createElement('div');
+  list.style.cssText = 'padding:12px 16px;display:flex;flex-direction:column;gap:6px;';
+  grades.forEach(g => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;font-family:Inconsolata,monospace;font-size:11px;line-height:1.6;';
+    const scoreColor = g.score >= 8 ? '#34d399' : g.score >= 6 ? '#fbbf24' : '#f87171';
+    const fixed = g.score <= 7 ? ' <span style="color:#a855f7;font-size:9px;letter-spacing:1px;">REWRITTEN</span>' : '';
+    row.innerHTML = `<span style="color:${scoreColor};min-width:36px;font-weight:600;">${g.score}/10</span><span style="color:#7c6a9a;">${g.section}</span><span style="color:rgba(237,232,245,0.5);flex:1;">— ${g.reason}</span>${fixed}`;
+    list.appendChild(row);
+  });
+  card.appendChild(list);
+  container.appendChild(card);
+}
+
+async function runStep4() {
+  const { polished, genre, structuredStory, userLines, theme, mood } = pipelineContext;
+  setPipelineStep(4);
+  setStatus('④ Grading and fixing what\'s still broken...');
+  try {
+    const gradeRaw = await aiCall(buildGradePrompt(polished, genre, structuredStory), 0.4, 2800, currentController?.signal);
+    const { grades, finalSong } = parseGradeOutput(gradeRaw);
+    hidePipeline(); clearStatus();
+    currentSong = { lyrics: finalSong, genre, mood, theme, structuredStory, userLines };
+    renderOutputBox(finalSong, genre, theme, structuredStory);
+    // Append grade card inside the output box
+    const outputBox = document.querySelector('#output .output-box');
+    if (outputBox && grades.length) renderGradeCard(grades, outputBox);
+    saveToHistory({ lyrics: finalSong, genre, mood, theme, structuredStory, userLines });
     document.getElementById('generate-btn').disabled = false;
     lockUI(false);
     currentController = null;
