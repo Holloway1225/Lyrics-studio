@@ -154,9 +154,11 @@
   <button class="generate-btn" id="generate-btn">✦ &nbsp; Write My Song</button>
   <div class="status" id="status"></div>
   <div class="pipeline-steps" id="pipeline-steps">
-    <div class="pipeline-step" id="step-1">① Studying your material...</div>
+    <div class="pipeline-step" id="step-1">① Finding the rule...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
     <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
+    <div class="pipeline-step" id="step-4">④ Grading across 6 axes...</div>
+    <div class="pipeline-step" id="step-5">⑤ Surgical rewrite...</div>
   </div>
   <div id="output"></div>
 </div>
@@ -202,7 +204,7 @@ function escapeHTML(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function setStatus(msg, err=false) { const el=document.getElementById('status'); el.textContent=msg; el.className='status visible'+(err?' error':''); }
 function clearStatus() { document.getElementById('status').className='status'; }
 function showModel(msg) { const el=document.getElementById('active-model'); el.textContent=msg; el.style.display='block'; }
-const TOTAL_STEPS=3;
+const TOTAL_STEPS=5;
 function setPipelineStep(n) { document.getElementById('pipeline-steps').classList.add('visible'); for(let i=1;i<=TOTAL_STEPS;i++){const el=document.getElementById('step-'+i);if(!el)continue;if(i<n)el.className='pipeline-step done';else if(i===n)el.className='pipeline-step active';else el.className='pipeline-step';} }
 function hidePipeline() { document.getElementById('pipeline-steps').classList.remove('visible'); for(let i=1;i<=TOTAL_STEPS;i++){const el=document.getElementById('step-'+i);if(el)el.className='pipeline-step';} }
 function fetchWithTimeout(url,opts,ms){return Promise.race([fetch(url,opts),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Request timed out')),ms))]);}
@@ -463,11 +465,126 @@ ${a4 ? 'TEST 9 — ALBUM 4: Any system/transmission/signal/static/glitch languag
 Output the complete revised song from [Verse 1] to [Outro]. No commentary.`;
 }
 
+function buildGradePrompt(song, genre, structuredStory, a4) {
+  const rule = genre === 'Cryptid Static'
+    ? (structuredStory.match(/LAYER 1[^\n]*\n([^\n]+)/)?.[1]?.trim() || '')
+    : (structuredStory.match(/THE SONG'S RULE[:\s]*\n([^\n]+)/)?.[1]?.trim() || '');
+  const a4block = a4 ? '\nALBUM 4 MODE: additionally penalize any system/signal/static/glitch language.\n' : '';
+
+  return `You are grading a ${genre} song using a 6-axis rubric. Grade honestly. Do not be generous.
+${a4block}
+THE SONG'S RULE: ${rule}
+
+SOURCE MATERIAL RULE — if a line appears generic but matches the source material's specific language, do NOT flag it. Only flag lines that are generic AND have no basis in the material.
+
+THE SONG:
+${song}
+
+Grade across these 6 axes (0-2 each, total out of 12, converted to /10):
+
+1. EMOTIONAL INEVITABILITY (0-2)
+Does every line feel like it HAD to become the next line? Not "is it emotional" — does the song feel fated or constructed?
+Full 2 = feels like the narrator can't think any other way anymore.
+Deduct for lines that feel placed rather than inevitable.
+
+2. PSYCHOLOGICAL COHERENCE (0-2)
+Is the mind behind this song consistent even as it breaks?
+The voice must keep logic intact while perception destabilizes.
+Full 2 = the narrator's psychology is stable and specific throughout.
+Deduct for lines that sound like a different person or a different song.
+
+3. SPECIFICITY VS ABSTRACTION BALANCE (0-2)
+Are abstractions caused by objects — or leading them?
+Concrete evidence (plates, logs, receipts, smells, shoes) should drive abstract conclusions.
+Full 2 = every abstraction is earned by a physical detail that preceded it.
+Deduct when abstract words ("signal," "truth," "paranoia," "pattern") appear without a physical anchor.
+
+4. ESCALATION DESIGN (0-2)
+Does each chorus CHANGE meaning — not just repeat?
+Does each verse add new evidence or new distortion?
+Does the bridge collapse or clarify tension — not explain it?
+Full 2 = clear escalation from discovery → pattern → control illusion → collapse.
+Deduct for sections that stay at the same emotional level as the previous section.
+
+5. LINE-LEVEL INEVITABILITY (0-2)
+No writer fingerprints. A 10-level line feels like "this was the only way the thought could land."
+A weak line feels like "someone sat down and crafted this line."
+Full 2 = blunt phrasing, repetitive thought patterns, compulsive language — thoughts sound involuntary.
+Deduct for lines that feel polished, literary, or constructed.
+
+6. THEMATIC COMPLETENESS (0-2)
+Does the song close the loop?
+The inversion must complete: observer becomes system, certainty becomes identity fusion with signal.
+Full 2 = the final chorus/outro fully completes the thematic arc established in verse 1.
+Deduct for songs that end on a strong image but don't resolve the system's logic.
+
+After scoring, output EXACTLY this format:
+
+AXIS SCORES:
+Emotional Inevitability: X/2 — [one line reason]
+Psychological Coherence: X/2 — [one line reason]
+Specificity Balance: X/2 — [one line reason]
+Escalation Design: X/2 — [one line reason]
+Line Inevitability: X/2 — [one line reason]
+Thematic Completeness: X/2 — [one line reason]
+TOTAL: X/12
+
+GRADE: X/10
+
+SURGICAL TARGETS:
+[List only lines scoring below full marks. For each:]
+LINE: "[exact line]"
+AXIS: [which axis it fails]
+PROBLEM: [one sentence — specific]
+REWRITE TECHNIQUE: [which of these 4 applies: CONCRETE UPGRADE / ABSTRACT REDUCTION / VOICE COMPRESSION / EMOTIONAL INVERSION]
+FIX: [concrete rewrite using the song's own imagery or source material]
+
+If grade is 9.5 or above write CERTIFIED at the end.`;
+}
+
+function buildSurgicalRewritePrompt(song, gradeOutput, genre, structuredStory, userLines, a4) {
+  const sacred = userLines ? '\nSACRED LINES — untouchable regardless of feedback:\n'+userLines+'\n' : '';
+  const rule = genre === 'Cryptid Static'
+    ? (structuredStory.match(/LAYER 1[^\n]*\n([^\n]+)/)?.[1]?.trim() || '')
+    : (structuredStory.match(/THE SONG'S RULE[:\s]*\n([^\n]+)/)?.[1]?.trim() || '');
+  const a4block = a4 ? ALBUM4_INJECTION : '';
+
+  return `You are doing a surgical rewrite. Fix only the flagged lines. Leave everything else character-for-character identical.
+
+GENRE: ${genre}
+THE SONG'S RULE: ${rule}
+${a4block}${sacred}
+
+THE SONG:
+${song}
+
+GRADE FEEDBACK — SURGICAL TARGETS:
+${gradeOutput}
+
+THE 4 REWRITE TECHNIQUES — apply the one specified for each flagged line:
+
+CONCRETE UPGRADE: Replace abstract language with a specific physical object, action, smell, or sound. "I've got patterns" → "all the threads connect without resistance"
+
+ABSTRACT REDUCTION: The abstraction stays but must now be caused by an object that precedes it. Move the physical anchor before the abstract conclusion.
+
+VOICE COMPRESSION: Make the thought sound involuntary. Use repetition, fragmentation, partial sentences, compulsive phrasing. "A spiraling mind doesn't lecture — it loops."
+
+EMOTIONAL INVERSION: Find where the emotion points one direction and flip it. fear → control. observation → participation. certainty → self-doubt. "It's how fast I started watching everybody else."
+
+RULES:
+1. Fix ONLY lines listed in SURGICAL TARGETS
+2. Apply the specified REWRITE TECHNIQUE for each
+3. The fix must use imagery from within the song or source material — no outside metaphors
+4. Sacred lines are untouchable
+5. Do not add or remove sections
+6. No commentary — output the complete revised song only, from [Verse 1] to [Outro]`;
+}
+
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const theme = document.getElementById('theme').value.trim();
   const userLines = document.getElementById('user-lines').value.trim();
   const a4 = album4ModeOn;
-  if (!getKey('groq') && !getKey('gemini')) { setStatus('⚠ Add at least one API key above', true); return; }
+  if (!getKey('anthropic') && !getKey('groq') && !getKey('gemini')) { setStatus('⚠ Add at least one API key above', true); return; }
   if (!theme) { setStatus('⚠ Give it something to work with', true); return; }
   if (currentController) currentController.abort();
   currentController = new AbortController();
@@ -480,16 +597,67 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   document.getElementById('active-model').style.display = 'none';
   clearStatus();
   try {
+    // Step 1 — Structure + Rule
     setPipelineStep(1);
-    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines, a4, genre), 0.3, 900, signal);
+    setStatus('① Finding the rule...');
+    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines, a4, genre), 0.3, 1200, signal);
+
+    // Step 2 — Write
     setPipelineStep(2);
+    setStatus('② Writing the song...');
     const draft = await aiCall(buildWritePrompt(structuredStory, genre, mood, userLines, a4), 0.95, 2000, signal);
+
+    // Step 3 — Polish
     setPipelineStep(3);
+    setStatus('③ Sharpening every line...');
     const polished = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines, a4), 0.6, 2000, signal);
+
+    // Step 4 — Grade (6-axis rubric)
+    setPipelineStep(4);
+    setStatus('④ Grading across 6 axes...');
+    const gradeOutput = await aiCall(buildGradePrompt(polished, genre, structuredStory, a4), 0.3, 1200, signal);
+
+    // Check if certified — if so skip step 5
+    const isCertified = /CERTIFIED/i.test(gradeOutput);
+    let finalSong = polished;
+
+    if (!isCertified) {
+      // Step 5 — Surgical rewrite
+      setPipelineStep(5);
+      setStatus('⑤ Surgical rewrite...');
+      // Extract just the SURGICAL TARGETS block
+      const targetsMatch = gradeOutput.match(/SURGICAL TARGETS:([\s\S]*?)(?=CERTIFIED|$)/i);
+      const targets = targetsMatch ? targetsMatch[0] : gradeOutput;
+      finalSong = await aiCall(buildSurgicalRewritePrompt(polished, targets, genre, structuredStory, userLines, a4), 0.7, 2000, signal);
+    }
+
     hidePipeline(); clearStatus();
+
+    // Parse grade for display
+    const gradeMatch = gradeOutput.match(/GRADE:\s*(\d+(?:\.\d+)?)\/10/i);
+    const gradeNum = gradeMatch ? parseFloat(gradeMatch[1]) : null;
+    const totalMatch = gradeOutput.match(/TOTAL:\s*(\d+)\/12/i);
+
     const modeTag = a4 ? '<span style="font-family:\'Inconsolata\',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan);background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);border-radius:50px;padding:4px 10px;">📡 Album 4</span>' : '';
-    document.getElementById('output').innerHTML = `<div class="output-box"><div class="box-header"><div class="box-title">✦ Your Lyrics</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${modeTag}<button class="copy-btn" id="copy-lyrics">Copy</button></div></div><div class="lyrics-text">${escapeHTML(polished)}</div></div>`;
-    document.getElementById('copy-lyrics').addEventListener('click', function() { copyText(polished, this); });
+    const certTag = isCertified ? '<span style="font-family:\'Inconsolata\',monospace;font-size:10px;letter-spacing:2px;color:var(--green);background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:50px;padding:4px 10px;">✦ CERTIFIED</span>' : '';
+    const gradeColor = gradeNum >= 9 ? 'var(--green)' : gradeNum >= 7 ? 'var(--gold)' : 'var(--error)';
+    const gradeTag = gradeNum ? `<span style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:2px;color:${gradeColor};background:rgba(0,0,0,0.2);border:1px solid ${gradeColor};border-radius:50px;padding:4px 12px;">${gradeNum}/10</span>` : '';
+
+    document.getElementById('output').innerHTML = `
+      <div class="output-box">
+        <div class="box-header">
+          <div class="box-title">✦ Your Lyrics</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${modeTag}${certTag}${gradeTag}<button class="copy-btn" id="copy-lyrics">Copy</button></div>
+        </div>
+        <div class="lyrics-text" id="lyrics-display">${escapeHTML(finalSong)}</div>
+      </div>
+      <div id="grade-card"></div>`;
+
+    document.getElementById('copy-lyrics').addEventListener('click', function() { copyText(finalSong, this); });
+
+    // Render grade card
+    renderGradeCard(gradeOutput, gradeNum, isCertified);
+
   } catch(e) {
     hidePipeline();
     if (e.name === 'AbortError') clearStatus();
@@ -499,6 +667,33 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     currentController = null;
   }
 });
+
+function renderGradeCard(gradeOutput, gradeNum, certified) {
+  const card = document.getElementById('grade-card');
+  if (!card) return;
+
+  // Parse axis scores
+  const axisLines = gradeOutput.match(/^(Emotional Inevitability|Psychological Coherence|Specificity Balance|Escalation Design|Line Inevitability|Thematic Completeness):\s*(\d)\/2\s*—\s*(.+)$/gm) || [];
+
+  let axisHTML = axisLines.map(line => {
+    const m = line.match(/^(.+?):\s*(\d)\/2\s*—\s*(.+)$/);
+    if (!m) return '';
+    const score = parseInt(m[2]);
+    const color = score === 2 ? 'var(--green)' : score === 1 ? 'var(--gold)' : 'var(--error)';
+    return `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
+      <span style="font-family:'Inconsolata',monospace;font-size:12px;color:${color};font-weight:600;min-width:28px;">${score}/2</span>
+      <div><div style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:1px;color:var(--text);">${m[1]}</div>
+      <div style="font-family:'Lora',serif;font-size:12px;color:var(--muted);font-style:italic;margin-top:2px;">${m[3]}</div></div>
+    </div>`;
+  }).join('');
+
+  const certBanner = certified ? `<div style="margin-bottom:12px;padding:8px 14px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.3);border-radius:8px;font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;color:var(--green);">✦ CERTIFIED — no surgical rewrite needed</div>` : '';
+
+  card.innerHTML = `<div style="margin-top:16px;background:rgba(0,0,0,0.25);border:1px solid rgba(168,85,247,0.2);border-radius:12px;overflow:hidden;">
+    <div style="padding:10px 16px;background:rgba(168,85,247,0.06);border-bottom:1px solid rgba(168,85,247,0.12);font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;">④ 6-Axis Grade</div>
+    <div style="padding:14px 16px;">${certBanner}${axisHTML}</div>
+  </div>`;
+}
 </script>
 </body>
 </html>
