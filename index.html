@@ -138,6 +138,13 @@
         <div class="mode-toggle-desc">Drops all system language, static, signal metaphors. Forces plain, direct, honest human songwriting. Use for Rewired the Flame era songs.</div>
       </div>
     </div>
+    <div class="mode-toggle-wrapper" id="grade-toggle-wrapper" style="margin-top:10px;">
+      <div class="mode-toggle-switch" id="grade-switch"><div class="mode-toggle-knob"></div></div>
+      <div class="mode-toggle-text">
+        <div class="mode-toggle-title" style="color:var(--gold);">⚡ Grade + Rewrite — Groq</div>
+        <div class="mode-toggle-desc">Adds 8-axis grading and surgical rewrite after polish. Runs on Groq to save cost. Adds ~2 cents per song.</div>
+      </div>
+    </div>
   </div>
   <div class="section-label">Your Idea</div>
   <div class="theme-hint">
@@ -172,6 +179,7 @@ const CONFIG = {
 
 let currentController = null;
 let album4ModeOn = false;
+let gradeModeOn = false;
 
 document.getElementById('album4-toggle-wrapper').addEventListener('click', () => {
   album4ModeOn = !album4ModeOn;
@@ -179,6 +187,18 @@ document.getElementById('album4-toggle-wrapper').addEventListener('click', () =>
   document.getElementById('album4-toggle-wrapper').classList.toggle('active', album4ModeOn);
   document.getElementById('generate-btn').classList.toggle('album4-mode', album4ModeOn);
   localStorage.setItem('album4_mode', album4ModeOn ? '1' : '0');
+});
+
+document.getElementById('grade-toggle-wrapper').addEventListener('click', () => {
+  gradeModeOn = !gradeModeOn;
+  const sw = document.getElementById('grade-switch');
+  const wrapper = document.getElementById('grade-toggle-wrapper');
+  sw.classList.toggle('on', gradeModeOn);
+  wrapper.classList.toggle('active', gradeModeOn);
+  // Update step labels visibility
+  document.getElementById('step-4').style.display = gradeModeOn ? '' : 'none';
+  document.getElementById('step-5').style.display = gradeModeOn ? '' : 'none';
+  localStorage.setItem('grade_mode', gradeModeOn ? '1' : '0');
 });
 
 window.addEventListener('load', () => {
@@ -191,6 +211,15 @@ window.addEventListener('load', () => {
     document.getElementById('album4-switch').classList.add('on');
     document.getElementById('album4-toggle-wrapper').classList.add('active');
     document.getElementById('generate-btn').classList.add('album4-mode');
+  }
+  if (localStorage.getItem('grade_mode') === '1') {
+    gradeModeOn = true;
+    document.getElementById('grade-switch').classList.add('on');
+    document.getElementById('grade-toggle-wrapper').classList.add('active');
+  } else {
+    // Hide grade steps when mode is off
+    document.getElementById('step-4').style.display = 'none';
+    document.getElementById('step-5').style.display = 'none';
   }
 });
 
@@ -219,6 +248,31 @@ async function aiCall(prompt, temp=0.95, maxTokens=1200, signal=null) {
   if(gem){const res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+CONFIG.GEMINI_MODEL+':generateContent?key='+gem,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:temp,maxOutputTokens:maxTokens}}),signal},CONFIG.TIMEOUT_MS);if(!res.ok){const e=await res.json();throw new Error(e?.error?.message||'Gemini error '+res.status);}const d=await res.json();let t=d.candidates?.[0]?.content?.parts?.[0]?.text||'';if(!t)throw new Error('Empty response from Gemini');t=t.replace(/\*\*[\s\S]*?\*\*/g,'').replace(/\*[^*]+\*/g,'').replace(/_{1,2}[^_]+_{1,2}/g,'').replace(/^\s*---+\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim();showModel('✦ Using Gemini');return t;}
 
   throw new Error('No API key — add your Anthropic, Groq, or Gemini key above');
+}
+
+async function groqCall(prompt, temp=0.3, maxTokens=2000, signal=null) {
+  const gk = getKey('groq'), gem = getKey('gemini');
+  if (gk) {
+    try {
+      const res = await fetchWithTimeout(CONFIG.GROQ_URL, {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},body:JSON.stringify({model:CONFIG.GROQ_MODEL,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature:temp,top_p:0.9}),signal}, CONFIG.TIMEOUT_MS);
+      if (res.ok) { const d = await res.json(); showModel('⚡ Grade via Groq'); return d.choices[0].message.content.trim(); }
+      const err = await res.json();
+      const isRL = err?.error?.message?.toLowerCase().includes('rate limit') || String(res.status).startsWith('429');
+      if (!isRL) throw new Error(err?.error?.message || 'Groq error ' + res.status);
+      showModel('⚡ Groq limit — switching to Gemini for grade');
+    } catch(e) { if (e.name === 'AbortError') throw e; if (!gem) throw e; }
+  }
+  if (gem) {
+    const res = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+CONFIG.GEMINI_MODEL+':generateContent?key='+gem, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:temp,maxOutputTokens:maxTokens}}),signal}, CONFIG.TIMEOUT_MS);
+    if (!res.ok) { const e = await res.json(); throw new Error(e?.error?.message || 'Gemini error ' + res.status); }
+    const d = await res.json();
+    let t = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!t) throw new Error('Empty response');
+    t = t.replace(/\*\*[\s\S]*?\*\*/g,'').replace(/\*[^*]+\*/g,'').replace(/_{1,2}[^_]+_{1,2}/g,'').replace(/^\s*---+\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
+    showModel('⚡ Grade via Gemini');
+    return t;
+  }
+  throw new Error('No fallback key for grade — add Groq or Gemini key');
 }
 
 const GENRE_EXAMPLES = {
@@ -626,25 +680,28 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     setStatus('③ Sharpening every line...');
     const polished = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines, a4), 0.6, 2000, signal);
 
-    // Step 4 — Grade (6-axis rubric)
-    setPipelineStep(4);
-    setStatus('④ Grading across 6 axes...');
-    const gradeOutput = await aiCall(buildGradePrompt(polished, genre, structuredStory, a4), 0.3, 1200, signal);
-
-    // Check if certified — if so skip step 5
-    const gradeMatch = gradeOutput.match(/GRADE:\s*(\d+(?:\.\d+)?)\s*(?:\/10)?/i);
-    const gradeNum = gradeMatch ? parseFloat(gradeMatch[1]) : null;
-    const isCertified = /CERTIFIED/i.test(gradeOutput) || (gradeNum !== null && gradeNum >= 9.5);
+    // Step 4+5 — Grade and surgical rewrite (only if grade mode is on)
+    let gradeOutput = null;
+    let gradeNum = null;
+    let isCertified = false;
     let finalSong = polished;
 
-    if (!isCertified) {
-      // Step 5 — Surgical rewrite
-      setPipelineStep(5);
-      setStatus('⑤ Surgical rewrite...');
-      // Extract just the SURGICAL TARGETS block
-      const targetsMatch = gradeOutput.match(/SURGICAL TARGETS:([\s\S]*?)(?=CERTIFIED|$)/i);
-      const targets = targetsMatch ? targetsMatch[0] : gradeOutput;
-      finalSong = await aiCall(buildSurgicalRewritePrompt(polished, targets, genre, structuredStory, userLines, a4), 0.7, 2000, signal);
+    if (gradeModeOn) {
+      setPipelineStep(4);
+      setStatus('④ Grading across 8 axes (Groq)...');
+      gradeOutput = await groqCall(buildGradePrompt(polished, genre, structuredStory, a4), 0.3, 2000, signal);
+
+      const gradeMatch = gradeOutput.match(/GRADE:\s*(\d+(?:\.\d+)?)\s*(?:\/10)?/i);
+      gradeNum = gradeMatch ? parseFloat(gradeMatch[1]) : null;
+      isCertified = /CERTIFIED/i.test(gradeOutput) || (gradeNum !== null && gradeNum >= 9.5);
+
+      if (!isCertified) {
+        setPipelineStep(5);
+        setStatus('⑤ Surgical rewrite (Groq)...');
+        const targetsMatch = gradeOutput.match(/SURGICAL TARGETS:([\s\S]*?)(?=CERTIFIED|$)/i);
+        const targets = targetsMatch ? targetsMatch[0] : gradeOutput;
+        finalSong = await groqCall(buildSurgicalRewritePrompt(polished, targets, genre, structuredStory, userLines, a4), 0.7, 2000, signal);
+      }
     }
 
     hidePipeline(); clearStatus();
@@ -652,7 +709,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     // Parse grade for display — already parsed above
     const modeTag = a4 ? '<span style="font-family:\'Inconsolata\',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan);background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);border-radius:50px;padding:4px 10px;">📡 Album 4</span>' : '';
     const certTag = isCertified ? '<span style="font-family:\'Inconsolata\',monospace;font-size:10px;letter-spacing:2px;color:var(--green);background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:50px;padding:4px 10px;">✦ CERTIFIED</span>' : '';
-    const gradeColor = gradeNum >= 9 ? 'var(--green)' : gradeNum >= 7 ? 'var(--gold)' : 'var(--error)';
+    const gradeColor = gradeNum !== null ? (gradeNum >= 9 ? 'var(--green)' : gradeNum >= 7 ? 'var(--gold)' : 'var(--error)') : 'var(--muted)';
     const gradeTag = gradeNum ? `<span style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:2px;color:${gradeColor};background:rgba(0,0,0,0.2);border:1px solid ${gradeColor};border-radius:50px;padding:4px 12px;">${gradeNum}/10</span>` : '';
 
     document.getElementById('output').innerHTML = `
@@ -667,8 +724,8 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
 
     document.getElementById('copy-lyrics').addEventListener('click', function() { copyText(finalSong, this); });
 
-    // Render grade card
-    renderGradeCard(gradeOutput, gradeNum, isCertified, finalSong, genre, structuredStory, userLines, a4, signal);
+    // Render grade card only if grade mode was on
+    if (gradeOutput) renderGradeCard(gradeOutput, gradeNum, isCertified, finalSong, genre, structuredStory, userLines, a4, signal);
 
   } catch(e) {
     hidePipeline();
