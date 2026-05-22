@@ -91,9 +91,10 @@
   </div>
   <div class="api-section" style="margin-top:28px">
     <div class="section-label" style="margin-top:0">API Keys</div>
+    <div class="api-row"><div class="api-label">ANTHROPIC</div><input type="password" id="api-anthropic" class="api-input" placeholder="sk-ant-..." aria-label="Anthropic API key"></div>
     <div class="api-row"><div class="api-label">GROQ</div><input type="password" id="api-groq" class="api-input" placeholder="gsk_..." aria-label="Groq API key"></div>
     <div class="api-row"><div class="api-label">GEMINI</div><input type="password" id="api-gemini" class="api-input" placeholder="AIza..." aria-label="Gemini API key"></div>
-    <div class="api-hint">Groq is used first. Gemini kicks in automatically if Groq hits its limit.<br>Groq: console.groq.com · Gemini: aistudio.google.com</div>
+    <div class="api-hint">Claude Sonnet used when Anthropic key is present — best quality for 5-layer engine. Groq or Gemini used as fallback.<br>Anthropic: console.anthropic.com · Groq: console.groq.com · Gemini: aistudio.google.com</div>
     <div class="api-warning">⚠ Keys are stored in your browser only. Do not use on a shared or public device.</div>
     <div class="api-saved" id="api-saved">✓ Keys saved to this browser</div>
     <div class="active-model" id="active-model"></div>
@@ -179,8 +180,8 @@ document.getElementById('album4-toggle-wrapper').addEventListener('click', () =>
 });
 
 window.addEventListener('load', () => {
-  ['groq','gemini'].forEach(k => { const v = localStorage.getItem('key_'+k); if (v) document.getElementById('api-'+k).value = v; });
-  if (localStorage.getItem('key_groq') || localStorage.getItem('key_gemini')) document.getElementById('api-saved').style.display = 'block';
+  ['anthropic','groq','gemini'].forEach(k => { const v = localStorage.getItem('key_'+k); if (v) document.getElementById('api-'+k).value = v; });
+  if (['anthropic','groq','gemini'].some(k => localStorage.getItem('key_'+k))) document.getElementById('api-saved').style.display = 'block';
   const sg = localStorage.getItem('pref_genre'); const sm = localStorage.getItem('pref_mood');
   if (sg) restoreToggle('genre-group', sg); if (sm) restoreToggle('mood-group', sm);
   if (localStorage.getItem('album4_mode') === '1') {
@@ -192,7 +193,7 @@ window.addEventListener('load', () => {
 });
 
 function restoreToggle(gid, val) { document.querySelectorAll('#'+gid+' .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.value === val)); }
-document.getElementById('save-keys-btn').addEventListener('click', () => { ['groq','gemini'].forEach(k => { const v = document.getElementById('api-'+k).value.trim(); if (v) localStorage.setItem('key_'+k, v); }); document.getElementById('api-saved').style.display = 'block'; });
+document.getElementById('save-keys-btn').addEventListener('click', () => { ['anthropic','groq','gemini'].forEach(k => { const v = document.getElementById('api-'+k).value.trim(); if (v) localStorage.setItem('key_'+k, v); }); document.getElementById('api-saved').style.display = 'block'; });
 function getKey(k) { return document.getElementById('api-'+k).value.trim(); }
 document.querySelectorAll('.toggle-group').forEach(g => { g.querySelectorAll('.toggle-btn').forEach(b => { b.addEventListener('click', () => { g.querySelectorAll('.toggle-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); if (g.id==='genre-group') localStorage.setItem('pref_genre', b.dataset.value); if (g.id==='mood-group') localStorage.setItem('pref_mood', b.dataset.value); }); }); });
 function getSelected(id) { return document.querySelector('#'+id+' .toggle-btn.active')?.dataset.value || ''; }
@@ -207,10 +208,15 @@ function hidePipeline() { document.getElementById('pipeline-steps').classList.re
 function fetchWithTimeout(url,opts,ms){return Promise.race([fetch(url,opts),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Request timed out')),ms))]);}
 
 async function aiCall(prompt, temp=0.95, maxTokens=1200, signal=null) {
-  const gk=getKey('groq'), gem=getKey('gemini');
+  const ak=getKey('anthropic'), gk=getKey('groq'), gem=getKey('gemini');
+
+  if(ak){try{const res=await fetchWithTimeout('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ak,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,temperature:temp,messages:[{role:'user',content:prompt}]}),signal},CONFIG.TIMEOUT_MS);if(res.ok){const d=await res.json();showModel('✦ Using Claude Sonnet');return d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim();}const err=await res.json();throw new Error(err?.error?.message||'Anthropic error '+res.status);}catch(e){if(e.name==='AbortError')throw e;if(!gk&&!gem)throw e;showModel('⚡ Claude unavailable — trying Groq');}}
+
   if(gk){try{const res=await fetchWithTimeout(CONFIG.GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},body:JSON.stringify({model:CONFIG.GROQ_MODEL,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature:temp,top_p:0.9}),signal},CONFIG.TIMEOUT_MS);if(res.ok){const d=await res.json();showModel('✦ Using Groq');return d.choices[0].message.content.trim();}const err=await res.json();const isRL=err?.error?.message?.toLowerCase().includes('rate limit')||String(res.status).startsWith('429');if(!isRL)throw new Error(err?.error?.message||'Groq error '+res.status);showModel('⚡ Groq limit — switching to Gemini');}catch(e){if(e.name==='AbortError')throw e;if(!e.message.toLowerCase().includes('rate limit')&&!gem)throw e;}}
+
   if(gem){const res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+CONFIG.GEMINI_MODEL+':generateContent?key='+gem,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:temp,maxOutputTokens:maxTokens}}),signal},CONFIG.TIMEOUT_MS);if(!res.ok){const e=await res.json();throw new Error(e?.error?.message||'Gemini error '+res.status);}const d=await res.json();let t=d.candidates?.[0]?.content?.parts?.[0]?.text||'';if(!t)throw new Error('Empty response from Gemini');t=t.replace(/\*\*[\s\S]*?\*\*/g,'').replace(/\*[^*]+\*/g,'').replace(/_{1,2}[^_]+_{1,2}/g,'').replace(/^\s*---+\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim();showModel('✦ Using Gemini');return t;}
-  throw new Error('No API key — add your Groq or Gemini key above');
+
+  throw new Error('No API key — add your Anthropic, Groq, or Gemini key above');
 }
 
 const GENRE_EXAMPLES = {
