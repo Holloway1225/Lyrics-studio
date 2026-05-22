@@ -632,7 +632,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     const gradeOutput = await aiCall(buildGradePrompt(polished, genre, structuredStory, a4), 0.3, 1200, signal);
 
     // Check if certified — if so skip step 5
-    const isCertified = /CERTIFIED/i.test(gradeOutput);
+    const isCertified = /CERTIFIED/i.test(gradeOutput) || (gradeNum !== null && gradeNum >= 9.5);
     let finalSong = polished;
 
     if (!isCertified) {
@@ -648,7 +648,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     hidePipeline(); clearStatus();
 
     // Parse grade for display
-    const gradeMatch = gradeOutput.match(/GRADE:\s*(\d+(?:\.\d+)?)\/10/i);
+    const gradeMatch = gradeOutput.match(/GRADE:\s*(\d+(?:\.\d+)?)\s*(?:\/10)?/i);
     const gradeNum = gradeMatch ? parseFloat(gradeMatch[1]) : null;
 
     const modeTag = a4 ? '<span style="font-family:\'Inconsolata\',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan);background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);border-radius:50px;padding:4px 10px;">📡 Album 4</span>' : '';
