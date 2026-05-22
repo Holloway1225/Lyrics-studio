@@ -471,7 +471,7 @@ function buildGradePrompt(song, genre, structuredStory, a4) {
     : (structuredStory.match(/THE SONG'S RULE[:\s]*\n([^\n]+)/)?.[1]?.trim() || '');
   const a4block = a4 ? '\nALBUM 4 MODE: additionally penalize any system/signal/static/glitch language.\n' : '';
 
-  return `You are grading a ${genre} song using a 6-axis rubric. Grade honestly. Do not be generous.
+  return `You are grading a ${genre} song using an 8-axis rubric. Grade honestly. Do not be generous.
 ${a4block}
 THE SONG'S RULE: ${rule}
 
@@ -480,7 +480,7 @@ SOURCE MATERIAL RULE — if a line appears generic but matches the source materi
 THE SONG:
 ${song}
 
-Grade across these 6 axes (0-2 each, total out of 12, converted to /10):
+Grade across these 8 axes (0-2 each, total out of 16, converted to /10):
 
 1. EMOTIONAL INEVITABILITY (0-2)
 Does every line feel like it HAD to become the next line? Not "is it emotional" — does the song feel fated or constructed?
@@ -497,7 +497,7 @@ Deduct for lines that sound like a different person or a different song.
 Are abstractions caused by objects — or leading them?
 Concrete evidence (plates, logs, receipts, smells, shoes) should drive abstract conclusions.
 Full 2 = every abstraction is earned by a physical detail that preceded it.
-Deduct when abstract words ("signal," "truth," "paranoia," "pattern") appear without a physical anchor.
+Deduct when abstract words appear without a physical anchor.
 
 4. ESCALATION DESIGN (0-2)
 Does each chorus CHANGE meaning — not just repeat?
@@ -518,6 +518,18 @@ The inversion must complete: observer becomes system, certainty becomes identity
 Full 2 = the final chorus/outro fully completes the thematic arc established in verse 1.
 Deduct for songs that end on a strong image but don't resolve the system's logic.
 
+7. MEMORABILITY (0-2)
+Are there standout lines a listener remembers after one hear?
+Does the chorus contain at least one phrase that lodges in the mind?
+Full 2 = multiple lines that feel inevitable AND memorable — the kind you find yourself repeating.
+Deduct if the song is consistent but has no single line that stops you.
+
+8. PHRASING AND FLOW (0-2)
+Can a human voice land on every line naturally?
+Say each line aloud — does it fit a melody without forcing it?
+Full 2 = every line has a natural breath point, clear rhythm, one idea per line.
+Deduct for lines that pack too many clauses into one breath, lines that read well but fall apart when sung, lines where the stress pattern fights the natural melody.
+
 After scoring, output EXACTLY this format:
 
 AXIS SCORES:
@@ -527,7 +539,9 @@ Specificity Balance: X/2 — [one line reason]
 Escalation Design: X/2 — [one line reason]
 Line Inevitability: X/2 — [one line reason]
 Thematic Completeness: X/2 — [one line reason]
-TOTAL: X/12
+Memorability: X/2 — [one line reason]
+Phrasing and Flow: X/2 — [one line reason]
+TOTAL: X/16
 
 GRADE: X/10
 
@@ -536,7 +550,7 @@ SURGICAL TARGETS:
 LINE: "[exact line]"
 AXIS: [which axis it fails]
 PROBLEM: [one sentence — specific]
-REWRITE TECHNIQUE: [which of these 4 applies: CONCRETE UPGRADE / ABSTRACT REDUCTION / VOICE COMPRESSION / EMOTIONAL INVERSION]
+REWRITE TECHNIQUE: [CONCRETE UPGRADE / ABSTRACT REDUCTION / VOICE COMPRESSION / EMOTIONAL INVERSION / SINGABILITY FIX]
 FIX: [concrete rewrite using the song's own imagery or source material]
 
 If grade is 9.5 or above write CERTIFIED at the end.`;
@@ -636,7 +650,6 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     // Parse grade for display
     const gradeMatch = gradeOutput.match(/GRADE:\s*(\d+(?:\.\d+)?)\/10/i);
     const gradeNum = gradeMatch ? parseFloat(gradeMatch[1]) : null;
-    const totalMatch = gradeOutput.match(/TOTAL:\s*(\d+)\/12/i);
 
     const modeTag = a4 ? '<span style="font-family:\'Inconsolata\',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan);background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);border-radius:50px;padding:4px 10px;">📡 Album 4</span>' : '';
     const certTag = isCertified ? '<span style="font-family:\'Inconsolata\',monospace;font-size:10px;letter-spacing:2px;color:var(--green);background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:50px;padding:4px 10px;">✦ CERTIFIED</span>' : '';
@@ -656,7 +669,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     document.getElementById('copy-lyrics').addEventListener('click', function() { copyText(finalSong, this); });
 
     // Render grade card
-    renderGradeCard(gradeOutput, gradeNum, isCertified);
+    renderGradeCard(gradeOutput, gradeNum, isCertified, finalSong, genre, structuredStory, userLines, a4, signal);
 
   } catch(e) {
     hidePipeline();
@@ -668,38 +681,87 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   }
 });
 
-function renderGradeCard(gradeOutput, gradeNum, certified) {
+function renderGradeCard(gradeOutput, gradeNum, certified, song, genre, structuredStory, userLines, a4, signal) {
   const card = document.getElementById('grade-card');
   if (!card) return;
 
-  const axisLines = gradeOutput.match(/^(Emotional Inevitability|Psychological Coherence|Specificity Balance|Escalation Design|Line Inevitability|Thematic Completeness):\s*(\d)\/2\s*[—\-]\s*(.+)$/gm) || [];
+  const ALL_AXES = ['Emotional Inevitability','Psychological Coherence','Specificity Balance','Escalation Design','Line Inevitability','Thematic Completeness','Memorability','Phrasing and Flow'];
+  const axisLines = [];
+  ALL_AXES.forEach(axis => {
+    const re = new RegExp(axis + ':\\s*(\\d(?:\\.\\d+)?)\\/2\\s*[—\\-]\\s*(.+)', 'i');
+    const m = gradeOutput.match(re);
+    if (m) axisLines.push({ name: axis, score: parseFloat(m[1]), reason: m[2].trim() });
+  });
 
-  const certBanner = certified ? `<div style="margin-bottom:12px;padding:8px 14px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.3);border-radius:8px;font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;color:var(--green);">✦ CERTIFIED — no surgical rewrite needed</div>` : '';
+  const certBanner = certified ? `<div style="margin-bottom:12px;padding:8px 14px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.3);border-radius:8px;font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;color:var(--green);">✦ CERTIFIED — surgical rewrite skipped</div>` : '';
 
   let axisHTML = '';
   if (axisLines.length > 0) {
-    axisHTML = axisLines.map(line => {
-      const m = line.match(/^(.+?):\s*(\d)\/2\s*[—\-]\s*(.+)$/);
-      if (!m) return '';
-      const score = parseInt(m[2]);
-      const color = score === 2 ? 'var(--green)' : score === 1 ? 'var(--gold)' : 'var(--error)';
-      return `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;">
-        <span style="font-family:'Inconsolata',monospace;font-size:12px;color:${color};font-weight:600;min-width:28px;">${score}/2</span>
-        <div><div style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:1px;color:var(--text);">${m[1]}</div>
-        <div style="font-family:'Lora',serif;font-size:12px;color:var(--muted);font-style:italic;margin-top:2px;">${m[3]}</div></div>
+    axisHTML = axisLines.map(g => {
+      const color = g.score >= 2 ? 'var(--green)' : g.score >= 1 ? 'var(--gold)' : 'var(--error)';
+      return `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+        <span style="font-family:'Inconsolata',monospace;font-size:12px;color:${color};font-weight:600;min-width:32px;">${g.score}/2</span>
+        <div><div style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:1px;color:var(--text);margin-bottom:2px;">${g.name}</div>
+        <div style="font-family:'Lora',serif;font-size:12px;color:var(--muted);font-style:italic;">${g.reason}</div></div>
       </div>`;
     }).join('');
   } else {
-    // Fallback — show raw grade output
     axisHTML = `<pre style="font-family:'Inconsolata',monospace;font-size:11px;color:var(--muted);white-space:pre-wrap;line-height:1.7;">${escapeHTML(gradeOutput)}</pre>`;
   }
 
-  const gradeDisplay = gradeNum ? `<div style="font-family:'Inconsolata',monospace;font-size:13px;font-weight:600;color:${gradeNum >= 9 ? 'var(--green)' : gradeNum >= 7 ? 'var(--gold)' : 'var(--error)'};margin-bottom:12px;">GRADE: ${gradeNum}/10</div>` : '';
+  const gradeDisplay = gradeNum ? `<div style="font-family:'Inconsolata',monospace;font-size:14px;font-weight:600;color:${gradeNum >= 9 ? 'var(--green)' : gradeNum >= 7 ? 'var(--gold)' : 'var(--error)'};margin-bottom:14px;letter-spacing:2px;">GRADE: ${gradeNum}/10</div>` : '';
+
+  // Build copyable scorecard text
+  const scorecardText = [
+    `GRADE: ${gradeNum}/10`,
+    '',
+    'AXIS SCORES:',
+    ...axisLines.map(g => `${g.name}: ${g.score}/2 — ${g.reason}`),
+    '',
+    gradeOutput.match(/SURGICAL TARGETS:([\s\S]*?)(?=CERTIFIED|$)/i)?.[0] || ''
+  ].join('\n').trim();
 
   card.innerHTML = `<div style="margin-top:16px;background:rgba(0,0,0,0.25);border:1px solid rgba(168,85,247,0.2);border-radius:12px;overflow:hidden;">
-    <div style="padding:10px 16px;background:rgba(168,85,247,0.06);border-bottom:1px solid rgba(168,85,247,0.12);font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;">④ 6-Axis Grade</div>
+    <div style="padding:10px 16px;background:rgba(168,85,247,0.06);border-bottom:1px solid rgba(168,85,247,0.12);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <span style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;">④ 8-Axis Grade</span>
+      <button id="copy-scorecard-btn" style="padding:5px 14px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;">Copy Scorecard</button>
+    </div>
     <div style="padding:14px 16px;">${certBanner}${gradeDisplay}${axisHTML}</div>
+    <div style="padding:10px 16px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">
+      <button id="force-rewrite-btn" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:rgba(168,85,247,0.08);color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">↻ Force Surgical Rewrite</button>
+    </div>
   </div>`;
+
+  // Copy scorecard
+  document.getElementById('copy-scorecard-btn').addEventListener('click', function() {
+    const btn = this;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(scorecardText).then(() => { btn.textContent = '✓ Copied!'; setTimeout(() => { btn.textContent = 'Copy Scorecard'; }, 2000); });
+    } else {
+      const ta = document.createElement('textarea'); ta.value = scorecardText; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      btn.textContent = '✓ Copied!'; setTimeout(() => { btn.textContent = 'Copy Scorecard'; }, 2000);
+    }
+  });
+
+  // Force rewrite
+  document.getElementById('force-rewrite-btn').addEventListener('click', async function() {
+    const btn = this;
+    btn.disabled = true; btn.textContent = '⟳ Rewriting...';
+    try {
+      const currentLyrics = document.getElementById('lyrics-display')?.innerText || song;
+      const targetsMatch = gradeOutput.match(/SURGICAL TARGETS:([\s\S]*?)(?=CERTIFIED|$)/i);
+      const targets = targetsMatch ? targetsMatch[0] : gradeOutput;
+      const rewritten = await aiCall(buildSurgicalRewritePrompt(currentLyrics, targets, genre, structuredStory, userLines, a4), 0.7, 2000, null);
+      const display = document.getElementById('lyrics-display');
+      if (display) display.textContent = rewritten;
+      const copyBtn = document.getElementById('copy-lyrics');
+      if (copyBtn) copyBtn.onclick = function() { copyText(rewritten, this); };
+      btn.textContent = '✓ Rewrite applied';
+    } catch(e) {
+      btn.textContent = '⚠ Failed — try again';
+      btn.disabled = false;
+    }
+  });
 }
 </script>
 </body>
