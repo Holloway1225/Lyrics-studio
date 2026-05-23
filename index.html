@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Lyrics Studio">
@@ -12,7 +12,7 @@
   :root {
     --bg: #07070f; --surface: rgba(255,255,255,0.03); --border: rgba(180,100,255,0.18);
     --accent: #a855f7; --accent2: #7c3aed; --text: #ede8f5; --muted: #7c6a9a;
-    --gold: #fbbf24; --green: #34d399; --error: #f87171; --cyan: #22d3ee;
+    --gold: #fbbf24; --green: #34d399; --error: #f87171;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { background: var(--bg); color: var(--text); font-family: 'Lora', Georgia, serif; min-height: 100vh; min-height: -webkit-fill-available; padding-bottom: env(safe-area-inset-bottom); overflow-x: hidden; }
@@ -27,7 +27,8 @@
   .api-section { margin-top: 28px; background: rgba(168,85,247,0.06); border: 1px solid rgba(168,85,247,0.2); border-radius: 14px; padding: 18px; }
   .api-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   .api-row:last-of-type { margin-bottom: 0; }
-  .api-label { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; min-width: 70px; }
+  .api-label { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; min-width: 80px; }
+  .api-label.primary { color: var(--accent); }
   .api-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: 'Inconsolata', monospace; font-size: 13px; outline: none; -webkit-appearance: none; }
   .api-input:focus { border-color: var(--accent); }
   .api-hint { font-family: 'Inconsolata', monospace; font-size: 10px; color: rgba(124,106,154,0.7); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; }
@@ -46,21 +47,9 @@
   .toggle-group { display: flex; flex-wrap: wrap; gap: 8px; }
   .toggle-btn { padding: 8px 14px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 1px; cursor: pointer; transition: all 0.15s; -webkit-appearance: none; }
   .toggle-btn.active { border-color: var(--accent); background: rgba(168,85,247,0.15); color: #f0abfc; transform: scale(1.04); }
-  .mode-toggle-section { margin-top: 24px; }
-  .mode-toggle-wrapper { display: flex; align-items: center; gap: 14px; background: rgba(34,211,238,0.04); border: 1px solid rgba(34,211,238,0.15); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; }
-  .mode-toggle-wrapper:hover { background: rgba(34,211,238,0.08); }
-  .mode-toggle-wrapper.active { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.4); }
-  .mode-toggle-switch { width: 42px; height: 24px; background: rgba(124,106,154,0.3); border-radius: 50px; position: relative; flex-shrink: 0; transition: background 0.2s; }
-  .mode-toggle-switch.on { background: var(--cyan); }
-  .mode-toggle-knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: white; border-radius: 50%; transition: transform 0.2s; }
-  .mode-toggle-switch.on .mode-toggle-knob { transform: translateX(18px); }
-  .mode-toggle-text { flex: 1; }
-  .mode-toggle-title { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 3px; color: var(--cyan); text-transform: uppercase; margin-bottom: 4px; }
-  .mode-toggle-desc { font-family: 'Lora', Georgia, serif; font-size: 12px; color: var(--muted); font-style: italic; line-height: 1.5; }
   .generate-btn { width: 100%; margin-top: 28px; padding: 18px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; font-family: 'Inconsolata', monospace; font-size: 14px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 30px rgba(168,85,247,0.3); transition: all 0.2s; -webkit-appearance: none; }
   .generate-btn:active { transform: scale(0.98); opacity: 0.9; }
   .generate-btn:disabled { background: rgba(168,85,247,0.2); color: var(--muted); box-shadow: none; cursor: not-allowed; }
-  .generate-btn.album4-mode { background: linear-gradient(135deg, #0e7490, #22d3ee); box-shadow: 0 0 30px rgba(34,211,238,0.25); }
   .output-box { margin-top: 28px; background: rgba(0,0,0,0.3); border: 1px solid rgba(124,77,255,0.3); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
   .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
   .box-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
@@ -86,23 +75,28 @@
   <div class="header">
     <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
     <h1>Your Lyrics.<br>Your Voice.</h1>
-    <p>100% Original · Powered by Groq + Gemini</p>
-    <div style="margin-top:10px;font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;">v3.0 · Rule Engine · 5-Layer Cryptid Mode</div>
+    <p>100% Original · Powered by Claude + Groq</p>
   </div>
+
   <div class="api-section" style="margin-top:28px">
     <div class="section-label" style="margin-top:0">API Keys</div>
-    <div class="api-row"><div class="api-label">ANTHROPIC</div><input type="password" id="api-anthropic" class="api-input" placeholder="sk-ant-..." aria-label="Anthropic API key"></div>
-    <div class="api-row"><div class="api-label">GROQ</div><input type="password" id="api-groq" class="api-input" placeholder="gsk_..." aria-label="Groq API key"></div>
-    <div class="api-row"><div class="api-label">GEMINI</div><input type="password" id="api-gemini" class="api-input" placeholder="AIza..." aria-label="Gemini API key"></div>
-    <div class="api-hint">Claude Sonnet used when Anthropic key is present — best quality for 5-layer engine. Groq or Gemini used as fallback.<br>Anthropic: console.anthropic.com · Groq: console.groq.com · Gemini: aistudio.google.com</div>
+    <div class="api-row">
+      <div class="api-label primary">ANTHROPIC</div>
+      <input type="password" id="api-anthropic" class="api-input" placeholder="sk-ant-..." aria-label="Anthropic API key">
+    </div>
+    <div class="api-row">
+      <div class="api-label">GROQ</div>
+      <input type="password" id="api-groq" class="api-input" placeholder="gsk_..." aria-label="Groq API key">
+    </div>
+    <div class="api-hint">Claude Sonnet used when Anthropic key is present — best quality. Groq used as fallback.<br>Anthropic: console.anthropic.com · Groq: console.groq.com</div>
     <div class="api-warning">⚠ Keys are stored in your browser only. Do not use on a shared or public device.</div>
     <div class="api-saved" id="api-saved">✓ Keys saved to this browser</div>
     <div class="active-model" id="active-model"></div>
     <button id="save-keys-btn" style="margin-top:12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:8px 16px;color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">Save Keys</button>
   </div>
+
   <div class="section-label">Genre</div>
   <div class="toggle-group" id="genre-group">
-    <button class="toggle-btn" data-value="Cryptid Static">📡 Cryptid Static</button>
     <button class="toggle-btn active" data-value="Pop">Pop</button>
     <button class="toggle-btn" data-value="Hip-Hop">Hip-Hop</button>
     <button class="toggle-btn" data-value="R&B">R&amp;B</button>
@@ -111,9 +105,11 @@
     <button class="toggle-btn" data-value="EDM">EDM</button>
     <button class="toggle-btn" data-value="Soul">Soul</button>
     <button class="toggle-btn" data-value="Indie">Indie</button>
+    <button class="toggle-btn" data-value="Dark Glitch Metal">🖤 Dark Glitch Metal</button>
     <button class="toggle-btn" data-value="Christian Rock">✝️ Christian Rock</button>
     <button class="toggle-btn" data-value="Christian Worship">🙏 Christian Worship</button>
   </div>
+
   <div class="section-label">Mood / Vibe</div>
   <div class="toggle-group" id="mood-group">
     <button class="toggle-btn active" data-value="high-energy, hype, hard-hitting">🔥 Hype</button>
@@ -129,616 +125,242 @@
     <button class="toggle-btn" data-value="dissociative, fractured, identity-dissolving, glitch">📡 Glitch/Dissociative</button>
     <button class="toggle-btn" data-value="haunting, cinematic, eerie, atmospheric dread">👁 Haunting</button>
   </div>
-  <div class="mode-toggle-section">
-    <div class="section-label">Writing Mode</div>
-    <div class="mode-toggle-wrapper" id="album4-toggle-wrapper">
-      <div class="mode-toggle-switch" id="album4-switch"><div class="mode-toggle-knob"></div></div>
-      <div class="mode-toggle-text">
-        <div class="mode-toggle-title">📡 Album 4 Mode — Human Voice</div>
-        <div class="mode-toggle-desc">Drops all system language, static, signal metaphors. Forces plain, direct, honest human songwriting. Use for Rewired the Flame era songs.</div>
-      </div>
-    </div>
-    <div class="mode-toggle-wrapper" id="grade-toggle-wrapper" style="margin-top:10px;">
-      <div class="mode-toggle-switch" id="grade-switch"><div class="mode-toggle-knob"></div></div>
-      <div class="mode-toggle-text">
-        <div class="mode-toggle-title" style="color:var(--gold);">⚡ Grade + Rewrite — Groq</div>
-        <div class="mode-toggle-desc">Adds 8-axis grading and surgical rewrite after polish. Runs on Groq to save cost. Adds ~2 cents per song.</div>
-      </div>
-    </div>
-  </div>
+
   <div class="section-label">Your Idea</div>
   <div class="theme-hint">
-    <div class="theme-hint-title">Paste your Concept Expander output here — or write your own</div>
+    <div class="theme-hint-title">Anything goes — the more vivid, the better</div>
     <div class="theme-hint-text">
-      If your idea is a theme ("suburban paranoia", "trust after betrayal") — <span class="theme-hint-good">run it through the Concept Expander first</span> to find the rule before generating. A theme produces a song. A rule produces a closed system.<br><br>
-      <span class="theme-hint-good">✓ Rule: "The act of watching creates what's being watched." Tagline: "Nobody sleeps, but nobody knows why."</span><br><br>
-      <span class="theme-hint-bad">✗ Theme: "Write a song about suburban paranoia"</span>
+      Give it a personal story, a Bible story, a metaphor, a concept, a character, a feeling — anything. The tool works from whatever you hand it. The only rule: be specific.<br><br>
+      <span class="theme-hint-good">✓ "Abraham takes Isaac up the mountain. Isaac keeps asking where the lamb is. Abraham can't answer. He binds his son, raises the knife — and then hears his name called from heaven. A ram appears in the thicket. He holds his son and weeps."</span><br><br>
+      <span class="theme-hint-bad">✗ Too vague: "Write a song about hope and struggle"</span>
     </div>
   </div>
-  <textarea id="theme" rows="5" placeholder="Paste your Concept Expander output, or write a specific story, rule, or image — the more concrete the better..."></textarea>
+  <textarea id="theme" rows="5" placeholder="A personal story, a Bible story, a metaphor, a feeling, a concept — anything vivid and specific..."></textarea>
+
   <div class="section-label">Lines to Protect <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
-  <textarea id="user-lines" rows="2" placeholder="Any lines or a tagline that must appear verbatim in the final song..."></textarea>
-  <div class="section-label">Banned Words <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
-  <div style="font-family:'Inconsolata',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;line-height:1.6;">Words the generator must not use in this song. Comma-separated. Use this to block default imagery — e.g. <span style="color:var(--accent);">3AM, kitchen, coffee</span></div>
-  <textarea id="banned-words" rows="1" style="min-height:44px;" placeholder="3AM, kitchen, coffee, 2AM..."></textarea>
+  <textarea id="user-lines" rows="2" placeholder="Any lines you've already written that must appear verbatim in the final song..."></textarea>
+
   <button class="generate-btn" id="generate-btn">✦ &nbsp; Write My Song</button>
+
   <div class="status" id="status"></div>
   <div class="pipeline-steps" id="pipeline-steps">
-    <div class="pipeline-step" id="step-1">① Finding the rule...</div>
+    <div class="pipeline-step" id="step-1">① Studying your story...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
     <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
-    <div class="pipeline-step" id="step-4">④ Grading across 6 axes...</div>
-    <div class="pipeline-step" id="step-5">⑤ Surgical rewrite...</div>
   </div>
   <div id="output"></div>
 </div>
+
 <script>
 const CONFIG = {
   GROQ_URL: 'https://api.groq.com/openai/v1/chat/completions',
   GROQ_MODEL: 'llama-3.3-70b-versatile',
-  GEMINI_MODEL: 'gemini-2.5-flash-lite',
-  TIMEOUT_MS: 120000,
+  GEMINI_MODEL: 'gemini-2.5-flash',
+  TIMEOUT_MS: 60000,
 };
 
 let currentController = null;
-let album4ModeOn = false;
-let gradeModeOn = false;
-
-document.getElementById('album4-toggle-wrapper').addEventListener('click', () => {
-  album4ModeOn = !album4ModeOn;
-  document.getElementById('album4-switch').classList.toggle('on', album4ModeOn);
-  document.getElementById('album4-toggle-wrapper').classList.toggle('active', album4ModeOn);
-  document.getElementById('generate-btn').classList.toggle('album4-mode', album4ModeOn);
-  localStorage.setItem('album4_mode', album4ModeOn ? '1' : '0');
-});
-
-document.getElementById('grade-toggle-wrapper').addEventListener('click', () => {
-  gradeModeOn = !gradeModeOn;
-  const sw = document.getElementById('grade-switch');
-  const wrapper = document.getElementById('grade-toggle-wrapper');
-  sw.classList.toggle('on', gradeModeOn);
-  wrapper.classList.toggle('active', gradeModeOn);
-  // Update step labels visibility
-  document.getElementById('step-4').style.display = gradeModeOn ? '' : 'none';
-  document.getElementById('step-5').style.display = gradeModeOn ? '' : 'none';
-  localStorage.setItem('grade_mode', gradeModeOn ? '1' : '0');
-});
 
 window.addEventListener('load', () => {
-  ['anthropic','groq','gemini'].forEach(k => { const v = localStorage.getItem('key_'+k); if (v) document.getElementById('api-'+k).value = v; });
-  if (['anthropic','groq','gemini'].some(k => localStorage.getItem('key_'+k))) document.getElementById('api-saved').style.display = 'block';
+  ['anthropic','groq'].forEach(k => { const v = localStorage.getItem('key_'+k); if (v) document.getElementById('api-'+k).value = v; });
+  if (localStorage.getItem('key_anthropic') || localStorage.getItem('key_groq')) document.getElementById('api-saved').style.display = 'block';
   const sg = localStorage.getItem('pref_genre'); const sm = localStorage.getItem('pref_mood');
   if (sg) restoreToggle('genre-group', sg); if (sm) restoreToggle('mood-group', sm);
-  if (localStorage.getItem('album4_mode') === '1') {
-    album4ModeOn = true;
-    document.getElementById('album4-switch').classList.add('on');
-    document.getElementById('album4-toggle-wrapper').classList.add('active');
-    document.getElementById('generate-btn').classList.add('album4-mode');
-  }
-  if (localStorage.getItem('grade_mode') === '1') {
-    gradeModeOn = true;
-    document.getElementById('grade-switch').classList.add('on');
-    document.getElementById('grade-toggle-wrapper').classList.add('active');
-  } else {
-    // Hide grade steps when mode is off
-    document.getElementById('step-4').style.display = 'none';
-    document.getElementById('step-5').style.display = 'none';
-  }
 });
 
 function restoreToggle(gid, val) { document.querySelectorAll('#'+gid+' .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.value === val)); }
-document.getElementById('save-keys-btn').addEventListener('click', () => { ['anthropic','groq','gemini'].forEach(k => { const v = document.getElementById('api-'+k).value.trim(); if (v) localStorage.setItem('key_'+k, v); }); document.getElementById('api-saved').style.display = 'block'; });
-function getKey(k) { return document.getElementById('api-'+k).value.trim(); }
+document.getElementById('save-keys-btn').addEventListener('click', () => { ['anthropic','groq'].forEach(k => { const v = document.getElementById('api-'+k).value.trim(); if (v) localStorage.setItem('key_'+k, v); }); document.getElementById('api-saved').style.display = 'block'; });
+function getKey(k) { return document.getElementById('api-'+k)?.value.trim() || ''; }
 document.querySelectorAll('.toggle-group').forEach(g => { g.querySelectorAll('.toggle-btn').forEach(b => { b.addEventListener('click', () => { g.querySelectorAll('.toggle-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); if (g.id==='genre-group') localStorage.setItem('pref_genre', b.dataset.value); if (g.id==='mood-group') localStorage.setItem('pref_mood', b.dataset.value); }); }); });
 function getSelected(id) { return document.querySelector('#'+id+' .toggle-btn.active')?.dataset.value || ''; }
-function copyText(text, btn) { const reset = () => { btn.textContent='Copy'; btn.classList.remove('copied'); }; const fb = () => { const ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); try { document.execCommand('copy'); btn.textContent='✓ Copied!'; btn.classList.add('copied'); setTimeout(reset,2000); } catch(e){btn.textContent='Failed';} document.body.removeChild(ta); }; if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(() => { btn.textContent='✓ Copied!'; btn.classList.add('copied'); setTimeout(reset,2000); }).catch(fb); } else { fb(); } }
+function copyText(text, btn) { const reset = () => { btn.textContent='Copy'; btn.classList.remove('copied'); }; const fb = () => { const ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); try { document.execCommand('copy'); btn.textContent='✓ Copied!'; btn.classList.add('copied'); setTimeout(reset,2000); } catch(e){} document.body.removeChild(ta); }; if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(() => { btn.textContent='✓ Copied!'; btn.classList.add('copied'); setTimeout(reset,2000); }).catch(fb); } else { fb(); } }
 function escapeHTML(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 function setStatus(msg, err=false) { const el=document.getElementById('status'); el.textContent=msg; el.className='status visible'+(err?' error':''); }
 function clearStatus() { document.getElementById('status').className='status'; }
 function showModel(msg) { const el=document.getElementById('active-model'); el.textContent=msg; el.style.display='block'; }
-const TOTAL_STEPS=5;
-function setPipelineStep(n) { document.getElementById('pipeline-steps').classList.add('visible'); for(let i=1;i<=TOTAL_STEPS;i++){const el=document.getElementById('step-'+i);if(!el)continue;if(i<n)el.className='pipeline-step done';else if(i===n)el.className='pipeline-step active';else el.className='pipeline-step';} }
-function hidePipeline() { document.getElementById('pipeline-steps').classList.remove('visible'); for(let i=1;i<=TOTAL_STEPS;i++){const el=document.getElementById('step-'+i);if(el)el.className='pipeline-step';} }
-function fetchWithTimeout(url,opts,ms){return Promise.race([fetch(url,opts),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Request timed out')),ms))]);}
+function setPipelineStep(n) { document.getElementById('pipeline-steps').classList.add('visible'); [1,2,3].forEach(i => { const el=document.getElementById('step-'+i); if(i<n) el.className='pipeline-step done'; else if(i===n) el.className='pipeline-step active'; else el.className='pipeline-step'; }); }
+function hidePipeline() { document.getElementById('pipeline-steps').classList.remove('visible'); [1,2,3].forEach(i => { document.getElementById('step-'+i).className='pipeline-step'; }); }
+function fetchWithTimeout(url, opts, ms) { return Promise.race([fetch(url,opts), new Promise((_,rej) => setTimeout(() => rej(new Error('Request timed out')), ms))]); }
 
 async function aiCall(prompt, temp=0.95, maxTokens=1200, signal=null) {
-  const ak=getKey('anthropic'), gk=getKey('groq'), gem=getKey('gemini');
+  const ak=getKey('anthropic'), gk=getKey('groq');
 
-  if(ak){try{const res=await fetchWithTimeout('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ak,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,temperature:temp,messages:[{role:'user',content:prompt}]}),signal},CONFIG.TIMEOUT_MS);if(res.ok){const d=await res.json();showModel('✦ Using Claude Sonnet');return d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim();}const err=await res.json();throw new Error(err?.error?.message||'Anthropic error '+res.status);}catch(e){if(e.name==='AbortError')throw e;if(!gk&&!gem)throw e;showModel('⚡ Claude unavailable — trying Groq');}}
-
-  if(gk){try{const res=await fetchWithTimeout(CONFIG.GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},body:JSON.stringify({model:CONFIG.GROQ_MODEL,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature:temp,top_p:0.9}),signal},CONFIG.TIMEOUT_MS);if(res.ok){const d=await res.json();showModel('✦ Using Groq');return d.choices[0].message.content.trim();}const err=await res.json();const isRL=err?.error?.message?.toLowerCase().includes('rate limit')||String(res.status).startsWith('429');if(!isRL)throw new Error(err?.error?.message||'Groq error '+res.status);showModel('⚡ Groq limit — switching to Gemini');}catch(e){if(e.name==='AbortError')throw e;if(!e.message.toLowerCase().includes('rate limit')&&!gem)throw e;}}
-
-  if(gem){const res=await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+CONFIG.GEMINI_MODEL+':generateContent?key='+gem,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:temp,maxOutputTokens:maxTokens}}),signal},CONFIG.TIMEOUT_MS);if(!res.ok){const e=await res.json();throw new Error(e?.error?.message||'Gemini error '+res.status);}const d=await res.json();let t=d.candidates?.[0]?.content?.parts?.[0]?.text||'';if(!t)throw new Error('Empty response from Gemini');t=t.replace(/\*\*[\s\S]*?\*\*/g,'').replace(/\*[^*]+\*/g,'').replace(/_{1,2}[^_]+_{1,2}/g,'').replace(/^\s*---+\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim();showModel('✦ Using Gemini');return t;}
-
-  throw new Error('No API key — add your Anthropic, Groq, or Gemini key above');
-}
-
-async function groqCall(prompt, temp=0.3, maxTokens=2000, signal=null) {
-  const gk = getKey('groq'), gem = getKey('gemini');
-  if (gk) {
+  if (ak) {
     try {
-      const res = await fetchWithTimeout(CONFIG.GROQ_URL, {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},body:JSON.stringify({model:CONFIG.GROQ_MODEL,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature:temp,top_p:0.9}),signal}, CONFIG.TIMEOUT_MS);
-      if (res.ok) { const d = await res.json(); showModel('⚡ Grade via Groq'); return d.choices[0].message.content.trim(); }
-      const err = await res.json();
-      const isRL = err?.error?.message?.toLowerCase().includes('rate limit') || String(res.status).startsWith('429');
-      if (!isRL) throw new Error(err?.error?.message || 'Groq error ' + res.status);
-      showModel('⚡ Groq limit — switching to Gemini for grade');
-    } catch(e) { if (e.name === 'AbortError') throw e; if (!gem) throw e; }
+      const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':ak,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,temperature:temp,messages:[{role:'user',content:prompt}]}),
+        signal
+      }, CONFIG.TIMEOUT_MS);
+      if (res.ok) { const d=await res.json(); showModel('✦ Using Claude Sonnet'); return d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim(); }
+      const err=await res.json().catch(()=>({}));
+      throw new Error(err?.error?.message||'Anthropic error '+res.status);
+    } catch(e) { if(e.name==='AbortError') throw e; if(!gk) throw e; }
   }
-  if (gem) {
-    const res = await fetchWithTimeout('https://generativelanguage.googleapis.com/v1beta/models/'+CONFIG.GEMINI_MODEL+':generateContent?key='+gem, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:temp,maxOutputTokens:maxTokens}}),signal}, CONFIG.TIMEOUT_MS);
-    if (!res.ok) { const e = await res.json(); throw new Error(e?.error?.message || 'Gemini error ' + res.status); }
-    const d = await res.json();
-    let t = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!t) throw new Error('Empty response');
-    t = t.replace(/\*\*[\s\S]*?\*\*/g,'').replace(/\*[^*]+\*/g,'').replace(/_{1,2}[^_]+_{1,2}/g,'').replace(/^\s*---+\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
-    showModel('⚡ Grade via Gemini');
-    return t;
+
+  if (gk) {
+    const res = await fetchWithTimeout(CONFIG.GROQ_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
+      body:JSON.stringify({model:CONFIG.GROQ_MODEL,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature:temp,top_p:0.9}),
+      signal
+    }, CONFIG.TIMEOUT_MS);
+    if (!res.ok) { const err=await res.json().catch(()=>({})); throw new Error(err?.error?.message||'Groq error '+res.status); }
+    const d=await res.json();
+    showModel('✦ Using Groq');
+    return d.choices[0].message.content.trim();
   }
-  throw new Error('No fallback key for grade — add Groq or Gemini key');
+
+  throw new Error('No API key — add your Anthropic or Groq key above');
 }
 
 const GENRE_EXAMPLES = {
-  "Cryptid Static": `GOOD LINE: "And I still hate that part of me that almost wants it back"\nBAD LINE: "I miss you so much it hurts"\nGOOD LINE: "They took the way my daughter says my name so I don't hear it right again"\nBAD LINE: "They took everything that mattered to me"\nGOOD CHORUS: "I'm bound, I'm free, I'm yours / say it like it doesn't hurt anymore / I'm real, I'm erased, I'm torn / still trying to remember what I'm for"\nBAD CHORUS: "I feel so empty inside / you left me here to die"\nSTYLE NOTES: Dark glitch metal and alternative. Cold, precise, industrial when needed. Personal and devastating when the song calls for it. Every line earns its place. No generic emotion-naming. Specific physical details over abstract feelings.`,
   "Pop": `GOOD LINE: "I found your hoodie in the back seat / still smells like the last time we were easy"\nBAD LINE: "I miss you so much it hurts inside"\nGOOD CHORUS: "Maybe I was wrong / maybe you were right / maybe we were just two kids / burning in the night"\nBAD CHORUS: "I will love you forever / you mean everything to me"`,
   "Hip-Hop": `GOOD LINE: "Mama kept the lights on working doubles at the waffle house / I told her I'd buy her a real house / she said boy just get your diploma out"\nBAD LINE: "I came from nothing and now I have everything"\nGOOD CHORUS: "All I got is this moment / can't waste it on your doubt / came too far to fold now / I'm finding my way out"`,
   "R&B": `GOOD LINE: "You left your perfume on my pillow / I still sleep on your side / order takeout for two by habit / then sit alone and cry"\nBAD LINE: "Without you I feel so empty inside"\nGOOD CHORUS: "I keep your number in my phone / can't bring myself to let it go / one text away from falling back / into everything I know"`,
   "Country": `GOOD LINE: "Last day of summer, back of your daddy's truck / radio on, gravel road, twenty bucks of luck"\nBAD LINE: "Small town life means everything to me"\nGOOD CHORUS: "That old red barn's still standing / your name's still in the wood / I'd go back and change a thousand things / but none of them I should"`,
   "Rock": `GOOD LINE: "Knuckles white on the steering wheel / drove past your street three times / told myself I was just passing through / told myself that lie"\nBAD LINE: "I feel the rage building inside me"\nGOOD CHORUS: "I am not what they made me / I am not what I was / I'm the fire that keeps burning / after everyone gives up"`,
-  "EDM": `GOOD LINE: "Neon lights on a wet street / your face in every window / three AM and I'm still moving / can't let this feeling go"\nBAD LINE: "Dance with me all night long"\nGOOD CHORUS: "Let it break / let it breathe / let it take / everything"`,
+  "EDM": `GOOD LINE: "Neon lights on a wet street / your face in every window / still moving / can't let this feeling go"\nBAD LINE: "Dance with me all night long"\nGOOD CHORUS: "Let it break / let it breathe / let it take / everything"`,
   "Soul": `GOOD LINE: "Sat in my car outside the church / couldn't make myself go in / pastor said God forgives everything / but I ain't forgiven him"\nBAD LINE: "I've been through so much pain in my life"\nGOOD CHORUS: "Still here / still standing / still got two hands worth of fight / still here / still standing / after the longest night"`,
   "Indie": `GOOD LINE: "You always burned the toast and called it caramelized / I believed you every time / now I make it perfect every morning / and I hate how it tastes"\nBAD LINE: "Everything reminds me of you"\nGOOD CHORUS: "I keep finding you in ordinary things / the way the light comes through at four / I don't know what any of this means / I just know I can't ignore"`,
+  "Dark Glitch Metal": `GOOD LINE: "And I still hate that part of me that almost wants it back"\nBAD LINE: "I miss you so much it hurts"\nGOOD LINE: "They took the way my daughter says my name so I don't hear it right again"\nBAD LINE: "They took everything that mattered to me"\nGOOD CHORUS: "I'm bound, I'm free, I'm yours / say it like it doesn't hurt anymore / I'm real, I'm erased, I'm torn / still trying to remember what I'm for"\nSTYLE: Cold, precise, personal and devastating. No generic emotion-naming. Specific physical details over abstract feelings.`,
   "Christian Rock": `GOOD LINE: "Hit the floor of my bathroom at 2 AM / thought I'd finally run too far / picked up a Bible I hadn't touched in years / found my name written in the scars"\nBAD LINE: "I cried out to you Lord in my darkness"\nGOOD CHORUS: "You didn't wait for me to get it right / you ran to me mid-fall / I thought I had to earn my way back home / but you never left at all"`,
   "Christian Worship": `GOOD LINE: "I've shown you every broken part / the ones I hid for years / and still you call me by my name / and meet me right here"\nBAD LINE: "You are so great and mighty Lord"\nGOOD CHORUS: "Where else would I go / you have the words of life / where else would I go / you hold me in the night"`
 };
 
-const ALBUM4_INJECTION = `
-=== ALBUM 4 MODE: HUMAN VOICE — MAXIMUM PRIORITY — OVERRIDES EVERYTHING ELSE ===
-You are writing a song for a person who survived something that should have ended them. They are on the other side. They stopped speaking in machine language. They just talk now.
-HARD BANNED WORDS: signal, transmission, frequency, static, glitch, data, code, loop, protocol, algorithm, archive, reboot, corrupted, decoded, processed, erased, system, binary, digital, terminate, subroutine, network, bandwidth, upload, download, interface, rendered, authenticated, verified, flagged, rerouted, overwritten, firmware, hardware, software, cached, buffered, synced
-HARD BANNED CONCEPTS: The self as a machine or computer. Identity splitting into versions or files. Consciousness as a program running. Emotions as system errors or glitches.
-WHAT THIS SOUNDS LIKE: A person. In a room. Talking plainly. Tired but present. Specific physical details. Real objects. Sentences that finish themselves. Feelings shown through actions, never named directly.
-GOOD: "I drove past the exit three times and told myself it was traffic"
-BAD: "My routing protocol flagged the exit as corrupted"
-=== END ALBUM 4 MODE ===
-`;
+function buildStructurePrompt(theme) {
+  return `You are a creative analyst for a world-class songwriter. You have been given raw material — it could be a personal story, a Bible story, a metaphor, a concept, a character, a feeling, or anything else. Your job is to extract what a songwriter needs from it. Do not editorialize. Do not invent details that aren't there. Just organize what already exists.
 
-function buildStructurePrompt(theme, userLines, a4, genre, bannedWords) {
-  const sacred = userLines ? '\nSACRED LINES — must appear verbatim in the final song:\n'+userLines+'\n' : '';
-  const a4block = a4 ? ALBUM4_INJECTION : '';
-  const bannedBlock = bannedWords ? `\nBANNED WORDS FOR THIS SONG — do not use these words or phrases anywhere in the structure or suggest them as imagery:\n${bannedWords}\nFind the images that belong to THIS concept's specific world instead.\n` : '';
-
-  if (genre === 'Cryptid Static') {
-    return `You are a creative analyst for a world-class concept songwriter. You are building a CLOSED SYSTEM — a song where every line is pressured by the rules of the concept, not just describing feelings.
-${a4block}${bannedBlock}${sacred}
 THE RAW MATERIAL:
 ${theme}
 
-Extract and return ONLY this structure:
-
-LAYER 1 — THE RULE OF REALITY:
-[The single law this song's world obeys. Not a theme. A rule. State it as a fact about how this world works.
-Example: "All audio is post-death playback." "Every fix rewrites another goodbye." "The door only opens for someone who didn't sign the exit papers."
-If you can't state the rule in one clean sentence, the song will drift. State it cleanly.]
-
-LAYER 2 — THE OBSESSION:
-[One emotional behavior the narrator develops in response to the rule. Not a mood — a behavior.
-Template: "The narrator becomes addicted to / trapped in / obsessed with ______."
-Example: "The narrator becomes obsessed with trying to save people through the signal."]
-
-LAYER 3 — THE ESCALATION LADDER:
-STAGE 1 — DISCOVERY: [Something strange appears. The rule first reveals itself.]
-STAGE 2 — PATTERN: [It's not random. It has rules. The narrator starts to understand.]
-STAGE 3 — CONTROL ILLUSION: ["I can use this / fix this / understand this."]
-STAGE 4 — COLLAPSE / INVERSION: [It was always about me. I was inside it. I was the system.]
-
-LAYER 4 — THE SONIC MOTIF:
-[One short phrase that can be repeated, interrupted, or recontextualized throughout the song. This is the song's phrase DNA — the tuning command.
-Examples: "Channel 13 — don't change the dial" / "Are you still there?" / "It already happened"
-Must be singable, short, and able to mean something different each time it returns.]
-
-LAYER 5 — THE FINAL INVERSION:
-[The non-negotiable ending move. The observer becomes part of the system.
-Template: "I thought I was ______, but I was actually ______."
-Types: listener becomes broadcast / dreamer becomes dream / memory becomes origin / narrator becomes cause not effect
-State the specific inversion for this song.]
-
-NARRATIVE SPINE:
-VERSE 1 — DISCOVERY + FIRST CRACK: [Stage 1 of the ladder. The rule first appears. One concrete physical beat.]
-VERSE 2 — PATTERN + CONTROL ILLUSION: [Stages 2-3. The narrator thinks they understand it. Different images from Verse 1.]
-BRIDGE — SYSTEM BREACHES PERSONAL SPACE: [The rule stops being external and becomes personal. The crack.]
-CHORUS — MOTIF REINFORCEMENT: [Built around the sonic motif. Escalates slightly each return. Gets closer to collapse.]
-OUTRO — INVERSION REVEAL: [Layer 5 executed. The observer has become part of the system. One specific image.]
-
-KEY IMAGES:
-[8-12 specific physical or sensory details from the material. Objects, sounds, actions, textures.]
-
-${userLines ? 'SACRED LINES PLACEMENT:\n[For each sacred line, specify which section and why.]\n' : ''}
-EMOTIONAL DESTINATION:
-[What the listener feels at the end. One sentence. Should feel inevitable, not surprising.]`;
-  }
-
-  return `You are a creative analyst for a world-class songwriter. Extract what a songwriter needs from this material. Preserve the original language. Do NOT flatten poetic input into plain language.
-${a4block}${bannedBlock}${sacred}
-THE RAW MATERIAL:
-${theme}
-
-IMPORTANT CONSTRAINTS:
-- Do not introduce generic themes not present in the material.
-- If the input has no clear turning point, invent one that FITS THE SPECIFIC IMAGERY.
-- Do not sanitize dark or unusual imagery. Preserve it.
-
-Extract and return ONLY this structure:
-
-THE SONG'S RULE:
-[Every great song operates by one internal law — the thing that is always true in this song's world. Not a theme. Not a mood. A rule.
-Examples by genre:
-- "The coat by the door isn't yours but you keep wearing it anyway." (identity drift)
-- "You keep arriving six seconds after the fear." (parental anxiety)
-- "The object outlasts the feeling that created it." (grief)
-- "You can't go home to something that's already gone." (nostalgia)
-- "The body remembers what the mind tried to forget." (desire/loss)
-State the rule for THIS song in one sentence. If you can't, the song will drift.]
+Extract and return ONLY this structure, nothing else:
 
 CENTRAL IMAGE OR METAPHOR:
-[The single most vivid image at the heart of this material. One sentence. Preserve exact input language if already poetic.]
+[The single most vivid or powerful image at the heart of this material. One sentence. If the input is a metaphor (e.g. "anxiety as a machine"), name it explicitly here.]
 
-NARRATIVE SPINE:
-VERSE 1 — SITUATION: [Opening state. Before anything changes. One concrete beat.]
-VERSE 2 — SHIFT: [What changes or complicates. One concrete beat. Different images from Verse 1.]
-BRIDGE — TURNING POINT: [The single moment something breaks or transforms. Tonally distinct.]
-CHORUS — EMOTIONAL TRUTH: [The recurring core. A physical moment or image that carries the feeling. What the whole song keeps returning to.]
-OUTRO — LANDING: [Where the listener is left. One image. Not resolution. Not motivation.]
+MOVEMENTS:
+[The stages this material moves through — beginning, escalation, turning point, resolution or landing. List each as a concrete beat, one per line. If it's a Bible story, follow the narrative. If it's a metaphor or concept, map its arc from start to finish.]
 
 KEY IMAGES:
-[8-12 specific physical or sensory details from the material.]
+[6-10 specific physical or sensory details present in the material — objects, places, sounds, actions, textures. Real and concrete only. Do not invent anything not implied by the input.]
 
-${userLines ? 'SACRED LINES PLACEMENT:\n[For each sacred line, specify which section it belongs in and why.]\n' : ''}
+TURNING POINT:
+[The single moment where something shifts — a decision, a revelation, a collapse, a surrender, a rescue. One sentence. Stay close to the material.]
+
+CHORUS CANDIDATE:
+[The most emotionally loaded image or moment. Should be a concrete scene or image, not an abstract theme. One or two sentences.]
+
 EMOTIONAL DESTINATION:
-[What the listener feels at the end. One sentence. Inferred from the arc — should feel inevitable.]`;
+[What should the listener feel at the end of this song? One sentence. Infer from the arc of the material.]`;
 }
 
-function buildWritePrompt(structuredStory, genre, mood, userLines, a4, bannedWords) {
-  const sacred = userLines ? '\nSACRED LINES — NON-NEGOTIABLE. Appear EXACTLY as written:\n'+userLines+'\n' : '';
+function buildPrompt(structuredStory, genre, mood, userLines) {
+  const sacred = userLines ? '\nSACRED LINES — these must appear verbatim in the final song, build around them:\n'+userLines+'\n' : '';
   const examples = GENRE_EXAMPLES[genre] || '';
-  const a4block = a4 ? ALBUM4_INJECTION : '';
-  const bannedBlock = bannedWords ? `\nBANNED WORDS FOR THIS SONG — these must not appear anywhere in the lyrics:\n${bannedWords}\nIf you reach for one of these, stop and find the image that actually belongs to this song's world.\n` : '';
-
-  const ruleEnforcement = genre === 'Cryptid Static' ? `
-THE RULE ENFORCEMENT — MANDATORY FOR EVERY LINE:
-Before writing each line ask: is this line consistent with LAYER 1 — THE RULE OF REALITY?
-Every line must be pressured by the rule. If a line could exist in a song with a different rule — cut it.
-The SONIC MOTIF must appear in the chorus and mutate each time it returns — meaning slightly more, feeling slightly less human, getting closer to collapse.
-The FINAL INVERSION must land in the outro — the observer becomes part of the system. This is non-negotiable.
-The escalation ladder is the song's spine: Verse 1 = discovery, Verse 2 = pattern + control illusion, Bridge = system breaches personal space, Final Chorus = inversion reveal.
-` : `
-THE RULE ENFORCEMENT — MANDATORY FOR EVERY LINE:
-The structured material contains THE SONG'S RULE — the one internal law this song's world obeys.
-Before writing each line ask: is this line consistent with the rule?
-Every line must serve the rule. If a line could exist in a song with a different rule — it is generic. Replace it with something that could only exist in THIS song's world.
-`;
-
-  return `You are a world-class songwriter. Write a complete song from this structured material.
+  return `You are a world class songwriter and ghostwriter. You have been given structured source material — it could be a personal story, a Bible story, a metaphor, a concept, or anything else. Your job is to turn it into a song that follows its arc exactly, in the order it was given.
 
 GENRE: ${genre}
 MOOD: ${mood}
-${a4block}
-${bannedBlock}
 ${sacred}
-THE STRUCTURED MATERIAL:
+THE STRUCTURED MATERIAL — follow this arc exactly, in this order:
 ${structuredStory}
-${ruleEnforcement}
-NARRATIVE SPINE RULE — MANDATORY:
-- [Verse 1] = SITUATION. Opening state. Before anything changes.
-- [Verse 2] = SHIFT. Something deepens or complicates. NOT a repeat of Verse 1.
-- [Bridge] = TURNING POINT. The crack or break moment. Tonally different from verses.
-- [Chorus] = EMOTIONAL TRUTH. One recurring image that carries the feeling.
-- [Outro] = LANDING. One specific image. Not a motivational statement.
 
 QUALITY STANDARD for ${genre}:
 ${examples}
 
 RULES:
 
-1. SACRED LINES ARE ABSOLUTE — appear exactly as written.
+1. FOLLOW THE ARC
+The song must follow the MOVEMENTS from the structured material in order. What comes first goes in Verse 1. What comes next goes in Verse 2. The turning point goes in the Bridge. The resolution or final beat goes in the Outro. Do not reorder.
 
-2. FINGERPRINT RULE — every line must be irreplaceable to this specific song. If a line could appear in a different song, replace it.
+2. USE THE REAL DETAILS
+Every specific detail in the KEY IMAGES is gold — names, objects, places, actions, textures. Use them directly. Do not swap for generic alternatives.
 
-3. PRESERVE INPUT LANGUAGE — use specific poetic phrasing from the source material. Do not replace vivid input with generic alternatives.
+3. FINGERPRINT RULE
+Every line must be irreplaceable — it could only exist in this song about this story. If a line could appear in a different song, rewrite it until it couldn't.
 
 4. BANNED PATTERNS:
 - Identity stacking: "I am the [noun] / I am the [noun]"
-- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall, scars+stars
-- Emotion naming: "I felt empty" "the pain was real"
+- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall
+- Emotion naming: "I felt empty" "I was devastated" "the pain inside"
 - Stock clichés: "heart beating like a drum" "words that cut too deep" "breathe again" "rise from the ashes"
-- Abstract endings: hope/love/strength/faith as a landing without a concrete image
+- Any line that names the feeling instead of showing the moment
+- Repeating a metaphor or image across multiple sections
 
-5. CHORUS RULE — max 4 lines, each under 10 words. Must contain a physical image or moment, not a theme statement.
-CRITICAL: The chorus must stay in the same register as the verses. If the verses are forensic and specific — timestamps, receipts, objects, evidence — the chorus must be too. Do not pull back into symbol or abstraction in the chorus when the verses are operating in concrete detail. The chorus should feel like the most compressed, inevitable version of the evidence — not a thematic summary of it.
+5. CHORUS RULE
+The chorus must contain a specific image or detail from the KEY IMAGES — not a summary of the theme. Max 4 lines, each under 10 words.
 
-6. VERSE 2 MUST NOT REPEAT VERSE 1 — different images, different moment in the arc.
-
-7. SINGABILITY RULE — THIS IS THE MOST IMPORTANT RULE
-You are writing lyrics that will be SUNG, not read. Before writing any line ask: can a human voice land on this? Can it be remembered after one listen?
-
-A SINGABLE line:
-- Has a natural place to breathe
-- Has ONE clear image or emotion — not three packed into one line
-- Lands on a strong syllable at the end
-- Can be delivered by a single human voice without tangling
-
-A NON-SINGABLE line fails when it:
-- Reads well on paper but falls apart spoken aloud
-- Packs too many clauses into one breath
-- Is atmospheric description with no emotional anchor
-- Could only exist in a short story, not in a mouth
-
-TEST EVERY LINE: say it out loud. If it does not land naturally — rewrite it.
-
-THE CHORUS must pass this test: can a stranger sing it back after hearing it once? If it cannot be hummed, it has failed.
-THE PRE-CHORUS must lean forward — it should feel like the song is falling into the chorus.
-VERSES can be more complex but must be deliverable by one human voice.
-
-GOOD SINGABLE: "Channel 13 — don't change the dial / that's how they go missing mid-breath, mid-smile"
-BAD UNSINGABLE: "The transmission on channel 13 only broadcasts final fragmented moments of lives cut mid-sentence"
-
-GOOD SINGABLE: "I love you six seconds too late"
-BAD UNSINGABLE: "My hypervigilance creates temporal displacement in how I experience our connection"
+6. BRIDGE AND OUTRO
+The bridge is where the narrator realizes something — use the TURNING POINT. The outro lands on the EMOTIONAL DESTINATION. Stay in the imagery. Do not go abstract or motivational.
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
-Output the COMPLETE song — every section, no truncation.`;
+Output the complete song. Every section. No truncating. No commentary.`;
 }
 
-function buildPolishPrompt(draft, genre, structuredStory, userLines, a4, bannedWords) {
-  const sacred = userLines ? '\nSACRED LINES — must appear verbatim. Restore if missing:\n'+userLines+'\n' : '';
-  const a4block = a4 ? ALBUM4_INJECTION : '';
-  const bannedBlock = bannedWords ? `\nBANNED WORDS — if any of these appear in the draft, rewrite those lines to remove them:\n${bannedWords}\n` : '';
-  return `You are a ruthless line editor. Fix every weak line. Leave strong ones untouched. Output the ENTIRE revised song.
+function buildPolishPrompt(draft, genre, structuredStory) {
+  return `You are a ruthless line editor for a world-class songwriter. You have been given a first draft and the structured story it came from. Your job is to make it consistently great — not to rewrite it, but to find and fix every weak line while leaving strong ones untouched.
 
 GENRE: ${genre}
-${a4block}
-${bannedBlock}
-${sacred}
-SOURCE MATERIAL:
+
+THE STRUCTURED STORY (source of truth):
 ${structuredStory}
 
 THE DRAFT:
 ${draft}
 
-Apply these tests to every line:
+Go through every line. Apply these tests:
 
-TEST 1 — SACRED LINES: Present verbatim? Restore if not.
+TEST 1 — FINGERPRINT TEST
+Could this line appear in a different song about a different story? If yes, rewrite it using a specific image from the structured story.
 
-TEST 2 — THE RULE TEST: The structured material contains THE SONG'S RULE (or for Cryptid Static, LAYER 1 — THE RULE OF REALITY). Does this line serve that rule? Could it exist in a song with a different rule? If yes — rewrite it until only this song's world could contain it.
+TEST 2 — FILLER TEST
+Does this line name an emotion or state the theme directly? If yes, replace it with the concrete action or image that caused that feeling.
 
-TEST 3 — FINGERPRINT: Could this line appear in a different song? If yes, rewrite using imagery from source material.
+TEST 3 — CHORUS TEST
+Does the chorus contain at least one specific physical detail from the KEY IMAGES? If no, rebuild it around the CHORUS CANDIDATE.
 
-TEST 4 — FILLER: Does this line name an emotion or state the theme directly? Replace with the concrete moment that caused it.
+TEST 4 — REPETITION TEST
+Does any metaphor, image, or phrase appear more than once across different sections? If yes, cut the weaker instance.
 
-TEST 5 — NARRATIVE SPINE: Verse 1 = situation. Verse 2 = shift (not repeat). Bridge = turning point. Outro = specific image, not motivation. Fix drift.
-
-TEST 6 — CHORUS: Physical image present? Under 4 lines, each under 10 words? Fix if not.
-
-TEST 7 — SINGABILITY: Say each line out loud. If it tangles in the mouth, stumbles, or packs too many clauses — rewrite it until a voice can land on it naturally. The chorus must be hummable. The pre-chorus must lean forward into the chorus.
-
-TEST 8 — BANNED PATTERNS: Identity stacking, stock pairs, emotion naming, stock clichés, abstract endings. Rewrite any offender.
-
-${a4 ? 'TEST 9 — ALBUM 4: Any system/transmission/signal/static/glitch language? Rewrite in plain human language.\n' : ''}
-
-Output the complete revised song from [Verse 1] to [Outro]. No commentary.`;
-}
-
-function buildGradePrompt(song, genre, structuredStory, a4) {
-  const rule = genre === 'Cryptid Static'
-    ? (structuredStory.match(/LAYER 1[^\n]*\n([^\n]+)/)?.[1]?.trim() || '')
-    : (structuredStory.match(/THE SONG'S RULE[:\s]*\n([^\n]+)/)?.[1]?.trim() || '');
-  const a4block = a4 ? '\nALBUM 4 MODE: additionally penalize any system/signal/static/glitch language.\n' : '';
-
-  return `You are grading a ${genre} song using an 8-axis rubric. Grade honestly. Do not be generous.
-${a4block}
-THE SONG'S RULE: ${rule}
-
-SOURCE MATERIAL RULE — if a line appears generic but matches the source material's specific language, do NOT flag it. Only flag lines that are generic AND have no basis in the material.
-
-THE SONG:
-${song}
-
-Grade across these 8 axes (0-2 each, total out of 16, converted to /10):
-
-1. EMOTIONAL INEVITABILITY (0-2)
-Does every line feel like it HAD to become the next line? Not "is it emotional" — does the song feel fated or constructed?
-Full 2 = feels like the narrator can't think any other way anymore.
-Deduct for lines that feel placed rather than inevitable.
-
-2. PSYCHOLOGICAL COHERENCE (0-2)
-Is the mind behind this song consistent even as it breaks?
-The voice must keep logic intact while perception destabilizes.
-Full 2 = the narrator's psychology is stable and specific throughout.
-Deduct for lines that sound like a different person or a different song.
-
-3. SPECIFICITY VS ABSTRACTION BALANCE (0-2)
-Are abstractions caused by objects — or leading them?
-Concrete evidence (plates, logs, receipts, smells, shoes) should drive abstract conclusions.
-Full 2 = every abstraction is earned by a physical detail that preceded it.
-Deduct when abstract words appear without a physical anchor.
-
-4. ESCALATION DESIGN (0-2)
-Does each chorus CHANGE meaning — not just repeat?
-Does each verse add new evidence or new distortion?
-Does the bridge collapse or clarify tension — not explain it?
-Full 2 = clear escalation from discovery → pattern → control illusion → collapse.
-CRITICAL CHORUS CHECK: Does the chorus stay in the same forensic/specific register as the verses? The chorus must not pull back into symbol or abstraction when the verses are operating in concrete evidence. If the verses have timestamps, receipts, physical objects — the chorus should too. A chorus that restates the thesis while the verses advance the evidence is a structural failure.
-Deduct for sections that stay at the same emotional level as the previous section.
-Deduct specifically if the chorus goes broader and more symbolic while the verses remain forensic and specific.
-
-5. LINE-LEVEL INEVITABILITY (0-2)
-No writer fingerprints. A 10-level line feels like "this was the only way the thought could land."
-A weak line feels like "someone sat down and crafted this line."
-Full 2 = blunt phrasing, repetitive thought patterns, compulsive language — thoughts sound involuntary.
-Deduct for lines that feel polished, literary, or constructed.
-
-6. THEMATIC COMPLETENESS (0-2)
-Does the song close the loop?
-The inversion must complete: observer becomes system, certainty becomes identity fusion with signal.
-Full 2 = the final chorus/outro fully completes the thematic arc established in verse 1.
-Deduct for songs that end on a strong image but don't resolve the system's logic.
-
-7. MEMORABILITY (0-2)
-Are there standout lines a listener remembers after one hear?
-Does the chorus contain at least one phrase that lodges in the mind?
-Full 2 = multiple lines that feel inevitable AND memorable — the kind you find yourself repeating.
-Deduct if the song is consistent but has no single line that stops you.
-
-8. PHRASING AND FLOW (0-2)
-Can a human voice land on every line naturally?
-Say each line aloud — does it fit a melody without forcing it?
-Full 2 = every line has a natural breath point, clear rhythm, one idea per line.
-Deduct for lines that pack too many clauses into one breath, lines that read well but fall apart when sung, lines where the stress pattern fights the natural melody.
-
-After scoring, output EXACTLY this format:
-
-AXIS SCORES:
-Emotional Inevitability: X/2 — [one line reason]
-Psychological Coherence: X/2 — [one line reason]
-Specificity Balance: X/2 — [one line reason]
-Escalation Design: X/2 — [one line reason]
-Line Inevitability: X/2 — [one line reason]
-Thematic Completeness: X/2 — [one line reason]
-Memorability: X/2 — [one line reason]
-Phrasing and Flow: X/2 — [one line reason]
-TOTAL: X/16
-
-GRADE: X/10
-
-SURGICAL TARGETS:
-[List only lines scoring below full marks. For each:]
-LINE: "[exact line]"
-AXIS: [which axis it fails]
-PROBLEM: [one sentence — specific]
-REWRITE TECHNIQUE: [CONCRETE UPGRADE / ABSTRACT REDUCTION / VOICE COMPRESSION / EMOTIONAL INVERSION / SINGABILITY FIX]
-FIX: [concrete rewrite using the song's own imagery or source material]
-
-If grade is 9.5 or above write CERTIFIED at the end.`;
-}
-
-function buildSurgicalRewritePrompt(song, gradeOutput, genre, structuredStory, userLines, a4) {
-  const sacred = userLines ? '\nSACRED LINES — untouchable regardless of feedback:\n'+userLines+'\n' : '';
-  const rule = genre === 'Cryptid Static'
-    ? (structuredStory.match(/LAYER 1[^\n]*\n([^\n]+)/)?.[1]?.trim() || '')
-    : (structuredStory.match(/THE SONG'S RULE[:\s]*\n([^\n]+)/)?.[1]?.trim() || '');
-  const a4block = a4 ? ALBUM4_INJECTION : '';
-
-  return `You are doing a surgical rewrite. Fix only the flagged lines. Leave everything else character-for-character identical.
-
-GENRE: ${genre}
-THE SONG'S RULE: ${rule}
-${a4block}${sacred}
-
-THE SONG:
-${song}
-
-GRADE FEEDBACK — SURGICAL TARGETS:
-${gradeOutput}
-
-THE 4 REWRITE TECHNIQUES — apply the one specified for each flagged line:
-
-CONCRETE UPGRADE: Replace abstract language with a specific physical object, action, smell, or sound. "I've got patterns" → "all the threads connect without resistance"
-
-ABSTRACT REDUCTION: The abstraction stays but must now be caused by an object that precedes it. Move the physical anchor before the abstract conclusion.
-
-VOICE COMPRESSION: Make the thought sound involuntary. Use repetition, fragmentation, partial sentences, compulsive phrasing. "A spiraling mind doesn't lecture — it loops."
-
-EMOTIONAL INVERSION: Find where the emotion points one direction and flip it. fear → control. observation → participation. certainty → self-doubt. "It's how fast I started watching everybody else."
+TEST 5 — ENDING TEST
+Does the outro stay in the imagery, or does it go abstract or generically motivational? If abstract, pull it back to a concrete image.
 
 RULES:
-1. Fix ONLY lines listed in SURGICAL TARGETS
-2. Apply the specified REWRITE TECHNIQUE for each
-3. The fix must use imagery from within the song or source material — no outside metaphors
-4. Sacred lines are untouchable
-5. Do not add or remove sections
-6. No commentary — output the complete revised song only, from [Verse 1] to [Outro]`;
+- Keep every section label exactly as written
+- Do not add or remove sections
+- If a line passes all tests, do not touch it
+- No commentary or explanations
+
+Output the complete revised song. Nothing else.`;
 }
 
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const theme = document.getElementById('theme').value.trim();
-  const userLines = document.getElementById('user-lines').value.trim();
-  const bannedWords = document.getElementById('banned-words').value.trim();
-  const a4 = album4ModeOn;
-  if (!getKey('anthropic') && !getKey('groq') && !getKey('gemini')) { setStatus('⚠ Add at least one API key above', true); return; }
-  if (!theme) { setStatus('⚠ Give it something to work with', true); return; }
+  if (!getKey('anthropic') && !getKey('groq')) { setStatus('⚠ Add at least one API key above', true); return; }
+  if (!theme) { setStatus('⚠ Give it something to work with — a story, a concept, a feeling', true); return; }
   if (currentController) currentController.abort();
   currentController = new AbortController();
   const signal = currentController.signal;
   const genre = getSelected('genre-group');
   const mood = getSelected('mood-group');
+  const userLines = document.getElementById('user-lines').value.trim();
   const btn = document.getElementById('generate-btn');
   btn.disabled = true;
   document.getElementById('output').innerHTML = '';
   document.getElementById('active-model').style.display = 'none';
   clearStatus();
   try {
-    // Step 1 — Structure + Rule
     setPipelineStep(1);
-    setStatus('① Finding the rule...');
-    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines, a4, genre, bannedWords), 0.3, 1200, signal);
-
-    // Step 2 — Write
+    const structuredStory = await aiCall(buildStructurePrompt(theme), 0.3, 600, signal);
     setPipelineStep(2);
-    setStatus('② Writing the song...');
-    const draft = await aiCall(buildWritePrompt(structuredStory, genre, mood, userLines, a4, bannedWords), 0.95, 2000, signal);
-
-    // Step 3 — Polish
+    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines), 0.95, 1400, signal);
     setPipelineStep(3);
-    setStatus('③ Sharpening every line...');
-    const polished = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines, a4, bannedWords), 0.6, 2000, signal);
-
-    // Step 4+5 — Grade and surgical rewrite (only if grade mode is on)
-    let gradeOutput = null;
-    let gradeNum = null;
-    let isCertified = false;
-    let finalSong = polished;
-
-    if (gradeModeOn) {
-      setPipelineStep(4);
-      setStatus('④ Grading across 8 axes (Groq)...');
-      gradeOutput = await groqCall(buildGradePrompt(polished, genre, structuredStory, a4), 0.3, 2000, signal);
-
-      const gradeMatch = gradeOutput.match(/GRADE:\s*(\d+(?:\.\d+)?)\s*(?:\/10)?/i);
-      gradeNum = gradeMatch ? parseFloat(gradeMatch[1]) : null;
-      isCertified = /CERTIFIED/i.test(gradeOutput) || (gradeNum !== null && gradeNum >= 9.5);
-
-      if (!isCertified) {
-        setPipelineStep(5);
-        setStatus('⑤ Surgical rewrite (Groq)...');
-        const targetsMatch = gradeOutput.match(/SURGICAL TARGETS:([\s\S]*?)(?=CERTIFIED|$)/i);
-        const targets = targetsMatch ? targetsMatch[0] : gradeOutput;
-        finalSong = await groqCall(buildSurgicalRewritePrompt(polished, targets, genre, structuredStory, userLines, a4), 0.7, 2000, signal);
-      }
-    }
-
+    const final = await aiCall(buildPolishPrompt(draft, genre, structuredStory), 0.4, 1400, signal);
     hidePipeline(); clearStatus();
-
-    // Parse grade for display — already parsed above
-    const modeTag = a4 ? '<span style="font-family:\'Inconsolata\',monospace;font-size:10px;letter-spacing:2px;color:var(--cyan);background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);border-radius:50px;padding:4px 10px;">📡 Album 4</span>' : '';
-    const certTag = isCertified ? '<span style="font-family:\'Inconsolata\',monospace;font-size:10px;letter-spacing:2px;color:var(--green);background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:50px;padding:4px 10px;">✦ CERTIFIED</span>' : '';
-    const gradeColor = gradeNum !== null ? (gradeNum >= 9 ? 'var(--green)' : gradeNum >= 7 ? 'var(--gold)' : 'var(--error)') : 'var(--muted)';
-    const gradeTag = gradeNum ? `<span style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:2px;color:${gradeColor};background:rgba(0,0,0,0.2);border:1px solid ${gradeColor};border-radius:50px;padding:4px 12px;">${gradeNum}/10</span>` : '';
-
-    document.getElementById('output').innerHTML = `
-      <div class="output-box">
-        <div class="box-header">
-          <div class="box-title">✦ Your Lyrics</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${modeTag}${certTag}${gradeTag}<button class="copy-btn" id="copy-lyrics">Copy</button></div>
-        </div>
-        <div class="lyrics-text" id="lyrics-display">${escapeHTML(finalSong)}</div>
-      </div>
-      <div id="grade-card"></div>`;
-
-    document.getElementById('copy-lyrics').addEventListener('click', function() { copyText(finalSong, this); });
-
-    // Render grade card only if grade mode was on
-    if (gradeOutput) renderGradeCard(gradeOutput, gradeNum, isCertified, finalSong, genre, structuredStory, userLines, a4, signal);
-
+    document.getElementById('output').innerHTML = `<div class="output-box"><div class="box-header"><div class="box-title">✦ Your Lyrics</div><button class="copy-btn" id="copy-lyrics">Copy</button></div><div class="lyrics-text">${escapeHTML(final)}</div></div>`;
+    document.getElementById('copy-lyrics').addEventListener('click', function() { copyText(final, this); });
   } catch(e) {
     hidePipeline();
     if (e.name === 'AbortError') clearStatus();
@@ -748,89 +370,6 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     currentController = null;
   }
 });
-
-function renderGradeCard(gradeOutput, gradeNum, certified, song, genre, structuredStory, userLines, a4, signal) {
-  const card = document.getElementById('grade-card');
-  if (!card) return;
-
-  const ALL_AXES = ['Emotional Inevitability','Psychological Coherence','Specificity Balance','Escalation Design','Line Inevitability','Thematic Completeness','Memorability','Phrasing and Flow'];
-  const axisLines = [];
-  ALL_AXES.forEach(axis => {
-    const re = new RegExp(axis + ':\\s*(\\d(?:\\.\\d+)?)\\/2\\s*[—\\-]\\s*(.+)', 'i');
-    const m = gradeOutput.match(re);
-    if (m) axisLines.push({ name: axis, score: parseFloat(m[1]), reason: m[2].trim() });
-  });
-
-  const certBanner = certified ? `<div style="margin-bottom:12px;padding:8px 14px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.3);border-radius:8px;font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;color:var(--green);">✦ CERTIFIED — surgical rewrite skipped</div>` : '';
-
-  let axisHTML = '';
-  if (axisLines.length > 0) {
-    axisHTML = axisLines.map(g => {
-      const color = g.score >= 2 ? 'var(--green)' : g.score >= 1 ? 'var(--gold)' : 'var(--error)';
-      return `<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
-        <span style="font-family:'Inconsolata',monospace;font-size:12px;color:${color};font-weight:600;min-width:32px;">${g.score}/2</span>
-        <div><div style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:1px;color:var(--text);margin-bottom:2px;">${g.name}</div>
-        <div style="font-family:'Lora',serif;font-size:12px;color:var(--muted);font-style:italic;">${g.reason}</div></div>
-      </div>`;
-    }).join('');
-  } else {
-    axisHTML = `<pre style="font-family:'Inconsolata',monospace;font-size:11px;color:var(--muted);white-space:pre-wrap;line-height:1.7;">${escapeHTML(gradeOutput)}</pre>`;
-  }
-
-  const gradeDisplay = gradeNum ? `<div style="font-family:'Inconsolata',monospace;font-size:14px;font-weight:600;color:${gradeNum >= 9 ? 'var(--green)' : gradeNum >= 7 ? 'var(--gold)' : 'var(--error)'};margin-bottom:14px;letter-spacing:2px;">GRADE: ${gradeNum}/10</div>` : '';
-
-  // Build copyable scorecard text
-  const scorecardText = [
-    `GRADE: ${gradeNum}/10`,
-    '',
-    'AXIS SCORES:',
-    ...axisLines.map(g => `${g.name}: ${g.score}/2 — ${g.reason}`),
-    '',
-    gradeOutput.match(/SURGICAL TARGETS:([\s\S]*?)(?=CERTIFIED|$)/i)?.[0] || ''
-  ].join('\n').trim();
-
-  card.innerHTML = `<div style="margin-top:16px;background:rgba(0,0,0,0.25);border:1px solid rgba(168,85,247,0.2);border-radius:12px;overflow:hidden;">
-    <div style="padding:10px 16px;background:rgba(168,85,247,0.06);border-bottom:1px solid rgba(168,85,247,0.12);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-      <span style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;">④ 8-Axis Grade</span>
-      <button id="copy-scorecard-btn" style="padding:5px 14px;border-radius:50px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:2px;cursor:pointer;">Copy Scorecard</button>
-    </div>
-    <div style="padding:14px 16px;">${certBanner}${gradeDisplay}${axisHTML}</div>
-    <div style="padding:10px 16px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">
-      <button id="force-rewrite-btn" style="padding:8px 16px;border-radius:8px;border:1px solid rgba(168,85,247,0.3);background:rgba(168,85,247,0.08);color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">↻ Force Surgical Rewrite</button>
-    </div>
-  </div>`;
-
-  // Copy scorecard
-  document.getElementById('copy-scorecard-btn').addEventListener('click', function() {
-    const btn = this;
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(scorecardText).then(() => { btn.textContent = '✓ Copied!'; setTimeout(() => { btn.textContent = 'Copy Scorecard'; }, 2000); });
-    } else {
-      const ta = document.createElement('textarea'); ta.value = scorecardText; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-      btn.textContent = '✓ Copied!'; setTimeout(() => { btn.textContent = 'Copy Scorecard'; }, 2000);
-    }
-  });
-
-  // Force rewrite
-  document.getElementById('force-rewrite-btn').addEventListener('click', async function() {
-    const btn = this;
-    btn.disabled = true; btn.textContent = '⟳ Rewriting...';
-    try {
-      const currentLyrics = document.getElementById('lyrics-display')?.innerText || song;
-      const targetsMatch = gradeOutput.match(/SURGICAL TARGETS:([\s\S]*?)(?=CERTIFIED|$)/i);
-      const targets = targetsMatch ? targetsMatch[0] : gradeOutput;
-      const rewritten = await aiCall(buildSurgicalRewritePrompt(currentLyrics, targets, genre, structuredStory, userLines, a4), 0.7, 2000, null);
-      const display = document.getElementById('lyrics-display');
-      if (display) display.textContent = rewritten;
-      const copyBtn = document.getElementById('copy-lyrics');
-      if (copyBtn) copyBtn.onclick = function() { copyText(rewritten, this); };
-      btn.textContent = '✓ Rewrite applied';
-    } catch(e) {
-      btn.textContent = '⚠ Failed — try again';
-      btn.disabled = false;
-    }
-  });
-}
 </script>
 </body>
 </html>
