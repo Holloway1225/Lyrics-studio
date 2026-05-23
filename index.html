@@ -148,16 +148,19 @@
   </div>
   <div class="section-label">Your Idea</div>
   <div class="theme-hint">
-    <div class="theme-hint-title">Anything goes — the more vivid, the better</div>
+    <div class="theme-hint-title">Paste your Concept Expander output here — or write your own</div>
     <div class="theme-hint-text">
-      Give it a personal story, a Bible story, a metaphor, a concept, a character, a feeling — anything. The tool works from whatever you hand it. The only rule: be specific.<br><br>
-      <span class="theme-hint-good">✓ "Abraham takes Isaac up the mountain. Isaac keeps asking where the lamb is..."</span><br><br>
-      <span class="theme-hint-bad">✗ Too vague: "Write a song about hope and struggle"</span>
+      If your idea is a theme ("suburban paranoia", "trust after betrayal") — <span class="theme-hint-good">run it through the Concept Expander first</span> to find the rule before generating. A theme produces a song. A rule produces a closed system.<br><br>
+      <span class="theme-hint-good">✓ Rule: "The act of watching creates what's being watched." Tagline: "Nobody sleeps, but nobody knows why."</span><br><br>
+      <span class="theme-hint-bad">✗ Theme: "Write a song about suburban paranoia"</span>
     </div>
   </div>
-  <textarea id="theme" rows="5" placeholder="A personal story, a Bible story, a metaphor, a feeling, a concept — anything vivid and specific..."></textarea>
+  <textarea id="theme" rows="5" placeholder="Paste your Concept Expander output, or write a specific story, rule, or image — the more concrete the better..."></textarea>
   <div class="section-label">Lines to Protect <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
   <textarea id="user-lines" rows="2" placeholder="Any lines or a tagline that must appear verbatim in the final song..."></textarea>
+  <div class="section-label">Banned Words <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
+  <div style="font-family:'Inconsolata',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;line-height:1.6;">Words the generator must not use in this song. Comma-separated. Use this to block default imagery — e.g. <span style="color:var(--accent);">3AM, kitchen, coffee</span></div>
+  <textarea id="banned-words" rows="1" style="min-height:44px;" placeholder="3AM, kitchen, coffee, 2AM..."></textarea>
   <button class="generate-btn" id="generate-btn">✦ &nbsp; Write My Song</button>
   <div class="status" id="status"></div>
   <div class="pipeline-steps" id="pipeline-steps">
@@ -300,13 +303,14 @@ BAD: "My routing protocol flagged the exit as corrupted"
 === END ALBUM 4 MODE ===
 `;
 
-function buildStructurePrompt(theme, userLines, a4, genre) {
+function buildStructurePrompt(theme, userLines, a4, genre, bannedWords) {
   const sacred = userLines ? '\nSACRED LINES — must appear verbatim in the final song:\n'+userLines+'\n' : '';
   const a4block = a4 ? ALBUM4_INJECTION : '';
+  const bannedBlock = bannedWords ? `\nBANNED WORDS FOR THIS SONG — do not use these words or phrases anywhere in the structure or suggest them as imagery:\n${bannedWords}\nFind the images that belong to THIS concept's specific world instead.\n` : '';
 
   if (genre === 'Cryptid Static') {
     return `You are a creative analyst for a world-class concept songwriter. You are building a CLOSED SYSTEM — a song where every line is pressured by the rules of the concept, not just describing feelings.
-${a4block}${sacred}
+${a4block}${bannedBlock}${sacred}
 THE RAW MATERIAL:
 ${theme}
 
@@ -355,7 +359,7 @@ EMOTIONAL DESTINATION:
   }
 
   return `You are a creative analyst for a world-class songwriter. Extract what a songwriter needs from this material. Preserve the original language. Do NOT flatten poetic input into plain language.
-${a4block}${sacred}
+${a4block}${bannedBlock}${sacred}
 THE RAW MATERIAL:
 ${theme}
 
@@ -394,10 +398,11 @@ EMOTIONAL DESTINATION:
 [What the listener feels at the end. One sentence. Inferred from the arc — should feel inevitable.]`;
 }
 
-function buildWritePrompt(structuredStory, genre, mood, userLines, a4) {
+function buildWritePrompt(structuredStory, genre, mood, userLines, a4, bannedWords) {
   const sacred = userLines ? '\nSACRED LINES — NON-NEGOTIABLE. Appear EXACTLY as written:\n'+userLines+'\n' : '';
   const examples = GENRE_EXAMPLES[genre] || '';
   const a4block = a4 ? ALBUM4_INJECTION : '';
+  const bannedBlock = bannedWords ? `\nBANNED WORDS FOR THIS SONG — these must not appear anywhere in the lyrics:\n${bannedWords}\nIf you reach for one of these, stop and find the image that actually belongs to this song's world.\n` : '';
 
   const ruleEnforcement = genre === 'Cryptid Static' ? `
 THE RULE ENFORCEMENT — MANDATORY FOR EVERY LINE:
@@ -418,6 +423,7 @@ Every line must serve the rule. If a line could exist in a song with a different
 GENRE: ${genre}
 MOOD: ${mood}
 ${a4block}
+${bannedBlock}
 ${sacred}
 THE STRUCTURED MATERIAL:
 ${structuredStory}
@@ -483,13 +489,15 @@ FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge]
 Output the COMPLETE song — every section, no truncation.`;
 }
 
-function buildPolishPrompt(draft, genre, structuredStory, userLines, a4) {
+function buildPolishPrompt(draft, genre, structuredStory, userLines, a4, bannedWords) {
   const sacred = userLines ? '\nSACRED LINES — must appear verbatim. Restore if missing:\n'+userLines+'\n' : '';
   const a4block = a4 ? ALBUM4_INJECTION : '';
+  const bannedBlock = bannedWords ? `\nBANNED WORDS — if any of these appear in the draft, rewrite those lines to remove them:\n${bannedWords}\n` : '';
   return `You are a ruthless line editor. Fix every weak line. Leave strong ones untouched. Output the ENTIRE revised song.
 
 GENRE: ${genre}
 ${a4block}
+${bannedBlock}
 ${sacred}
 SOURCE MATERIAL:
 ${structuredStory}
@@ -654,6 +662,7 @@ RULES:
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const theme = document.getElementById('theme').value.trim();
   const userLines = document.getElementById('user-lines').value.trim();
+  const bannedWords = document.getElementById('banned-words').value.trim();
   const a4 = album4ModeOn;
   if (!getKey('anthropic') && !getKey('groq') && !getKey('gemini')) { setStatus('⚠ Add at least one API key above', true); return; }
   if (!theme) { setStatus('⚠ Give it something to work with', true); return; }
@@ -671,17 +680,17 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     // Step 1 — Structure + Rule
     setPipelineStep(1);
     setStatus('① Finding the rule...');
-    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines, a4, genre), 0.3, 1200, signal);
+    const structuredStory = await aiCall(buildStructurePrompt(theme, userLines, a4, genre, bannedWords), 0.3, 1200, signal);
 
     // Step 2 — Write
     setPipelineStep(2);
     setStatus('② Writing the song...');
-    const draft = await aiCall(buildWritePrompt(structuredStory, genre, mood, userLines, a4), 0.95, 2000, signal);
+    const draft = await aiCall(buildWritePrompt(structuredStory, genre, mood, userLines, a4, bannedWords), 0.95, 2000, signal);
 
     // Step 3 — Polish
     setPipelineStep(3);
     setStatus('③ Sharpening every line...');
-    const polished = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines, a4), 0.6, 2000, signal);
+    const polished = await aiCall(buildPolishPrompt(draft, genre, structuredStory, userLines, a4, bannedWords), 0.6, 2000, signal);
 
     // Step 4+5 — Grade and surgical rewrite (only if grade mode is on)
     let gradeOutput = null;
