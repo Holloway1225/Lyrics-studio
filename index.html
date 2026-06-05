@@ -56,6 +56,13 @@
   .copy-btn { padding: 6px 16px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; min-width: 64px; text-align: center; }
   .copy-btn.copied { color: #f0abfc; border-color: var(--accent); }
   .lyrics-text { font-family: 'Lora', Georgia, serif; font-size: 15px; line-height: 2; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+  /* Craft note box */
+  .craft-box { margin-top: 16px; background: rgba(251,191,36,0.04); border: 1px solid rgba(251,191,36,0.18); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
+  .craft-box .box-title { color: var(--gold); }
+  .craft-box .copy-btn:hover { color: var(--gold); border-color: var(--gold); }
+  .craft-text { font-family: 'Lora', Georgia, serif; font-size: 13px; line-height: 1.8; color: rgba(237,232,245,0.75); font-style: italic; white-space: pre-wrap; word-break: break-word; }
+  /* section headers inside lyrics */
+  .lyrics-text .section-tag { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; }
   .status { font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 2px; color: var(--accent); margin-top: 20px; text-align: center; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); display: none; }
   .status.visible { display: block; }
   .status.error { color: var(--error); border-color: rgba(248,113,113,0.3); }
@@ -147,6 +154,7 @@
     <div class="pipeline-step" id="step-1">① Studying your story...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
     <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
+    <div class="pipeline-step" id="step-4">④ Writing craft note...</div>
   </div>
   <div id="output"></div>
 </div>
@@ -155,7 +163,6 @@
 const CONFIG = {
   GROQ_URL: 'https://api.groq.com/openai/v1/chat/completions',
   GROQ_MODEL: 'llama-3.3-70b-versatile',
-  GEMINI_MODEL: 'gemini-2.5-flash',
   TIMEOUT_MS: 60000,
 };
 
@@ -178,11 +185,19 @@ function escapeHTML(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function setStatus(msg, err=false) { const el=document.getElementById('status'); el.textContent=msg; el.className='status visible'+(err?' error':''); }
 function clearStatus() { document.getElementById('status').className='status'; }
 function showModel(msg) { const el=document.getElementById('active-model'); el.textContent=msg; el.style.display='block'; }
-function setPipelineStep(n) { document.getElementById('pipeline-steps').classList.add('visible'); [1,2,3].forEach(i => { const el=document.getElementById('step-'+i); if(i<n) el.className='pipeline-step done'; else if(i===n) el.className='pipeline-step active'; else el.className='pipeline-step'; }); }
-function hidePipeline() { document.getElementById('pipeline-steps').classList.remove('visible'); [1,2,3].forEach(i => { document.getElementById('step-'+i).className='pipeline-step'; }); }
+function setPipelineStep(n) {
+  document.getElementById('pipeline-steps').classList.add('visible');
+  [1,2,3,4].forEach(i => {
+    const el=document.getElementById('step-'+i);
+    if(i<n) el.className='pipeline-step done';
+    else if(i===n) el.className='pipeline-step active';
+    else el.className='pipeline-step';
+  });
+}
+function hidePipeline() { document.getElementById('pipeline-steps').classList.remove('visible'); [1,2,3,4].forEach(i => { document.getElementById('step-'+i).className='pipeline-step'; }); }
 function fetchWithTimeout(url, opts, ms) { return Promise.race([fetch(url,opts), new Promise((_,rej) => setTimeout(() => rej(new Error('Request timed out')), ms))]); }
 
-async function aiCall(prompt, temp=0.95, maxTokens=1200, signal=null) {
+async function aiCall(systemPrompt, userPrompt, temp=0.95, maxTokens=1400, signal=null) {
   const ak=getKey('anthropic'), gk=getKey('groq');
 
   if (ak) {
@@ -190,7 +205,13 @@ async function aiCall(prompt, temp=0.95, maxTokens=1200, signal=null) {
       const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
         method:'POST',
         headers:{'Content-Type':'application/json','x-api-key':ak,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,temperature:temp,messages:[{role:'user',content:prompt}]}),
+        body:JSON.stringify({
+          model:'claude-sonnet-4-6',
+          max_tokens:maxTokens,
+          temperature:temp,
+          system: systemPrompt,
+          messages:[{role:'user',content:userPrompt}]
+        }),
         signal
       }, CONFIG.TIMEOUT_MS);
       if (res.ok) { const d=await res.json(); showModel('✦ Using Claude Sonnet'); return d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim(); }
@@ -200,10 +221,13 @@ async function aiCall(prompt, temp=0.95, maxTokens=1200, signal=null) {
   }
 
   if (gk) {
+    const messages = systemPrompt
+      ? [{role:'system',content:systemPrompt},{role:'user',content:userPrompt}]
+      : [{role:'user',content:userPrompt}];
     const res = await fetchWithTimeout(CONFIG.GROQ_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
-      body:JSON.stringify({model:CONFIG.GROQ_MODEL,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature:temp,top_p:0.9}),
+      body:JSON.stringify({model:CONFIG.GROQ_MODEL,messages,max_tokens:maxTokens,temperature:temp,top_p:0.9}),
       signal
     }, CONFIG.TIMEOUT_MS);
     if (!res.ok) { const err=await res.json().catch(()=>({})); throw new Error(err?.error?.message||'Groq error '+res.status); }
@@ -215,6 +239,27 @@ async function aiCall(prompt, temp=0.95, maxTokens=1200, signal=null) {
   throw new Error('No API key — add your Anthropic or Groq key above');
 }
 
+// ─── SONGWRITER SYSTEM PROMPT ───────────────────────────────────────────────
+const SONGWRITER_SYSTEM = `You are a world-class songwriter with deep expertise across every genre — you think like a poet, feel like a therapist, and craft like a musician who has written #1 hits, Grammy-winning albums, and cult-classic underground records. You understand song architecture, emotional arc, subtext, and the difference between a lyric that sounds good and one that cuts.
+
+Your rules when writing any song:
+
+1. Every line must earn its place. If a line could be in any other song about this topic, rewrite it until it couldn't.
+2. Show, don't tell. Replace emotional labels ("I'm sad", "I'm broken") with images, actions, and sensory details that make the listener feel it.
+3. The song has a spine. Verse 1 establishes the situation. Verse 2 deepens or shifts it. The bridge breaks something open. The chorus lands the emotional truth — not a summary, an arrival.
+4. Hooks are earned, not announced. The chorus hits harder because of what came before it.
+5. Avoid clichés unless you're subverting them. No "pick up the pieces," no "burning bridges," no "scars that won't heal" unless you're flipping them into something unexpected.
+6. Match tone to genre. Specificity of language, cadence, and imagery should feel native to the genre — not generic.
+7. The title is the thesis. It should reframe by the end of the song — meaning more, or differently, than when it was introduced.
+
+ADDITIONAL BANNED PATTERNS:
+- Identity stacking: "I am the [noun] / I am the [noun]"
+- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall
+- Emotion naming: "I felt empty" "I was devastated" "the pain inside"
+- Stock clichés: "heart beating like a drum" "words that cut too deep" "breathe again" "rise from the ashes"
+- Any line that names the feeling instead of showing the moment`;
+
+// ─── GENRE EXAMPLES ──────────────────────────────────────────────────────────
 const GENRE_EXAMPLES = {
   "Pop": `GOOD LINE: "I found your hoodie in the back seat / still smells like the last time we were easy"\nBAD LINE: "I miss you so much it hurts inside"\nGOOD CHORUS: "Maybe I was wrong / maybe you were right / maybe we were just two kids / burning in the night"\nBAD CHORUS: "I will love you forever / you mean everything to me"`,
   "Hip-Hop": `GOOD LINE: "Mama kept the lights on working doubles at the waffle house / I told her I'd buy her a real house / she said boy just get your diploma out"\nBAD LINE: "I came from nothing and now I have everything"\nGOOD CHORUS: "All I got is this moment / can't waste it on your doubt / came too far to fold now / I'm finding my way out"`,
@@ -229,113 +274,102 @@ const GENRE_EXAMPLES = {
   "Christian Worship": `GOOD LINE: "I've shown you every broken part / the ones I hid for years / and still you call me by my name / and meet me right here"\nBAD LINE: "You are so great and mighty Lord"\nGOOD CHORUS: "Where else would I go / you have the words of life / where else would I go / you hold me in the night"`
 };
 
+// ─── PROMPTS ──────────────────────────────────────────────────────────────────
 function buildStructurePrompt(theme) {
-  return `You are a creative analyst for a world-class songwriter. You have been given raw material — it could be a personal story, a Bible story, a metaphor, a concept, a character, a feeling, or anything else. Your job is to extract what a songwriter needs from it. Do not editorialize. Do not invent details that aren't there. Just organize what already exists.
+  return `You are a creative analyst for a world-class songwriter. Analyze the following raw material and extract a structured creative brief. Do not editorialize. Do not invent details that aren't there. Stay close to the source.
 
-THE RAW MATERIAL:
+RAW MATERIAL:
 ${theme}
 
-Extract and return ONLY this structure, nothing else:
+Return ONLY this structure:
 
 CENTRAL IMAGE OR METAPHOR:
-[The single most vivid or powerful image at the heart of this material. One sentence. If the input is a metaphor (e.g. "anxiety as a machine"), name it explicitly here.]
+[The single most vivid or powerful image at the heart of this material. One sentence.]
 
 MOVEMENTS:
-[The stages this material moves through — beginning, escalation, turning point, resolution or landing. List each as a concrete beat, one per line. If it's a Bible story, follow the narrative. If it's a metaphor or concept, map its arc from start to finish.]
+[The stages this material moves through — beginning, escalation, turning point, resolution. One concrete beat per line.]
 
 KEY IMAGES:
-[6-10 specific physical or sensory details present in the material — objects, places, sounds, actions, textures. Real and concrete only. Do not invent anything not implied by the input.]
+[6-10 specific physical or sensory details present in the material — objects, places, sounds, actions, textures. Real and concrete only.]
 
 TURNING POINT:
-[The single moment where something shifts — a decision, a revelation, a collapse, a surrender, a rescue. One sentence. Stay close to the material.]
+[The single moment where something shifts — a decision, a revelation, a collapse, a surrender, a rescue. One sentence.]
 
 CHORUS CANDIDATE:
-[The most emotionally loaded image or moment. Should be a concrete scene or image, not an abstract theme. One or two sentences.]
+[The most emotionally loaded image or moment. Concrete scene or image, not abstract theme. One or two sentences.]
 
 EMOTIONAL DESTINATION:
-[What should the listener feel at the end of this song? One sentence. Infer from the arc of the material.]`;
+[What should the listener feel at the end of this song? One sentence.]`;
 }
 
-function buildPrompt(structuredStory, genre, mood, userLines) {
-  const sacred = userLines ? '\nSACRED LINES — these must appear verbatim in the final song, build around them:\n'+userLines+'\n' : '';
+function buildWritePrompt(structuredStory, genre, mood, userLines) {
+  const sacred = userLines ? `\nSACRED LINES — these must appear verbatim in the final song, build around them:\n${userLines}\n` : '';
   const examples = GENRE_EXAMPLES[genre] || '';
-  return `You are a world class songwriter and ghostwriter. You have been given structured source material — it could be a personal story, a Bible story, a metaphor, a concept, or anything else. Your job is to turn it into a song that follows its arc exactly, in the order it was given.
-
-GENRE: ${genre}
-MOOD: ${mood}
+  return `Write a complete ${genre} song with a ${mood} vibe, using the structured material below as your source of truth.
 ${sacred}
-THE STRUCTURED MATERIAL — follow this arc exactly, in this order:
+STRUCTURED MATERIAL — follow this arc exactly, in this order:
 ${structuredStory}
 
-QUALITY STANDARD for ${genre}:
+QUALITY REFERENCE for ${genre}:
 ${examples}
 
-RULES:
-
-1. FOLLOW THE ARC
-The song must follow the MOVEMENTS from the structured material in order. What comes first goes in Verse 1. What comes next goes in Verse 2. The turning point goes in the Bridge. The resolution or final beat goes in the Outro. Do not reorder.
-
-2. USE THE REAL DETAILS
-Every specific detail in the KEY IMAGES is gold — names, objects, places, actions, textures. Use them directly. Do not swap for generic alternatives.
-
-3. FINGERPRINT RULE
-Every line must be irreplaceable — it could only exist in this song about this story. If a line could appear in a different song, rewrite it until it couldn't.
-
-4. BANNED PATTERNS:
-- Identity stacking: "I am the [noun] / I am the [noun]"
-- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall
-- Emotion naming: "I felt empty" "I was devastated" "the pain inside"
-- Stock clichés: "heart beating like a drum" "words that cut too deep" "breathe again" "rise from the ashes"
-- Any line that names the feeling instead of showing the moment
-- Repeating a metaphor or image across multiple sections
-
-5. CHORUS RULE
-The chorus must contain a specific image or detail from the KEY IMAGES — not a summary of the theme. Max 4 lines, each under 10 words.
-
-6. BRIDGE AND OUTRO
-The bridge is where the narrator realizes something — use the TURNING POINT. The outro lands on the EMOTIONAL DESTINATION. Stay in the imagery. Do not go abstract or motivational.
+STRUCTURAL RULES:
+- Verse 1 establishes the situation from MOVEMENTS beat 1
+- Verse 2 deepens or shifts it — beat 2
+- The bridge breaks the TURNING POINT open
+- The chorus is the CHORUS CANDIDATE made irresistible — max 4 lines, each under 10 words
+- The outro lands on the EMOTIONAL DESTINATION — stay in the imagery, do not go abstract or motivational
+- Every line must be irreplaceable — it could only exist in THIS song about THIS story
+- The title is the thesis — it reframes by the end, meaning more than when introduced
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
-Output the complete song. Every section. No truncating. No commentary.`;
+Output the complete song. Every section. No truncating. No commentary. No title header.`;
 }
 
 function buildPolishPrompt(draft, genre, structuredStory) {
-  return `You are a ruthless line editor for a world-class songwriter. You have been given a first draft and the structured story it came from. Your job is to make it consistently great — not to rewrite it, but to find and fix every weak line while leaving strong ones untouched.
+  return `You are a ruthless line editor for a world-class songwriter. First draft and source material are below. Fix every weak line — leave every strong line untouched.
 
 GENRE: ${genre}
 
-THE STRUCTURED STORY (source of truth):
+SOURCE MATERIAL (truth):
 ${structuredStory}
 
-THE DRAFT:
+DRAFT:
 ${draft}
 
-Go through every line. Apply these tests:
+Apply these tests to every line:
 
-TEST 1 — FINGERPRINT TEST
-Could this line appear in a different song about a different story? If yes, rewrite it using a specific image from the structured story.
-
-TEST 2 — FILLER TEST
-Does this line name an emotion or state the theme directly? If yes, replace it with the concrete action or image that caused that feeling.
-
-TEST 3 — CHORUS TEST
-Does the chorus contain at least one specific physical detail from the KEY IMAGES? If no, rebuild it around the CHORUS CANDIDATE.
-
-TEST 4 — REPETITION TEST
-Does any metaphor, image, or phrase appear more than once across different sections? If yes, cut the weaker instance.
-
-TEST 5 — ENDING TEST
-Does the outro stay in the imagery, or does it go abstract or generically motivational? If abstract, pull it back to a concrete image.
+FINGERPRINT TEST: Could this line appear in a different song about a different story? If yes, rewrite using a specific image from the source material.
+FILLER TEST: Does this line name an emotion or state the theme directly? Replace with the concrete action or image that caused that feeling.
+CHORUS TEST: Does the chorus contain at least one specific physical detail from KEY IMAGES? If no, rebuild it around the CHORUS CANDIDATE.
+REPETITION TEST: Does any metaphor, image, or phrase appear more than once across sections? Cut the weaker instance.
+ENDING TEST: Does the outro stay in imagery, or does it go abstract or generically motivational? If abstract, pull back to a concrete image.
 
 RULES:
 - Keep every section label exactly as written
 - Do not add or remove sections
 - If a line passes all tests, do not touch it
-- No commentary or explanations
+- No commentary
 
 Output the complete revised song. Nothing else.`;
 }
 
+function buildCraftNotePrompt(finalLyrics, genre, mood, structuredStory) {
+  return `You are a world-class songwriter reflecting on a finished song. Below is the final song you wrote and the structured source material it came from.
+
+GENRE: ${genre}
+MOOD: ${mood}
+
+SOURCE MATERIAL:
+${structuredStory}
+
+FINAL SONG:
+${finalLyrics}
+
+Write one focused paragraph — a craft note — explaining the structural and emotional choices you made in this song. Cover: how you built the emotional arc, what the chorus is doing and why it's placed there, how the bridge breaks something open, what the title reframes by the end, and one specific line choice you're proud of and why it works. Write it as a working songwriter talking to another songwriter — precise, specific, no fluff. Do not summarize the song. Explain the craft.`;
+}
+
+// ─── MAIN HANDLER ─────────────────────────────────────────────────────────────
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const theme = document.getElementById('theme').value.trim();
   if (!getKey('anthropic') && !getKey('groq')) { setStatus('⚠ Add at least one API key above', true); return; }
@@ -351,16 +385,61 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   document.getElementById('output').innerHTML = '';
   document.getElementById('active-model').style.display = 'none';
   clearStatus();
+
   try {
+    // Step 1: Structure
     setPipelineStep(1);
-    const structuredStory = await aiCall(buildStructurePrompt(theme), 0.3, 600, signal);
+    const structuredStory = await aiCall(
+      'You are a creative analyst for a world-class songwriter. Extract structured song material from raw input. Be precise and concrete.',
+      buildStructurePrompt(theme),
+      0.3, 600, signal
+    );
+
+    // Step 2: Write
     setPipelineStep(2);
-    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines), 0.95, 1400, signal);
+    const draft = await aiCall(
+      SONGWRITER_SYSTEM,
+      buildWritePrompt(structuredStory, genre, mood, userLines),
+      0.95, 1600, signal
+    );
+
+    // Step 3: Polish
     setPipelineStep(3);
-    const final = await aiCall(buildPolishPrompt(draft, genre, structuredStory), 0.4, 1400, signal);
+    const final = await aiCall(
+      SONGWRITER_SYSTEM,
+      buildPolishPrompt(draft, genre, structuredStory),
+      0.4, 1600, signal
+    );
+
+    // Step 4: Craft note
+    setPipelineStep(4);
+    const craftNote = await aiCall(
+      SONGWRITER_SYSTEM,
+      buildCraftNotePrompt(final, genre, mood, structuredStory),
+      0.5, 600, signal
+    );
+
     hidePipeline(); clearStatus();
-    document.getElementById('output').innerHTML = `<div class="output-box"><div class="box-header"><div class="box-title">✦ Your Lyrics</div><button class="copy-btn" id="copy-lyrics">Copy</button></div><div class="lyrics-text">${escapeHTML(final)}</div></div>`;
+
+    document.getElementById('output').innerHTML = `
+      <div class="output-box">
+        <div class="box-header">
+          <div class="box-title">✦ Your Lyrics</div>
+          <button class="copy-btn" id="copy-lyrics">Copy</button>
+        </div>
+        <div class="lyrics-text">${escapeHTML(final)}</div>
+      </div>
+      <div class="craft-box">
+        <div class="box-header">
+          <div class="box-title">✦ Craft Note</div>
+          <button class="copy-btn" id="copy-craft">Copy</button>
+        </div>
+        <div class="craft-text">${escapeHTML(craftNote)}</div>
+      </div>`;
+
     document.getElementById('copy-lyrics').addEventListener('click', function() { copyText(final, this); });
+    document.getElementById('copy-craft').addEventListener('click', function() { copyText(craftNote, this); });
+
   } catch(e) {
     hidePipeline();
     if (e.name === 'AbortError') clearStatus();
