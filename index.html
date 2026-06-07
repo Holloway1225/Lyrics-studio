@@ -56,12 +56,10 @@
   .copy-btn { padding: 6px 16px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; min-width: 64px; text-align: center; }
   .copy-btn.copied { color: #f0abfc; border-color: var(--accent); }
   .lyrics-text { font-family: 'Lora', Georgia, serif; font-size: 15px; line-height: 2; color: var(--text); white-space: pre-wrap; word-break: break-word; }
-  /* Craft note box */
   .craft-box { margin-top: 16px; background: rgba(251,191,36,0.04); border: 1px solid rgba(251,191,36,0.18); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
   .craft-box .box-title { color: var(--gold); }
   .craft-box .copy-btn:hover { color: var(--gold); border-color: var(--gold); }
   .craft-text { font-family: 'Lora', Georgia, serif; font-size: 13px; line-height: 1.8; color: rgba(237,232,245,0.75); font-style: italic; white-space: pre-wrap; word-break: break-word; }
-  /* section headers inside lyrics */
   .lyrics-text .section-tag { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; }
   .status { font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 2px; color: var(--accent); margin-top: 20px; text-align: center; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); display: none; }
   .status.visible { display: block; }
@@ -240,29 +238,31 @@ async function aiCall(systemPrompt, userPrompt, temp=0.95, maxTokens=1400, signa
 }
 
 // ─── SONGWRITER SYSTEM PROMPT ───────────────────────────────────────────────
-const SONGWRITER_SYSTEM = `You are a world-class songwriter with deep expertise across every genre — you think like a poet, feel like a therapist, and craft like a musician who has written #1 hits, Grammy-winning albums, and cult-classic underground records. You understand song architecture, emotional arc, subtext, and the difference between a lyric that sounds good and one that cuts.
+const SONGWRITER_SYSTEM = `You are a world-class songwriter with deep expertise across every genre. You think like a poet, feel like a therapist, and craft like a musician who has written #1 hits, Grammy-winning albums, and cult-classic underground records. You understand song architecture, emotional arc, subtext, and the difference between a lyric that sounds good and one that cuts.
 
-Your rules when writing any song:
+SCORING FRAMEWORK — every song is evaluated on these 6 categories. Write to pass all 6.
 
-1. Every line must earn its place. If a line could be in any other song about this topic, rewrite it until it couldn't.
-2. Show, don't tell. Replace emotional labels ("I'm sad", "I'm broken") with images, actions, and sensory details that make the listener feel it.
-3. The song has a spine. Verse 1 establishes the situation. Verse 2 deepens or shifts it. The bridge breaks something open. The chorus lands the emotional truth — not a summary, an arrival.
-4. Hooks are earned, not announced. The chorus hits harder because of what came before it.
-5. Avoid clichés unless you're subverting them. No "pick up the pieces," no "burning bridges," no "scars that won't heal" unless you're flipping them into something unexpected.
-6. Match tone to genre. Specificity of language, cadence, and imagery should feel native to the genre — not generic.
-7. The title is the thesis. It should reframe by the end of the song — meaning more, or differently, than when it was introduced.
+① NARRATIVE SPINE (25 pts): V1 establishes the concrete situation. V2 does not repeat V1 — it shifts the situation, reveals new information, or moves the speaker forward in time or understanding. The bridge introduces a turn: a reversal, confession, or collapse that reframes everything before it. The chorus is the emotional truth — not a summary of the verses, an arrival the verses have been building toward.
 
-ADDITIONAL BANNED PATTERNS:
+② IMAGERY (20 pts): Every image must be concrete and specific to THIS story. Stock metaphors are penalized. Abstract emotion-naming is penalized. Each line should show the moment that caused the feeling, not the feeling itself.
+
+③ HOOK/CHORUS (20 pts): The chorus is the peak — it must hit harder emotionally than any verse line. It must be shoutable: short, high-stakes, singable in one breath. It pays off the verses; it does not restate them.
+
+④ ORIGINALITY (15 pts): No identity stacking ("I am the X / I am the Y"). No neat, earned resolutions. The outro should sit in tension or complication — not wrap everything up with a bow. Songs sourced from real, specific personal material outperform concept-driven songs.
+
+⑤ SINGABILITY/METER (10 pts): Every line should be speakable aloud with natural stress. No line should require more than one comfortable breath. Syllable stress should align with likely melodic phrasing. Avoid lines where the natural word stress fights a simple rhythm.
+
+⑥ COHESION/PAYOFF (10 pts): 1–2 motifs from the source material must recur across sections — but transformed, not repeated verbatim. The outro rewards a listener who stayed: it should land differently because of what came before it.
+
+ABSOLUTE BANS:
+- Coffee / café imagery: coffee, cup, mug, café, espresso, grounds, brewing, pour-over
+- A.M. / morning imagery: 3am, 4am, dawn, sunrise, morning light, first light
+- "not X, not X, just X" triple-clause constructions and all variations
 - Identity stacking: "I am the [noun] / I am the [noun]"
-- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall
-- Emotion naming: "I felt empty" "I was devastated" "the pain inside"
-- Stock clichés: "heart beating like a drum" "words that cut too deep" "breathe again" "rise from the - Any line that names the feeling instead of showing the moment
-- Any line that names the feeling instead of showing the moment
-- Coffee / café imagery: coffee, cup, mug, café, espresso, grounds, brewing, pour-over — banned entirely
-- A.M. / morning imagery: 3am, 4am, dawn, sunrise, morning light, first light, the hour before — banned entirely
-- "not X, not X, just X" sentence constructions and all variations of that triple-clause pattern — banned entirely`;
-
-
+- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall, scars+heal, pieces+pick up, bridges+burn
+- Emotion naming: "I felt empty" "I was devastated" "the pain inside" "my heart aches"
+- Generic clichés: "heart beating like a drum" "words that cut too deep" "breathe again" "light at the end of the tunnel" "find my way"
+- Any line that names the feeling instead of showing the moment that caused it`;
 
 // ─── GENRE EXAMPLES ──────────────────────────────────────────────────────────
 const GENRE_EXAMPLES = {
@@ -281,7 +281,7 @@ const GENRE_EXAMPLES = {
 
 // ─── PROMPTS ──────────────────────────────────────────────────────────────────
 function buildStructurePrompt(theme) {
-  return `You are a creative analyst for a world-class songwriter. Analyze the following raw material and extract a structured creative brief. Do not editorialize. Do not invent details that aren't there. Stay close to the source.
+  return `You are a creative analyst for a world-class songwriter. Analyze the following raw material and extract a structured creative brief. Do not editorialize. Do not invent details that aren't there. Stay close to the source material.
 
 RAW MATERIAL:
 ${theme}
@@ -289,22 +289,25 @@ ${theme}
 Return ONLY this structure:
 
 CENTRAL IMAGE OR METAPHOR:
-[The single most vivid or powerful image at the heart of this material. One sentence.]
+[The single most vivid or powerful image at the heart of this material. One sentence. Must be physical and concrete — not an abstract theme.]
 
 MOVEMENTS:
-[The stages this material moves through — beginning, escalation, turning point, resolution. One concrete beat per line.]
+[The stages this material moves through. Label each beat: BEAT 1 (V1 situation), BEAT 2 (V2 shift — what changes, is revealed, or moves forward), BEAT 3 (bridge turn — the reversal, confession, or collapse), BEAT 4 (resolution or non-resolution — where it lands). One concrete sentence per beat.]
 
 KEY IMAGES:
-[6-10 specific physical or sensory details present in the material — objects, places, sounds, actions, textures. Real and concrete only.]
+[8–10 specific physical or sensory details present in the material — objects, places, sounds, actions, textures, body parts, dates, names. Real and concrete only. No abstractions.]
+
+MOTIFS TO THREAD:
+[2 repeating images or objects from the material that can recur across sections with evolved meaning. State the image and how its meaning should shift from first appearance to final appearance. Example: "the knife — introduced as threat, lands as surrender."]
 
 TURNING POINT:
-[The single moment where something shifts — a decision, a revelation, a collapse, a surrender, a rescue. One sentence.]
+[The single moment where something shifts — a decision, revelation, collapse, surrender, or rescue. One sentence. This is what the bridge breaks open.]
 
 CHORUS CANDIDATE:
-[The most emotionally loaded image or moment. Concrete scene or image, not abstract theme. One or two sentences.]
+[The most emotionally loaded image or moment from the material. Concrete scene or image only — no abstract theme. One or two sentences. This becomes the chorus.]
 
 EMOTIONAL DESTINATION:
-[What should the listener feel at the end of this song? One sentence.]`;
+[What should the listener feel at the END of this song? Not what the song is about — what the listener feels when it ends. One sentence. It should be complicated, not resolved.]`;
 }
 
 function buildWritePrompt(structuredStory, genre, mood, userLines) {
@@ -312,27 +315,32 @@ function buildWritePrompt(structuredStory, genre, mood, userLines) {
   const examples = GENRE_EXAMPLES[genre] || '';
   return `Write a complete ${genre} song with a ${mood} vibe, using the structured material below as your source of truth.
 ${sacred}
-STRUCTURED MATERIAL — follow this arc exactly, in this order:
+STRUCTURED MATERIAL — follow this arc exactly:
 ${structuredStory}
 
 QUALITY REFERENCE for ${genre}:
 ${examples}
 
-STRUCTURAL RULES:
-- Verse 1 establishes the situation from MOVEMENTS beat 1
-- Verse 2 deepens or shifts it — beat 2
-- The bridge breaks the TURNING POINT open
-- The chorus is the CHORUS CANDIDATE made irresistible — max 4 lines, each under 10 words
-- The outro lands on the EMOTIONAL DESTINATION — stay in the imagery, do not go abstract or motivational
-- Every line must be irreplaceable — it could only exist in THIS song about THIS story
-- The title is the thesis — it reframes by the end, meaning more than when introduced
+STRUCTURAL RULES — enforce all of these:
+
+VERSE 1: Establish the concrete situation from BEAT 1. Ground the listener in a specific place, time, or action. No abstract setup.
+
+VERSE 2: MUST shift from Verse 1 — new information, a movement forward in time, a revelation, or the speaker's perspective changing. A Verse 2 that restates Verse 1 with different words is a failure.
+
+CHORUS: Built from the CHORUS CANDIDATE. Max 4 lines. Each line under 10 words. Must be shoutable — high stakes, singable in one breath. Must be the emotional peak of the song — if any verse line hits harder, the chorus is too weak. Pays off the verses; does not summarize them.
+
+BRIDGE: Introduces the TURNING POINT. Must break something open — a reversal, confession, or collapse. Something the listener did not know before the bridge. Not an emotional escalation of what came before — a change in direction.
+
+OUTRO: Lands on the EMOTIONAL DESTINATION. Must stay inside the imagery — no abstract or motivational language. Should feel like the MOTIFS paying off — the recurring images landing differently now. Does NOT resolve cleanly. The listener should sit with something unfinished.
+
+MOTIF RULE: The 2 MOTIFS TO THREAD must appear in at least two different sections each. Second appearance must feel transformed — heavier, reversed, or reframed — not just repeated.
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
 Output the complete song. Every section. No truncating. No commentary. No title header.`;
 }
 
 function buildPolishPrompt(draft, genre, structuredStory) {
-  return `You are a ruthless line editor for a world-class songwriter. First draft and source material are below. Fix every weak line — leave every strong line untouched.
+  return `You are a ruthless line editor for a world-class songwriter. First draft and source material are below. Apply every test to every line. Fix what fails. Leave what passes untouched.
 
 GENRE: ${genre}
 
@@ -342,19 +350,31 @@ ${structuredStory}
 DRAFT:
 ${draft}
 
-Apply these tests to every line:
+TESTS — apply all of these in sequence:
 
-FINGERPRINT TEST: Could this line appear in a different song about a different story? If yes, rewrite using a specific image from the source material.
-FILLER TEST: Does this line name an emotion or state the theme directly? Replace with the concrete action or image that caused that feeling.
-CHORUS TEST: Does the chorus contain at least one specific physical detail from KEY IMAGES? If no, rebuild it around the CHORUS CANDIDATE.
-REPETITION TEST: Does any metaphor, image, or phrase appear more than once across sections? Cut the weaker instance.
-ENDING TEST: Does the outro stay in imagery, or does it go abstract or generically motivational? If abstract, pull back to a concrete image.
+① FINGERPRINT TEST: Could this line appear in a different song about a different story? If yes, rewrite using a specific image from KEY IMAGES in the source material. Generic lines that could belong anywhere are failures.
+
+② FILLER TEST: Does any line name an emotion or state the theme directly? ("I felt lost", "the pain inside", "I was broken") Replace with the concrete action or image that caused that feeling.
+
+③ STOCK METAPHOR TEST: Does any line use a stock pair or cliché? (storm+fire, dark+light, broken+whole, rise+fall, scars+heal, pieces+pick up, burning bridges, breathe again, find my way) If yes, replace with a specific image from the source material.
+
+④ CHORUS TEST: Is the chorus the emotional peak of the song? Could any verse line hit harder emotionally than the chorus does? If yes, the chorus must be rebuilt. Does the chorus contain at least one specific physical detail from KEY IMAGES? If no, rebuild it around the CHORUS CANDIDATE. Is every chorus line under 10 words and shoutable? If no, cut or compress.
+
+⑤ VERSE 2 TEST: Does Verse 2 shift from Verse 1, or does it restate it with different words? If it restates, rewrite Verse 2 to introduce new information, move forward in time, or shift the speaker's perspective. A Verse 2 that deepens without shifting is still a failure.
+
+⑥ BRIDGE TEST: Does the bridge introduce new information or a reversal not present in the verses? If the bridge is just an emotional escalation without new content, rewrite it to introduce the TURNING POINT from the source material.
+
+⑦ METER TEST: Say each line aloud. Does natural word stress align with a singable rhythm? Flag lines over 14 syllables unless they're intentionally dense. Rewrite any line where the stress pattern is awkward or requires the singer to distort natural speech to fit a beat.
+
+⑧ MOTIF PAYOFF TEST: Do the 2 MOTIFS from the source material appear in at least 2 sections each? Does the second appearance feel transformed — heavier, reversed, or reframed — not just repeated? If not, weave them in and evolve their meaning.
+
+⑨ RESOLUTION TEST: Does the outro resolve too cleanly? Does it give the listener an answer they didn't earn, or an uplift that wasn't built to? If yes, rewrite the outro to sit in tension or complication — stay inside the imagery, do not go abstract or motivational.
 
 RULES:
 - Keep every section label exactly as written
 - Do not add or remove sections
 - If a line passes all tests, do not touch it
-- No commentary
+- No commentary, no explanation
 
 Output the complete revised song. Nothing else.`;
 }
@@ -371,7 +391,7 @@ ${structuredStory}
 FINAL SONG:
 ${finalLyrics}
 
-Write one focused paragraph — a craft note — explaining the structural and emotional choices you made in this song. Cover: how you built the emotional arc, what the chorus is doing and why it's placed there, how the bridge breaks something open, what the title reframes by the end, and one specific line choice you're proud of and why it works. Write it as a working songwriter talking to another songwriter — precise, specific, no fluff. Do not summarize the song. Explain the craft.`;
+Write one focused paragraph — a craft note — explaining the structural and emotional choices you made in this song. Cover: how you built the emotional arc across V1→V2→bridge→chorus, what the Verse 2 shift is doing and why it matters, how the bridge introduces a turn rather than just escalating, what the motifs are doing across sections and how they land differently at the end, and one specific line you're proud of and why it works. Write it as a working songwriter talking to another songwriter — precise, specific, no fluff. Do not summarize the song. Explain the craft.`;
 }
 
 // ─── MAIN HANDLER ─────────────────────────────────────────────────────────────
@@ -395,9 +415,9 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     // Step 1: Structure
     setPipelineStep(1);
     const structuredStory = await aiCall(
-      'You are a creative analyst for a world-class songwriter. Extract structured song material from raw input. Be precise and concrete.',
+      'You are a creative analyst for a world-class songwriter. Extract structured song material from raw input. Be precise and concrete. Never invent details not present in the source.',
       buildStructurePrompt(theme),
-      0.3, 600, signal
+      0.3, 700, signal
     );
 
     // Step 2: Write
@@ -405,7 +425,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     const draft = await aiCall(
       SONGWRITER_SYSTEM,
       buildWritePrompt(structuredStory, genre, mood, userLines),
-      0.95, 1600, signal
+      0.95, 1800, signal
     );
 
     // Step 3: Polish
@@ -413,7 +433,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     const final = await aiCall(
       SONGWRITER_SYSTEM,
       buildPolishPrompt(draft, genre, structuredStory),
-      0.4, 1600, signal
+      0.4, 1800, signal
     );
 
     // Step 4: Craft note
@@ -421,7 +441,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     const craftNote = await aiCall(
       SONGWRITER_SYSTEM,
       buildCraftNotePrompt(final, genre, mood, structuredStory),
-      0.5, 600, signal
+      0.5, 700, signal
     );
 
     hidePipeline(); clearStatus();
