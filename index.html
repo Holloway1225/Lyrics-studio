@@ -81,6 +81,7 @@
     <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
     <h1>Your Lyrics.<br>Your Voice.</h1>
     <p>100% Original · Powered by Claude + Groq</p>
+    <div style="margin-top:10px;display:inline-block;padding:3px 10px;border:1px solid rgba(168,85,247,0.3);border-radius:50px;font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);">v3.0</div>
   </div>
 
   <div class="api-section" style="margin-top:28px">
@@ -257,14 +258,15 @@ SCORING FRAMEWORK — every song is evaluated on these 6 categories. Write to pa
 ABSOLUTE BANS:
 - Coffee / café imagery: coffee, cup, mug, café, espresso, grounds, brewing, pour-over
 - A.M. / morning imagery: 3am, 4am, dawn, sunrise, morning light, first light
-- "not X, not X, just X" triple-clause constructions and all variations
 - Identity stacking: "I am the [noun] / I am the [noun]"
 - Stock pairs: storm+fire, dark+light, broken+whole, rise+fall, scars+heal, pieces+pick up, bridges+burn
 - Emotion naming: "I felt empty" "I was devastated" "the pain inside" "my heart aches"
 - Generic clichés: "heart beating like a drum" "words that cut too deep" "breathe again" "light at the end of the tunnel" "find my way"
 - Any line that names the feeling instead of showing the moment that caused it
 - Explanation-after-image: a strong concrete line followed immediately by a line that tells the listener what it means. If the image works, the next line moves — it does not explain. "I found your coat on the hook / I guess I still miss you" — the second line is a kill shot to the first. Trust the image. Cut the explanation.
-- Motivational pivots after hard images: "but I'm still standing" "I'll be okay" "I know I'll make it through" — if the image landed, the uplift undoes it`;
+- Motivational pivots after hard images: "but I'm still standing" "I'll be okay" "I know I'll make it through" — if the image landed, the uplift undoes it
+- Triple-clause constructions: "not X, not X, just X" in every form — "not broken, not whole, just here" / "not angry, not sad, just tired" / "not this, not that, just [anything]" / "I'm not X anymore, I'm just Y" — banned entirely. Replace with a single concrete image that does the same work without announcing it
+- Double-clause constructions: "not X, just X" in every form — "not lost, just quiet" / "not angry, just tired" / "not leaving, just gone" / "not crying, just done" — banned entirely. Same rule: replace with the image, not the declaration`;
 
 // ─── GENRE EXAMPLES ──────────────────────────────────────────────────────────
 const GENRE_EXAMPLES = {
