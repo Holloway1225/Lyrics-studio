@@ -81,7 +81,7 @@
     <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
     <h1>Your Lyrics.<br>Your Voice.</h1>
     <p>100% Original · Powered by Claude + Groq</p>
-    <div style="margin-top:10px;display:inline-block;padding:3px 10px;border:1px solid rgba(168,85,247,0.3);border-radius:50px;font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);">v3.0</div>
+    <div style="margin-top:10px;display:inline-block;padding:3px 10px;border:1px solid rgba(168,85,247,0.3);border-radius:50px;font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);">v4.0</div>
   </div>
 
   <div class="api-section" style="margin-top:28px">
@@ -152,7 +152,7 @@
   <div class="pipeline-steps" id="pipeline-steps">
     <div class="pipeline-step" id="step-1">① Studying your story...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
-    <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
+    <div class="pipeline-step" id="step-3">③ Grading & refining to 100...</div>
     <div class="pipeline-step" id="step-4">④ Writing craft note...</div>
   </div>
   <div id="output"></div>
@@ -402,6 +402,69 @@ ${finalLyrics}
 Write one focused paragraph — a craft note — explaining the structural and emotional choices you made in this song. Cover: how you built the emotional arc across V1→V2→bridge→chorus, what the Verse 2 shift is doing and why it matters, how the bridge introduces a turn rather than just escalating, what the motifs are doing across sections and how they land differently at the end, and one specific line you're proud of and why it works. Write it as a working songwriter talking to another songwriter — precise, specific, no fluff. Do not summarize the song. Explain the craft.`;
 }
 
+// ─── GRADER PROMPT (returns JSON) ─────────────────────────────────────────────
+function buildGradePrompt(lyrics, structuredStory) {
+  return `You are a ruthless, precise lyrics grader. Grade the song below against this fixed 100-point rubric. Be honest and unsparing — most songs land 85-94. Do not inflate. A 100 means every category is flawless with zero notes.
+
+RUBRIC (100 pts total):
+- NARRATIVE SPINE (25): V1 establishes; V2 shifts (not restates); bridge turns; chorus arrives.
+- IMAGERY (20): Every image concrete and specific to THIS story. Penalize stock metaphors and emotion-naming.
+- HOOK/CHORUS (20): Chorus is the peak, shoutable, pays off verses, contains a physical detail.
+- ORIGINALITY (15): No identity stacking, no neat resolution, no double/triple-clause "not X just X" constructions. Outro sits in tension.
+- SINGABILITY/METER (10): Every line speakable in one breath, natural stress, no awkward syllable clusters.
+- COHESION/PAYOFF (10): 1-2 motifs recur transformed across sections; outro lands differently because of what came before.
+
+SOURCE MATERIAL:
+${structuredStory}
+
+SONG:
+${lyrics}
+
+Return ONLY valid JSON, no markdown fences, no preamble:
+{
+  "total": <int>,
+  "categories": {
+    "narrative": <int>, "imagery": <int>, "hook": <int>, "originality": <int>, "singability": <int>, "cohesion": <int>
+  },
+  "fixes": [
+    {"category": "<name>", "line": "<the exact failing line, verbatim from the song>", "problem": "<what specifically fails — name the word or syllable>", "direction": "<what kind of fix is needed — do NOT write the replacement line>"}
+  ]
+}
+List every line costing points in "fixes", weakest first. If total is 100, "fixes" is an empty array.`;
+}
+
+// ─── TARGETED REWRITE PROMPT ──────────────────────────────────────────────────
+function buildTargetedRewritePrompt(lyrics, fixes, structuredStory) {
+  const fixList = fixes.map((f,i) => `${i+1}. [${f.category}] Line: "${f.line}"\n   Problem: ${f.problem}\n   Direction: ${f.direction}`).join('\n\n');
+  return `You are a surgical line editor. Below is a song that scored just short of perfect, and a list of the exact lines costing points. Fix ONLY those lines. Every line not in the list must remain EXACTLY as written — same words, same order, same section labels.
+
+SOURCE MATERIAL (truth — pull replacement images from here):
+${structuredStory}
+
+CURRENT SONG:
+${lyrics}
+
+LINES TO FIX (fix only these, leave everything else untouched):
+${fixList}
+
+RULES:
+- Change only the flagged lines. Do not touch anything else.
+- A fix to one line must not break the meter or rhyme of the lines around it — if it would, adjust the flagged line, not its neighbors.
+- Replacement images come from the SOURCE MATERIAL, not invented.
+- Keep every section label exactly.
+- No commentary.
+
+Output the complete revised song. Nothing else.`;
+}
+
+// ─── PARSE GRADE JSON ─────────────────────────────────────────────────────────
+function parseGrade(raw) {
+  let s = raw.trim().replace(/^\`\`\`json\s*/i,'').replace(/^\`\`\`\s*/,'').replace(/\`\`\`\s*$/,'').trim();
+  const start = s.indexOf('{'), end = s.lastIndexOf('}');
+  if (start !== -1 && end !== -1) s = s.slice(start, end+1);
+  return JSON.parse(s);
+}
+
 // ─── MAIN HANDLER ─────────────────────────────────────────────────────────────
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const theme = document.getElementById('theme').value.trim();
@@ -438,11 +501,38 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
 
     // Step 3: Polish
     setPipelineStep(3);
-    const final = await aiCall(
+    let final = await aiCall(
       SONGWRITER_SYSTEM,
       buildPolishPrompt(draft, genre, structuredStory),
       0.4, 1800, signal
     );
+
+    // Step 3b: Auto grade-rewrite loop — drive toward 100, max 8 rounds
+    let grade = null;
+    const MAX_ROUNDS = 8;
+    let bestSong = final, bestGrade = null;
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      const rawGrade = await aiCall(
+        'You are a ruthless lyrics grader. Output only valid JSON.',
+        buildGradePrompt(final, structuredStory),
+        0.2, 1200, signal
+      );
+      try { grade = parseGrade(rawGrade); }
+      catch(e) { break; }
+
+      if (!bestGrade || grade.total > bestGrade.total) { bestGrade = grade; bestSong = final; }
+
+      if (grade.total >= 100 || !grade.fixes || grade.fixes.length === 0) break;
+      if (round === MAX_ROUNDS - 1) break;
+
+      final = await aiCall(
+        SONGWRITER_SYSTEM,
+        buildTargetedRewritePrompt(final, grade.fixes, structuredStory),
+        0.5, 1800, signal
+      );
+    }
+    if (bestGrade && bestGrade.total >= (grade ? grade.total : 0)) final = bestSong;
+    const finalGrade = bestGrade || grade;
 
     // Step 4: Craft note
     setPipelineStep(4);
@@ -454,10 +544,12 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
 
     hidePipeline(); clearStatus();
 
+    const gradeBadge = finalGrade ? `<span style="font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;color:${finalGrade.total>=97?'var(--green)':'var(--gold)'};border:1px solid currentColor;border-radius:50px;padding:3px 12px;margin-left:8px;">${finalGrade.total}/100</span>` : '';
+
     document.getElementById('output').innerHTML = `
       <div class="output-box">
         <div class="box-header">
-          <div class="box-title">✦ Your Lyrics</div>
+          <div class="box-title">✦ Your Lyrics ${gradeBadge}</div>
           <button class="copy-btn" id="copy-lyrics">Copy</button>
         </div>
         <div class="lyrics-text">${escapeHTML(final)}</div>
