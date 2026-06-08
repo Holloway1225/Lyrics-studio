@@ -81,7 +81,7 @@
     <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
     <h1>Your Lyrics.<br>Your Voice.</h1>
     <p>100% Original · Powered by Claude + Groq</p>
-    <div style="margin-top:10px;display:inline-block;padding:3px 10px;border:1px solid rgba(168,85,247,0.3);border-radius:50px;font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);">v4.0</div>
+    <div style="margin-top:10px;display:inline-block;padding:3px 10px;border:1px solid rgba(168,85,247,0.3);border-radius:50px;font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);">v5.0</div>
   </div>
 
   <div class="api-section" style="margin-top:28px">
@@ -99,6 +99,18 @@
     <div class="api-saved" id="api-saved">✓ Keys saved to this browser</div>
     <div class="active-model" id="active-model"></div>
     <button id="save-keys-btn" style="margin-top:12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:8px 16px;color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">Save Keys</button>
+  </div>
+
+  <div class="section-label">Mode</div>
+  <div class="toggle-group" id="mode-group">
+    <button class="toggle-btn active" data-value="literary">✦ Literary / Dense</button>
+    <button class="toggle-btn" data-value="felt">♫ Felt / Radio</button>
+  </div>
+  <div class="theme-hint" style="margin-top:8px;margin-bottom:0;">
+    <div class="theme-hint-text" style="font-style:normal;">
+      <strong style="color:var(--accent);">Literary</strong> — packed, specific, every line irreplaceable. For deep cuts and lyric-forward writing.<br><br>
+      <strong style="color:var(--accent);">Felt / Radio</strong> — built to be sung, not read. Repetition allowed, space in the verses, a plain emotionally-direct hook. For songs that land on first listen.
+    </div>
   </div>
 
   <div class="section-label">Genre</div>
@@ -172,12 +184,13 @@ window.addEventListener('load', () => {
   if (localStorage.getItem('key_anthropic') || localStorage.getItem('key_groq')) document.getElementById('api-saved').style.display = 'block';
   const sg = localStorage.getItem('pref_genre'); const sm = localStorage.getItem('pref_mood');
   if (sg) restoreToggle('genre-group', sg); if (sm) restoreToggle('mood-group', sm);
+  const smode = localStorage.getItem('pref_mode'); if (smode) restoreToggle('mode-group', smode);
 });
 
 function restoreToggle(gid, val) { document.querySelectorAll('#'+gid+' .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.value === val)); }
 document.getElementById('save-keys-btn').addEventListener('click', () => { ['anthropic','groq'].forEach(k => { const v = document.getElementById('api-'+k).value.trim(); if (v) localStorage.setItem('key_'+k, v); }); document.getElementById('api-saved').style.display = 'block'; });
 function getKey(k) { return document.getElementById('api-'+k)?.value.trim() || ''; }
-document.querySelectorAll('.toggle-group').forEach(g => { g.querySelectorAll('.toggle-btn').forEach(b => { b.addEventListener('click', () => { g.querySelectorAll('.toggle-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); if (g.id==='genre-group') localStorage.setItem('pref_genre', b.dataset.value); if (g.id==='mood-group') localStorage.setItem('pref_mood', b.dataset.value); }); }); });
+document.querySelectorAll('.toggle-group').forEach(g => { g.querySelectorAll('.toggle-btn').forEach(b => { b.addEventListener('click', () => { g.querySelectorAll('.toggle-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); if (g.id==='genre-group') localStorage.setItem('pref_genre', b.dataset.value); if (g.id==='mood-group') localStorage.setItem('pref_mood', b.dataset.value); if (g.id==='mode-group') localStorage.setItem('pref_mode', b.dataset.value); }); }); });
 function getSelected(id) { return document.querySelector('#'+id+' .toggle-btn.active')?.dataset.value || ''; }
 function copyText(text, btn) { const reset = () => { btn.textContent='Copy'; btn.classList.remove('copied'); }; const fb = () => { const ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); try { document.execCommand('copy'); btn.textContent='✓ Copied!'; btn.classList.add('copied'); setTimeout(reset,2000); } catch(e){} document.body.removeChild(ta); }; if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(() => { btn.textContent='✓ Copied!'; btn.classList.add('copied'); setTimeout(reset,2000); }).catch(fb); } else { fb(); } }
 function escapeHTML(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
@@ -268,6 +281,29 @@ ABSOLUTE BANS:
 - Triple-clause constructions: "not X, not X, just X" in every form — "not broken, not whole, just here" / "not angry, not sad, just tired" / "not this, not that, just [anything]" / "I'm not X anymore, I'm just Y" — banned entirely. Replace with a single concrete image that does the same work without announcing it
 - Double-clause constructions: "not X, just X" in every form — "not lost, just quiet" / "not angry, just tired" / "not leaving, just gone" / "not crying, just done" — banned entirely. Same rule: replace with the image, not the declaration`;
 
+// ─── FELT / RADIO MODE OVERRIDE ───────────────────────────────────────────────
+// Appended to the system prompt when Felt mode is active. It RELAXES the dense-mode
+// rules where they fight singability, and adds felt-song requirements.
+const FELT_OVERRIDE = `
+
+═══ FELT / RADIO MODE IS ACTIVE — THE FOLLOWING OVERRIDES THE RULES ABOVE ═══
+
+This song is built to be SUNG AND FELT, not read and analyzed. A great felt song would score lower on a density rubric and that is correct. Prioritize what lands on first listen over what rewards close reading.
+
+OVERRIDES:
+1. REPETITION IS A TOOL, NOT A FLAW. The chorus should repeat its core line — that is how a song lodges in the body. A single anchor phrase may recur across sections on purpose. Do not vary a line just to avoid repeating it.
+2. SPACE BEATS DENSITY. Verses should breathe. Not every line carries an image. Plain, open lines let the melody and the singer do the emotional work. Roughly half the verse lines should be simple and uncluttered.
+3. THE HOOK CAN NAME THE FEELING. In the chorus only, direct emotional statement is allowed and often best — "I still want you," "I'm not over you," "stay." The emotion-naming ban applies to VERSES, not the hook.
+4. SINGABILITY OUTRANKS EVERYTHING. Favor open vowels on the lines meant to be held. Keep stress patterns simple and regular. If a clever image makes a line hard to sing, cut the image and keep it singable.
+5. CHORUS IS DUMB-SIMPLE ON PURPOSE. Short words, few syllables, one clear emotional idea, repeatable. A chorus a stranger can sing back after one listen beats a chorus that's clever.
+6. STILL BANNED (these hurt in any mode): coffee/morning imagery, "not X just X" constructions, identity stacking, stock metaphor pairs, generic clichés. Simple is not the same as cliché.
+
+The goal is not a perfect lyric. The goal is a song someone sings in the car.`;
+
+function systemForMode(mode) {
+  return mode === 'felt' ? SONGWRITER_SYSTEM + FELT_OVERRIDE : SONGWRITER_SYSTEM;
+}
+
 // ─── GENRE EXAMPLES ──────────────────────────────────────────────────────────
 const GENRE_EXAMPLES = {
   "Pop": `GOOD LINE: "I found your hoodie in the back seat / still smells like the last time we were easy"\nBAD LINE: "I miss you so much it hurts inside"\nGOOD CHORUS: "Maybe I was wrong / maybe you were right / maybe we were just two kids / burning in the night"\nBAD CHORUS: "I will love you forever / you mean everything to me"`,
@@ -314,7 +350,7 @@ EMOTIONAL DESTINATION:
 [What should the listener feel at the END of this song? Not what the song is about — what the listener feels when it ends. One sentence. It should be complicated, not resolved.]`;
 }
 
-function buildWritePrompt(structuredStory, genre, mood, userLines) {
+function buildWritePrompt(structuredStory, genre, mood, userLines, mode) {
   const sacred = userLines ? `\nSACRED LINES — these must appear verbatim in the final song, build around them:\n${userLines}\n` : '';
   const examples = GENRE_EXAMPLES[genre] || '';
   return `Write a complete ${genre} song with a ${mood} vibe, using the structured material below as your source of truth.
@@ -340,10 +376,23 @@ OUTRO: Lands on the EMOTIONAL DESTINATION. Must stay inside the imagery — no a
 MOTIF RULE: The 2 MOTIFS TO THREAD must appear in at least two different sections each. Second appearance must feel transformed — heavier, reversed, or reframed — not just repeated.
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
+${mode === 'felt' ? 'FELT MODE: The chorus must repeat its core line. Keep choruses short and singable. Let verses breathe — do not pack every line. The hook may state the feeling directly. Build for first-listen impact, not density.' : ''}
 Output the complete song. Every section. No truncating. No commentary. No title header.`;
 }
 
-function buildPolishPrompt(draft, genre, structuredStory) {
+function buildPolishPrompt(draft, genre, structuredStory, mode) {
+  const feltNote = mode === 'felt' ? `
+
+═══ FELT / RADIO MODE — ADJUST THESE TESTS ═══
+- REPETITION TEST IS SUSPENDED for the chorus and for one deliberate anchor phrase. Do NOT vary repeated hook lines. Repetition is intended.
+- FILLER TEST applies to VERSES ONLY. The chorus may name the feeling directly — leave it.
+- Do NOT add images to plain verse lines. Open, simple lines are intentional. Only fix a plain line if it is a cliché, not because it lacks an image.
+- SINGABILITY is the top priority. If any fix would make a line harder to sing, do not make it.
+- Keep the chorus short, simple, and repeatable. Do not make it denser.
+` : '';
+  return buildPolishPromptBody(draft, genre, structuredStory) + feltNote;
+}
+function buildPolishPromptBody(draft, genre, structuredStory) {
   return `You are a ruthless line editor for a world-class songwriter. First draft and source material are below. Apply every test to every line. Fix what fails. Leave what passes untouched.
 
 GENRE: ${genre}
@@ -403,7 +452,44 @@ Write one focused paragraph — a craft note — explaining the structural and e
 }
 
 // ─── GRADER PROMPT (returns JSON) ─────────────────────────────────────────────
-function buildGradePrompt(lyrics, structuredStory) {
+function buildGradePrompt(lyrics, structuredStory, mode) {
+  const rubric = mode === 'felt' ? `RUBRIC — FELT / RADIO (100 pts total). This grades how well the song works SUNG, not read:
+- HOOK/CHORUS (25): Short, simple, repeatable, emotionally direct, lands on first listen. Repetition is GOOD here.
+- SINGABILITY/METER (25): Every line sits easy in the mouth, natural stress, open vowels on held notes, no awkward clusters.
+- EMOTIONAL DIRECTNESS (20): Does it make you FEEL on first listen without decoding? Plain and direct beats clever.
+- NARRATIVE SPINE (15): V1 sets up, V2 moves, bridge turns, chorus pays off — but space and repetition are fine.
+- IMAGERY (10): A few concrete anchors. Do NOT reward density — penalize a verse that is too packed to sing.
+- ORIGINALITY (5): No clichés, no "not X just X", no identity stacking. Simple is allowed; lazy is not.
+Map JSON keys: hook, singability, narrative (use for emotional directness+spine combined is NOT needed — use the six keys below).
+Return categories with these exact keys: hook, singability, directness, narrative, imagery, originality.` : `RUBRIC (100 pts total):
+- NARRATIVE SPINE (25): V1 establishes; V2 shifts (not restates); bridge turns; chorus arrives.
+- IMAGERY (20): Every image concrete and specific to THIS story. Penalize stock metaphors and emotion-naming.
+- HOOK/CHORUS (20): Chorus is the peak, shoutable, pays off verses, contains a physical detail.
+- ORIGINALITY (15): No identity stacking, no neat resolution, no double/triple-clause "not X just X" constructions. Outro sits in tension.
+- SINGABILITY/METER (10): Every line speakable in one breath, natural stress, no awkward syllable clusters.
+- COHESION/PAYOFF (10): 1-2 motifs recur transformed across sections; outro lands differently because of what came before.
+Return categories with these exact keys: narrative, imagery, hook, originality, singability, cohesion.`;
+  return `You are a ruthless, precise lyrics grader. Grade the song below against the rubric. Be honest and unsparing — most songs land 85-94. Do not inflate. A 100 means flawless with zero notes.
+
+${rubric}
+
+SOURCE MATERIAL:
+${structuredStory}
+
+SONG:
+${lyrics}
+
+Return ONLY valid JSON, no markdown fences, no preamble:
+{
+  "total": <int>,
+  "categories": { <the exact keys named above, each an int> },
+  "fixes": [
+    {"category": "<name>", "line": "<the exact failing line, verbatim>", "problem": "<what specifically fails>", "direction": "<what kind of fix — do NOT write the replacement line>"}
+  ]
+}
+List every line costing points in "fixes", weakest first. If total is 100, "fixes" is an empty array.${mode === 'felt' ? ' In felt mode, do NOT flag a line for being plain or for repeating — those are intended.' : ''}`;
+}
+function buildGradePromptOLD(lyrics, structuredStory) {
   return `You are a ruthless, precise lyrics grader. Grade the song below against this fixed 100-point rubric. Be honest and unsparing — most songs land 85-94. Do not inflate. A 100 means every category is flawless with zero notes.
 
 RUBRIC (100 pts total):
@@ -475,6 +561,8 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   const signal = currentController.signal;
   const genre = getSelected('genre-group');
   const mood = getSelected('mood-group');
+  const mode = getSelected('mode-group') || 'literary';
+  const SYS = systemForMode(mode);
   const userLines = document.getElementById('user-lines').value.trim();
   const btn = document.getElementById('generate-btn');
   btn.disabled = true;
@@ -494,27 +582,27 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     // Step 2: Write
     setPipelineStep(2);
     const draft = await aiCall(
-      SONGWRITER_SYSTEM,
-      buildWritePrompt(structuredStory, genre, mood, userLines),
+      SYS,
+      buildWritePrompt(structuredStory, genre, mood, userLines, mode),
       0.95, 1800, signal
     );
 
     // Step 3: Polish
     setPipelineStep(3);
     let final = await aiCall(
-      SONGWRITER_SYSTEM,
-      buildPolishPrompt(draft, genre, structuredStory),
+      SYS,
+      buildPolishPrompt(draft, genre, structuredStory, mode),
       0.4, 1800, signal
     );
 
     // Step 3b: Auto grade-rewrite loop — drive toward 100, max 8 rounds
     let grade = null;
-    const MAX_ROUNDS = 8;
+    const MAX_ROUNDS = mode === 'felt' ? 4 : 8;
     let bestSong = final, bestGrade = null;
     for (let round = 0; round < MAX_ROUNDS; round++) {
       const rawGrade = await aiCall(
         'You are a ruthless lyrics grader. Output only valid JSON.',
-        buildGradePrompt(final, structuredStory),
+        buildGradePrompt(final, structuredStory, mode),
         0.2, 1200, signal
       );
       try { grade = parseGrade(rawGrade); }
@@ -526,7 +614,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
       if (round === MAX_ROUNDS - 1) break;
 
       final = await aiCall(
-        SONGWRITER_SYSTEM,
+        SYS,
         buildTargetedRewritePrompt(final, grade.fixes, structuredStory),
         0.5, 1800, signal
       );
@@ -537,7 +625,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     // Step 4: Craft note
     setPipelineStep(4);
     const craftNote = await aiCall(
-      SONGWRITER_SYSTEM,
+      SYS,
       buildCraftNotePrompt(final, genre, mood, structuredStory),
       0.5, 700, signal
     );
