@@ -6,85 +6,98 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Lyrics Studio">
-<title>✦ Suno Lyrics Studio</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inconsolata:wght@400;600&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<title>SIGNAL // LYRICS STUDIO</title>
+<link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #07070f; --surface: rgba(255,255,255,0.03); --border: rgba(180,100,255,0.18);
-    --accent: #a855f7; --accent2: #7c3aed; --text: #ede8f5; --muted: #7c6a9a;
-    --gold: #fbbf24; --green: #34d399; --error: #f87171;
+    --bg: #07090c; --surface: rgba(46,230,230,0.03); --line: #1b2530;
+    --cyan: #2ee6e6; --red: #ff3b50; --dim: #6b7d8c; --text: #cdd9e1;
+    --gold: #ffc14d; --green: #2ee6a0; --error: #ff3b50;
+    --border: var(--line); --accent: var(--cyan); --muted: var(--dim);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { background: var(--bg); color: var(--text); font-family: 'Lora', Georgia, serif; min-height: 100vh; min-height: -webkit-fill-available; padding-bottom: env(safe-area-inset-bottom); overflow-x: hidden; }
-  .orb { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; filter: blur(80px); }
-  .orb1 { top: -15%; left: -15%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(88,28,135,0.3) 0%, transparent 70%); }
-  .orb2 { bottom: -20%; right: -15%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(109,40,217,0.2) 0%, transparent 70%); }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; min-height: 100vh; min-height: -webkit-fill-available; padding-bottom: env(safe-area-inset-bottom); overflow-x: hidden; position: relative; }
+  body::before { content:""; position: fixed; inset: 0; background: repeating-linear-gradient(to bottom, transparent 0, transparent 2px, rgba(46,230,230,0.022) 3px, rgba(46,230,230,0.022) 4px); pointer-events: none; z-index: 99; }
   .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 0 16px 80px; }
-  .header { text-align: center; padding: 48px 20px 32px; border-bottom: 1px solid var(--border); }
-  .header-eyebrow { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 6px; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
-  .header h1 { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 8vw, 3rem); font-weight: 900; line-height: 1.1; background: linear-gradient(135deg, #f0abfc, #c084fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-  .header p { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 3px; color: var(--muted); margin-top: 10px; text-transform: uppercase; }
-  .api-section { margin-top: 28px; background: rgba(168,85,247,0.06); border: 1px solid rgba(168,85,247,0.2); border-radius: 14px; padding: 18px; }
+  .header { text-align: center; padding: 44px 20px 28px; border-bottom: 1px solid var(--line); }
+  .header-eyebrow { font-size: 10px; letter-spacing: 6px; color: var(--cyan); text-transform: uppercase; margin-bottom: 12px; }
+  .header h1 { font-family: 'Major Mono Display', monospace; font-size: clamp(1.8rem, 7vw, 2.8rem); line-height: 1.1; color: var(--cyan); text-shadow: 2px 0 var(--red), -2px 0 rgba(46,230,230,0.4); }
+  .header p { font-size: 11px; letter-spacing: 3px; color: var(--dim); margin-top: 12px; text-transform: uppercase; }
+  .badge { margin-top: 10px; display: inline-block; padding: 3px 10px; border: 1px solid var(--red); border-radius: 0; font-size: 9px; letter-spacing: 2px; color: var(--red); text-transform: uppercase; }
+  .api-section { margin-top: 26px; background: var(--surface); border: 1px solid var(--line); padding: 18px; }
   .api-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   .api-row:last-of-type { margin-bottom: 0; }
-  .api-label { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; min-width: 80px; }
-  .api-label.primary { color: var(--accent); }
-  .api-input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: 'Inconsolata', monospace; font-size: 13px; outline: none; -webkit-appearance: none; }
-  .api-input:focus { border-color: var(--accent); }
-  .api-hint { font-family: 'Inconsolata', monospace; font-size: 10px; color: rgba(124,106,154,0.7); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; }
-  .api-warning { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--gold); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 8px; padding: 8px 10px; }
-  .api-saved { font-family: 'Inconsolata', monospace; font-size: 10px; color: var(--green); margin-top: 6px; letter-spacing: 1px; display: none; }
-  .active-model { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; margin-top: 8px; color: var(--accent); display: none; }
-  .section-label { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; margin: 24px 0 8px; }
-  .theme-hint { background: rgba(168,85,247,0.04); border: 1px solid rgba(168,85,247,0.12); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
-  .theme-hint-title { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
-  .theme-hint-text { font-family: 'Lora', Georgia, serif; font-size: 12px; color: var(--muted); line-height: 1.7; font-style: italic; }
-  .theme-hint-good { color: var(--green); font-style: normal; }
-  .theme-hint-bad { color: var(--error); font-style: normal; text-decoration: line-through; }
-  textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); font-family: 'Lora', Georgia, serif; font-size: 15px; resize: none; outline: none; -webkit-appearance: none; transition: border-color 0.2s; line-height: 1.6; }
-  textarea:focus { border-color: rgba(168,85,247,0.6); }
-  textarea::placeholder { color: var(--muted); font-style: italic; font-size: 13px; }
+  .api-label { font-size: 10px; color: var(--dim); letter-spacing: 2px; min-width: 80px; }
+  .api-label.primary { color: var(--cyan); }
+  .api-input { flex: 1; background: #05070a; border: 1px solid var(--line); padding: 11px 14px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 13px; outline: none; -webkit-appearance: none; }
+  .api-input:focus { border-color: var(--cyan); }
+  .api-hint { font-size: 10px; color: var(--dim); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; }
+  .api-warning { font-size: 10px; color: var(--gold); margin-top: 8px; letter-spacing: 1px; line-height: 1.6; background: rgba(255,193,77,0.06); border: 1px solid rgba(255,193,77,0.2); padding: 8px 10px; }
+  .api-saved { font-size: 10px; color: var(--green); margin-top: 6px; letter-spacing: 1px; display: none; }
+  .active-model { font-size: 10px; letter-spacing: 2px; margin-top: 8px; color: var(--cyan); display: none; }
+  .section-label { font-size: 10px; letter-spacing: 5px; color: var(--cyan); text-transform: uppercase; margin: 24px 0 8px; }
+  .theme-hint { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; margin-bottom: 12px; }
+  .theme-hint-title { font-size: 9px; letter-spacing: 3px; color: var(--cyan); text-transform: uppercase; margin-bottom: 8px; }
+  .theme-hint-text { font-size: 12px; color: var(--dim); line-height: 1.7; }
+  .theme-hint-good { color: var(--green); }
+  .theme-hint-bad { color: var(--error); text-decoration: line-through; }
+  textarea { width: 100%; background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 15px; resize: none; outline: none; -webkit-appearance: none; transition: border-color 0.2s; line-height: 1.6; }
+  textarea:focus { border-color: var(--cyan); }
+  textarea::placeholder { color: var(--dim); font-size: 13px; }
   .toggle-group { display: flex; flex-wrap: wrap; gap: 8px; }
-  .toggle-btn { padding: 8px 14px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 1px; cursor: pointer; transition: all 0.15s; -webkit-appearance: none; }
-  .toggle-btn.active { border-color: var(--accent); background: rgba(168,85,247,0.15); color: #f0abfc; transform: scale(1.04); }
-  .generate-btn { width: 100%; margin-top: 28px; padding: 18px; border-radius: 14px; border: none; background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #fff; font-family: 'Inconsolata', monospace; font-size: 14px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 30px rgba(168,85,247,0.3); transition: all 0.2s; -webkit-appearance: none; }
-  .generate-btn:active { transform: scale(0.98); opacity: 0.9; }
-  .generate-btn:disabled { background: rgba(168,85,247,0.2); color: var(--muted); box-shadow: none; cursor: not-allowed; }
-  .output-box { margin-top: 28px; background: rgba(0,0,0,0.3); border: 1px solid rgba(124,77,255,0.3); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
-  .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-  .box-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; }
-  .copy-btn { padding: 6px 16px; border-radius: 50px; border: 1.5px solid var(--border); background: transparent; color: var(--muted); font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; min-width: 64px; text-align: center; }
-  .copy-btn.copied { color: #f0abfc; border-color: var(--accent); }
-  .lyrics-text { font-family: 'Lora', Georgia, serif; font-size: 15px; line-height: 2; color: var(--text); white-space: pre-wrap; word-break: break-word; }
-  .craft-box { margin-top: 16px; background: rgba(251,191,36,0.04); border: 1px solid rgba(251,191,36,0.18); border-radius: 16px; padding: 20px; animation: fadeUp 0.4s ease both; }
-  .craft-box .box-title { color: var(--gold); }
-  .craft-box .copy-btn:hover { color: var(--gold); border-color: var(--gold); }
-  .craft-text { font-family: 'Lora', Georgia, serif; font-size: 13px; line-height: 1.8; color: rgba(237,232,245,0.75); font-style: italic; white-space: pre-wrap; word-break: break-word; }
-  .lyrics-text .section-tag { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; }
-  .status { font-family: 'Inconsolata', monospace; font-size: 12px; letter-spacing: 2px; color: var(--accent); margin-top: 20px; text-align: center; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); display: none; }
+  .toggle-btn { padding: 8px 14px; border: 1px solid var(--line); background: transparent; color: var(--dim); font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 1px; cursor: pointer; transition: all 0.15s; -webkit-appearance: none; }
+  .toggle-btn.active { border-color: var(--cyan); background: rgba(46,230,230,0.12); color: var(--cyan); }
+  .generate-btn { width: 100%; margin-top: 28px; padding: 18px; border: none; background: var(--cyan); color: #05070a; font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; }
+  .generate-btn:active { transform: scale(0.98); }
+  .generate-btn:hover { background: #fff; }
+  .generate-btn:disabled { background: rgba(46,230,230,0.2); color: var(--dim); cursor: not-allowed; }
+  .output-box { margin-top: 26px; background: #05070a; border: 1px solid var(--line); padding: 20px; animation: fadeUp 0.4s ease both; }
+  .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 10px; }
+  .box-title { font-size: 10px; letter-spacing: 5px; color: var(--cyan); text-transform: uppercase; }
+  .copy-btn { padding: 6px 16px; border: 1px solid var(--line); background: transparent; color: var(--dim); font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s; -webkit-appearance: none; min-width: 64px; text-align: center; }
+  .copy-btn.copied { color: var(--cyan); border-color: var(--cyan); }
+  .lyrics-text { font-size: 15px; line-height: 1.9; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+  .title-box { margin-top: 26px; background: rgba(46,230,230,0.05); border: 1px solid var(--cyan); padding: 20px; animation: fadeUp 0.4s ease both; }
+  .title-suggest { font-family: 'Major Mono Display', monospace; font-size: 22px; color: var(--cyan); line-height: 1.3; word-break: break-word; }
+  .suno-box { margin-top: 16px; background: rgba(255,193,77,0.04); border: 1px solid rgba(255,193,77,0.25); padding: 20px; animation: fadeUp 0.4s ease both; }
+  .suno-box .box-title { color: var(--gold); }
+  .suno-text { font-size: 13px; line-height: 1.9; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+  .status { font-size: 12px; letter-spacing: 2px; color: var(--cyan); margin-top: 20px; text-align: center; padding: 14px; border: 1px solid var(--line); background: var(--surface); display: none; }
   .status.visible { display: block; }
-  .status.error { color: var(--error); border-color: rgba(248,113,113,0.3); }
+  .status.error { color: var(--error); border-color: rgba(255,59,80,0.3); }
   .pipeline-steps { display: none; flex-direction: column; gap: 6px; margin-top: 10px; }
   .pipeline-steps.visible { display: flex; }
-  .pipeline-step { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); transition: all 0.3s; }
-  .pipeline-step.active { color: var(--accent); border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.07); animation: pulse 1.2s ease infinite; }
-  .pipeline-step.done { color: var(--green); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.04); }
+  .pipeline-step { font-size: 11px; letter-spacing: 2px; padding: 9px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--dim); transition: all 0.3s; }
+  .pipeline-step.active { color: var(--cyan); border-color: rgba(46,230,230,0.4); background: rgba(46,230,230,0.07); animation: pulse 1.2s ease infinite; }
+  .pipeline-step.done { color: var(--green); border-color: rgba(46,230,160,0.3); background: rgba(46,230,160,0.04); }
+  .hist-section { margin-top: 32px; border-top: 1px solid var(--line); padding-top: 20px; }
+  .hist-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .hist-clear { background: transparent; border: 1px solid var(--red); color: var(--red); padding: 6px 12px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 2px; cursor: pointer; }
+  .hist-clear:hover { background: var(--red); color: #05070a; }
+  .hist-item { border: 1px solid var(--line); padding: 14px; margin-bottom: 10px; background: #05070a; }
+  .hist-meta { font-size: 10px; color: var(--dim); letter-spacing: 1px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 10px; }
+  .hist-title { font-family: 'Major Mono Display', monospace; font-size: 15px; color: var(--cyan); margin-bottom: 8px; word-break: break-word; }
+  .hist-lyrics { font-size: 12px; line-height: 1.5; white-space: pre-wrap; color: var(--text); max-height: 120px; overflow: hidden; position: relative; }
+  .hist-lyrics.expanded { max-height: none; }
+  .hist-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .hist-btn { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 5px 12px; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; cursor: pointer; }
+  .hist-btn:hover { background: var(--cyan); color: #05070a; }
+  .hist-empty { color: var(--dim); font-size: 12px; }
+  .footer { text-align: center; color: var(--dim); font-size: 11px; letter-spacing: 2px; margin-top: 30px; }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 </style>
 </head>
 <body>
-<div class="orb orb1"></div>
-<div class="orb orb2"></div>
 <div class="container">
   <div class="header">
-    <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
-    <h1>Your Lyrics.<br>Your Voice.</h1>
-    <p>100% Original · Powered by Claude + Groq</p>
-    <div style="margin-top:10px;display:inline-block;padding:3px 10px;border:1px solid rgba(168,85,247,0.3);border-radius:50px;font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);">v5.0</div>
+    <div class="header-eyebrow">Signal Tools</div>
+    <h1>lyrics studio</h1>
+    <p>your lyrics · your voice · powered by claude + groq</p>
+    <div class="badge">v6.0</div>
   </div>
 
-  <div class="api-section" style="margin-top:28px">
+  <div class="api-section">
     <div class="section-label" style="margin-top:0">API Keys</div>
     <div class="api-row">
       <div class="api-label primary">ANTHROPIC</div>
@@ -95,21 +108,21 @@
       <input type="password" id="api-groq" class="api-input" placeholder="gsk_..." aria-label="Groq API key">
     </div>
     <div class="api-hint">Claude Sonnet used when Anthropic key is present — best quality. Groq used as fallback.<br>Anthropic: console.anthropic.com · Groq: console.groq.com</div>
-    <div class="api-warning">⚠ Keys are stored in your browser only. Do not use on a shared or public device.</div>
-    <div class="api-saved" id="api-saved">✓ Keys saved to this browser</div>
+    <div class="api-warning">Keys are stored in your browser only. Do not use on a shared or public device.</div>
+    <div class="api-saved" id="api-saved">Keys saved to this browser</div>
     <div class="active-model" id="active-model"></div>
-    <button id="save-keys-btn" style="margin-top:12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:8px 16px;color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">Save Keys</button>
+    <button id="save-keys-btn" style="margin-top:12px;background:rgba(46,230,230,0.1);border:1px solid rgba(46,230,230,0.3);padding:8px 16px;color:var(--cyan);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">Save Keys</button>
   </div>
 
   <div class="section-label">Mode</div>
   <div class="toggle-group" id="mode-group">
-    <button class="toggle-btn active" data-value="literary">✦ Literary / Dense</button>
-    <button class="toggle-btn" data-value="felt">♫ Felt / Radio</button>
+    <button class="toggle-btn active" data-value="literary">Literary / Dense</button>
+    <button class="toggle-btn" data-value="felt">Felt / Radio</button>
   </div>
   <div class="theme-hint" style="margin-top:8px;margin-bottom:0;">
-    <div class="theme-hint-text" style="font-style:normal;">
-      <strong style="color:var(--accent);">Literary</strong> — packed, specific, every line irreplaceable. For deep cuts and lyric-forward writing.<br><br>
-      <strong style="color:var(--accent);">Felt / Radio</strong> — built to be sung, not read. Repetition allowed, space in the verses, a plain emotionally-direct hook. For songs that land on first listen.
+    <div class="theme-hint-text">
+      <strong style="color:var(--cyan);">Literary</strong> — packed, specific, every line irreplaceable. For deep cuts and lyric-forward writing.<br><br>
+      <strong style="color:var(--cyan);">Felt / Radio</strong> — built to be sung, not read. Repetition allowed, space in the verses, a plain emotionally-direct hook. For songs that land on first listen.
     </div>
   </div>
 
@@ -123,51 +136,61 @@
     <button class="toggle-btn" data-value="EDM">EDM</button>
     <button class="toggle-btn" data-value="Soul">Soul</button>
     <button class="toggle-btn" data-value="Indie">Indie</button>
-    <button class="toggle-btn" data-value="Dark Glitch Metal">🖤 Dark Glitch Metal</button>
-    <button class="toggle-btn" data-value="Christian Rock">✝️ Christian Rock</button>
-    <button class="toggle-btn" data-value="Christian Worship">🙏 Christian Worship</button>
+    <button class="toggle-btn" data-value="Dark Glitch Metal">Dark Glitch Metal</button>
+    <button class="toggle-btn" data-value="Christian Rock">Christian Rock</button>
+    <button class="toggle-btn" data-value="Christian Worship">Christian Worship</button>
   </div>
 
   <div class="section-label">Mood / Vibe</div>
   <div class="toggle-group" id="mood-group">
-    <button class="toggle-btn active" data-value="high-energy, hype, hard-hitting">🔥 Hype</button>
-    <button class="toggle-btn" data-value="emotional, heartbreak, melancholic">💔 Heartbreak</button>
-    <button class="toggle-btn" data-value="euphoric, uplifting, anthemic">✨ Euphoric</button>
-    <button class="toggle-btn" data-value="angry, intense, aggressive, raw">😤 Rage</button>
-    <button class="toggle-btn" data-value="chill, introspective, late night">🌙 Late Night</button>
-    <button class="toggle-btn" data-value="romantic, smooth, sensual">💘 Romantic</button>
-    <button class="toggle-btn" data-value="dreamy, ethereal, atmospheric">🌊 Dreamy</button>
-    <button class="toggle-btn" data-value="empowering, confident, bold">💪 Empowerment</button>
-    <button class="toggle-btn" data-value="dark, brooding, suffocating, heavy">🖤 Dark/Brooding</button>
-    <button class="toggle-btn" data-value="defiant, raw, unpolished, human">⚡ Defiant/Raw</button>
-    <button class="toggle-btn" data-value="dissociative, fractured, identity-dissolving, glitch">📡 Glitch/Dissociative</button>
-    <button class="toggle-btn" data-value="haunting, cinematic, eerie, atmospheric dread">👁 Haunting</button>
+    <button class="toggle-btn active" data-value="high-energy, hype, hard-hitting">Hype</button>
+    <button class="toggle-btn" data-value="emotional, heartbreak, melancholic">Heartbreak</button>
+    <button class="toggle-btn" data-value="euphoric, uplifting, anthemic">Euphoric</button>
+    <button class="toggle-btn" data-value="angry, intense, aggressive, raw">Rage</button>
+    <button class="toggle-btn" data-value="chill, introspective, late night">Late Night</button>
+    <button class="toggle-btn" data-value="romantic, smooth, sensual">Romantic</button>
+    <button class="toggle-btn" data-value="dreamy, ethereal, atmospheric">Dreamy</button>
+    <button class="toggle-btn" data-value="empowering, confident, bold">Empowerment</button>
+    <button class="toggle-btn" data-value="dark, brooding, suffocating, heavy">Dark/Brooding</button>
+    <button class="toggle-btn" data-value="defiant, raw, unpolished, human">Defiant/Raw</button>
+    <button class="toggle-btn" data-value="dissociative, fractured, identity-dissolving, glitch">Glitch/Dissociative</button>
+    <button class="toggle-btn" data-value="haunting, cinematic, eerie, atmospheric dread">Haunting</button>
   </div>
 
   <div class="section-label">Your Idea</div>
   <div class="theme-hint">
     <div class="theme-hint-title">Anything goes — the more vivid, the better</div>
     <div class="theme-hint-text">
-      Give it a personal story, a Bible story, a metaphor, a concept, a character, a feeling — anything. The tool works from whatever you hand it. The only rule: be specific.<br><br>
-      <span class="theme-hint-good">✓ "Abraham takes Isaac up the mountain. Isaac keeps asking where the lamb is. Abraham can't answer. He binds his son, raises the knife — and then hears his name called from heaven. A ram appears in the thicket. He holds his son and weeps."</span><br><br>
-      <span class="theme-hint-bad">✗ Too vague: "Write a song about hope and struggle"</span>
+      Give it a personal story, a metaphor, a concept, a character, a feeling — anything. The tool works from whatever you hand it. The only rule: be specific.<br><br>
+      <span class="theme-hint-good">Good: "There's someone else breathing in my apartment. It sits at the kitchen table like it's always been there, knows which thoughts I swallow, then speaks them back in my voice when no one's around."</span><br><br>
+      <span class="theme-hint-bad">Too vague: "Write a song about struggle"</span>
     </div>
   </div>
-  <textarea id="theme" rows="5" placeholder="A personal story, a Bible story, a metaphor, a feeling, a concept — anything vivid and specific..."></textarea>
+  <textarea id="theme" rows="5" placeholder="A story, a metaphor, a feeling, a concept — anything vivid and specific..."></textarea>
 
-  <div class="section-label">Lines to Protect <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
-  <textarea id="user-lines" rows="2" placeholder="Any lines you've already written that must appear verbatim in the final song..."></textarea>
+  <div class="section-label">Lines to Protect <span style="color:var(--dim);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
+  <textarea id="user-lines" rows="2" placeholder="Any lines you've already written that must appear verbatim..."></textarea>
 
-  <button class="generate-btn" id="generate-btn">✦ &nbsp; Write My Song</button>
+  <button class="generate-btn" id="generate-btn">Write My Song</button>
 
   <div class="status" id="status"></div>
   <div class="pipeline-steps" id="pipeline-steps">
-    <div class="pipeline-step" id="step-1">① Studying your story...</div>
-    <div class="pipeline-step" id="step-2">② Writing the song...</div>
-    <div class="pipeline-step" id="step-3">③ Grading & refining to 100...</div>
-    <div class="pipeline-step" id="step-4">④ Writing craft note...</div>
+    <div class="pipeline-step" id="step-1">1 · Studying your story...</div>
+    <div class="pipeline-step" id="step-2">2 · Writing the song...</div>
+    <div class="pipeline-step" id="step-3">3 · Grading & refining to 100...</div>
+    <div class="pipeline-step" id="step-4">4 · Title & Suno references...</div>
   </div>
   <div id="output"></div>
+
+  <div class="hist-section">
+    <div class="hist-head">
+      <div class="section-label" style="margin:0">History Log</div>
+      <button class="hist-clear" id="clearhist">Clear</button>
+    </div>
+    <div id="history"><div class="hist-empty">No songs generated yet.</div></div>
+  </div>
+
+  <div class="footer">// stay tuned //</div>
 </div>
 
 <script>
@@ -176,6 +199,7 @@ const CONFIG = {
   GROQ_MODEL: 'llama-3.3-70b-versatile',
   TIMEOUT_MS: 60000,
 };
+const LS_HIST = 'lyrics_history';
 
 let currentController = null;
 
@@ -185,6 +209,7 @@ window.addEventListener('load', () => {
   const sg = localStorage.getItem('pref_genre'); const sm = localStorage.getItem('pref_mood');
   if (sg) restoreToggle('genre-group', sg); if (sm) restoreToggle('mood-group', sm);
   const smode = localStorage.getItem('pref_mode'); if (smode) restoreToggle('mode-group', smode);
+  renderHist();
 });
 
 function restoreToggle(gid, val) { document.querySelectorAll('#'+gid+' .toggle-btn').forEach(b => b.classList.toggle('active', b.dataset.value === val)); }
@@ -192,7 +217,7 @@ document.getElementById('save-keys-btn').addEventListener('click', () => { ['ant
 function getKey(k) { return document.getElementById('api-'+k)?.value.trim() || ''; }
 document.querySelectorAll('.toggle-group').forEach(g => { g.querySelectorAll('.toggle-btn').forEach(b => { b.addEventListener('click', () => { g.querySelectorAll('.toggle-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); if (g.id==='genre-group') localStorage.setItem('pref_genre', b.dataset.value); if (g.id==='mood-group') localStorage.setItem('pref_mood', b.dataset.value); if (g.id==='mode-group') localStorage.setItem('pref_mode', b.dataset.value); }); }); });
 function getSelected(id) { return document.querySelector('#'+id+' .toggle-btn.active')?.dataset.value || ''; }
-function copyText(text, btn) { const reset = () => { btn.textContent='Copy'; btn.classList.remove('copied'); }; const fb = () => { const ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); try { document.execCommand('copy'); btn.textContent='✓ Copied!'; btn.classList.add('copied'); setTimeout(reset,2000); } catch(e){} document.body.removeChild(ta); }; if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(() => { btn.textContent='✓ Copied!'; btn.classList.add('copied'); setTimeout(reset,2000); }).catch(fb); } else { fb(); } }
+function copyText(text, btn) { const reset = () => { btn.textContent='Copy'; btn.classList.remove('copied'); }; const fb = () => { const ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0;top:0;left:0'; document.body.appendChild(ta); ta.focus(); ta.select(); try { document.execCommand('copy'); btn.textContent='Copied'; btn.classList.add('copied'); setTimeout(reset,2000); } catch(e){} document.body.removeChild(ta); }; if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(() => { btn.textContent='Copied'; btn.classList.add('copied'); setTimeout(reset,2000); }).catch(fb); } else { fb(); } }
 function escapeHTML(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 function setStatus(msg, err=false) { const el=document.getElementById('status'); el.textContent=msg; el.className='status visible'+(err?' error':''); }
 function clearStatus() { document.getElementById('status').className='status'; }
@@ -226,7 +251,7 @@ async function aiCall(systemPrompt, userPrompt, temp=0.95, maxTokens=1400, signa
         }),
         signal
       }, CONFIG.TIMEOUT_MS);
-      if (res.ok) { const d=await res.json(); showModel('✦ Using Claude Sonnet'); return d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim(); }
+      if (res.ok) { const d=await res.json(); showModel('Using Claude Sonnet'); return d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim(); }
       const err=await res.json().catch(()=>({}));
       throw new Error(err?.error?.message||'Anthropic error '+res.status);
     } catch(e) { if(e.name==='AbortError') throw e; if(!gk) throw e; }
@@ -244,7 +269,7 @@ async function aiCall(systemPrompt, userPrompt, temp=0.95, maxTokens=1400, signa
     }, CONFIG.TIMEOUT_MS);
     if (!res.ok) { const err=await res.json().catch(()=>({})); throw new Error(err?.error?.message||'Groq error '+res.status); }
     const d=await res.json();
-    showModel('✦ Using Groq');
+    showModel('Using Groq');
     return d.choices[0].message.content.trim();
   }
 
@@ -281,9 +306,6 @@ ABSOLUTE BANS:
 - Triple-clause constructions: "not X, not X, just X" in every form — "not broken, not whole, just here" / "not angry, not sad, just tired" / "not this, not that, just [anything]" / "I'm not X anymore, I'm just Y" — banned entirely. Replace with a single concrete image that does the same work without announcing it
 - Double-clause constructions: "not X, just X" in every form — "not lost, just quiet" / "not angry, just tired" / "not leaving, just gone" / "not crying, just done" — banned entirely. Same rule: replace with the image, not the declaration`;
 
-// ─── FELT / RADIO MODE OVERRIDE ───────────────────────────────────────────────
-// Appended to the system prompt when Felt mode is active. It RELAXES the dense-mode
-// rules where they fight singability, and adds felt-song requirements.
 const FELT_OVERRIDE = `
 
 ═══ FELT / RADIO MODE IS ACTIVE — THE FOLLOWING OVERRIDES THE RULES ABOVE ═══
@@ -304,7 +326,6 @@ function systemForMode(mode) {
   return mode === 'felt' ? SONGWRITER_SYSTEM + FELT_OVERRIDE : SONGWRITER_SYSTEM;
 }
 
-// ─── GENRE EXAMPLES ──────────────────────────────────────────────────────────
 const GENRE_EXAMPLES = {
   "Pop": `GOOD LINE: "I found your hoodie in the back seat / still smells like the last time we were easy"\nBAD LINE: "I miss you so much it hurts inside"\nGOOD CHORUS: "Maybe I was wrong / maybe you were right / maybe we were just two kids / burning in the night"\nBAD CHORUS: "I will love you forever / you mean everything to me"`,
   "Hip-Hop": `GOOD LINE: "Mama kept the lights on working doubles at the waffle house / I told her I'd buy her a real house / she said boy just get your diploma out"\nBAD LINE: "I came from nothing and now I have everything"\nGOOD CHORUS: "All I got is this moment / can't waste it on your doubt / came too far to fold now / I'm finding my way out"`,
@@ -319,7 +340,6 @@ const GENRE_EXAMPLES = {
   "Christian Worship": `GOOD LINE: "I've shown you every broken part / the ones I hid for years / and still you call me by my name / and meet me right here"\nBAD LINE: "You are so great and mighty Lord"\nGOOD CHORUS: "Where else would I go / you have the words of life / where else would I go / you hold me in the night"`
 };
 
-// ─── PROMPTS ──────────────────────────────────────────────────────────────────
 function buildStructurePrompt(theme) {
   return `You are a creative analyst for a world-class songwriter. Analyze the following raw material and extract a structured creative brief. Do not editorialize. Do not invent details that aren't there. Stay close to the source material.
 
@@ -436,22 +456,6 @@ RULES:
 Output the complete revised song. Nothing else.`;
 }
 
-function buildCraftNotePrompt(finalLyrics, genre, mood, structuredStory) {
-  return `You are a world-class songwriter reflecting on a finished song. Below is the final song you wrote and the structured source material it came from.
-
-GENRE: ${genre}
-MOOD: ${mood}
-
-SOURCE MATERIAL:
-${structuredStory}
-
-FINAL SONG:
-${finalLyrics}
-
-Write one focused paragraph — a craft note — explaining the structural and emotional choices you made in this song. Cover: how you built the emotional arc across V1→V2→bridge→chorus, what the Verse 2 shift is doing and why it matters, how the bridge introduces a turn rather than just escalating, what the motifs are doing across sections and how they land differently at the end, and one specific line you're proud of and why it works. Write it as a working songwriter talking to another songwriter — precise, specific, no fluff. Do not summarize the song. Explain the craft.`;
-}
-
-// ─── GRADER PROMPT (returns JSON) ─────────────────────────────────────────────
 function buildGradePrompt(lyrics, structuredStory, mode) {
   const rubric = mode === 'felt' ? `RUBRIC — FELT / RADIO (100 pts total). This grades how well the song works SUNG, not read:
 - HOOK/CHORUS (25): Short, simple, repeatable, emotionally direct, lands on first listen. Repetition is GOOD here.
@@ -460,7 +464,6 @@ function buildGradePrompt(lyrics, structuredStory, mode) {
 - NARRATIVE SPINE (15): V1 sets up, V2 moves, bridge turns, chorus pays off — but space and repetition are fine.
 - IMAGERY (10): A few concrete anchors. Do NOT reward density — penalize a verse that is too packed to sing.
 - ORIGINALITY (5): No clichés, no "not X just X", no identity stacking. Simple is allowed; lazy is not.
-Map JSON keys: hook, singability, narrative (use for emotional directness+spine combined is NOT needed — use the six keys below).
 Return categories with these exact keys: hook, singability, directness, narrative, imagery, originality.` : `RUBRIC (100 pts total):
 - NARRATIVE SPINE (25): V1 establishes; V2 shifts (not restates); bridge turns; chorus arrives.
 - IMAGERY (20): Every image concrete and specific to THIS story. Penalize stock metaphors and emotion-naming.
@@ -489,37 +492,7 @@ Return ONLY valid JSON, no markdown fences, no preamble:
 }
 List every line costing points in "fixes", weakest first. If total is 100, "fixes" is an empty array.${mode === 'felt' ? ' In felt mode, do NOT flag a line for being plain or for repeating — those are intended.' : ''}`;
 }
-function buildGradePromptOLD(lyrics, structuredStory) {
-  return `You are a ruthless, precise lyrics grader. Grade the song below against this fixed 100-point rubric. Be honest and unsparing — most songs land 85-94. Do not inflate. A 100 means every category is flawless with zero notes.
 
-RUBRIC (100 pts total):
-- NARRATIVE SPINE (25): V1 establishes; V2 shifts (not restates); bridge turns; chorus arrives.
-- IMAGERY (20): Every image concrete and specific to THIS story. Penalize stock metaphors and emotion-naming.
-- HOOK/CHORUS (20): Chorus is the peak, shoutable, pays off verses, contains a physical detail.
-- ORIGINALITY (15): No identity stacking, no neat resolution, no double/triple-clause "not X just X" constructions. Outro sits in tension.
-- SINGABILITY/METER (10): Every line speakable in one breath, natural stress, no awkward syllable clusters.
-- COHESION/PAYOFF (10): 1-2 motifs recur transformed across sections; outro lands differently because of what came before.
-
-SOURCE MATERIAL:
-${structuredStory}
-
-SONG:
-${lyrics}
-
-Return ONLY valid JSON, no markdown fences, no preamble:
-{
-  "total": <int>,
-  "categories": {
-    "narrative": <int>, "imagery": <int>, "hook": <int>, "originality": <int>, "singability": <int>, "cohesion": <int>
-  },
-  "fixes": [
-    {"category": "<name>", "line": "<the exact failing line, verbatim from the song>", "problem": "<what specifically fails — name the word or syllable>", "direction": "<what kind of fix is needed — do NOT write the replacement line>"}
-  ]
-}
-List every line costing points in "fixes", weakest first. If total is 100, "fixes" is an empty array.`;
-}
-
-// ─── TARGETED REWRITE PROMPT ──────────────────────────────────────────────────
 function buildTargetedRewritePrompt(lyrics, fixes, structuredStory) {
   const fixList = fixes.map((f,i) => `${i+1}. [${f.category}] Line: "${f.line}"\n   Problem: ${f.problem}\n   Direction: ${f.direction}`).join('\n\n');
   return `You are a surgical line editor. Below is a song that scored just short of perfect, and a list of the exact lines costing points. Fix ONLY those lines. Every line not in the list must remain EXACTLY as written — same words, same order, same section labels.
@@ -543,7 +516,6 @@ RULES:
 Output the complete revised song. Nothing else.`;
 }
 
-// ─── PARSE GRADE JSON ─────────────────────────────────────────────────────────
 function parseGrade(raw) {
   let s = raw.trim().replace(/^\`\`\`json\s*/i,'').replace(/^\`\`\`\s*/,'').replace(/\`\`\`\s*$/,'').trim();
   const start = s.indexOf('{'), end = s.lastIndexOf('}');
@@ -551,11 +523,78 @@ function parseGrade(raw) {
   return JSON.parse(s);
 }
 
+// ─── TITLE + SUNO REFERENCES PROMPT (replaces craft note) ──────────────────────
+function buildTitleSunoPrompt(finalLyrics, genre, mood) {
+  return `You are a music supervisor and A&R. Below is a finished song. Produce a release title and a Suno sound reference, derived from the song's ACTUAL mood and content — not from any preset genre lane.
+
+SONG:
+${finalLyrics}
+
+Do two things:
+
+1. TITLE: One evocative track title pulled from the song's strongest image or phrase. Short — one to four words. No quotation marks. It should feel like a real release title, not a description. Do not just reuse the first chorus line verbatim unless it genuinely is the best title.
+
+2. SUNO SOUND REFERENCE: Pick TWO real, well-known recording artists whose sound best matches THIS song's mood, energy, and subject — let the lyrics decide the lane, ignore any assumed house style. For each artist, name ONE representative song that best captures the specific sonic register this track should aim for. Then write one short line (under 20 words) describing the production feel to aim for in Suno.
+
+Return ONLY valid JSON, no markdown fences, no preamble:
+{
+  "title": "<the title>",
+  "refs": [
+    {"artist": "<artist 1>", "song": "<representative song>"},
+    {"artist": "<artist 2>", "song": "<representative song>"}
+  ],
+  "production": "<one short line on the production feel>"
+}`;
+}
+function parseTitleSuno(raw) {
+  let s = raw.trim().replace(/^\`\`\`json\s*/i,'').replace(/^\`\`\`\s*/,'').replace(/\`\`\`\s*$/,'').trim();
+  const start = s.indexOf('{'), end = s.lastIndexOf('}');
+  if (start !== -1 && end !== -1) s = s.slice(start, end+1);
+  return JSON.parse(s);
+}
+
+// ─── HISTORY LOG ───────────────────────────────────────────────────────────────
+function loadHist(){ try { return JSON.parse(localStorage.getItem(LS_HIST)||'[]'); } catch(e){ return []; } }
+function saveHist(h){ localStorage.setItem(LS_HIST, JSON.stringify(h.slice(0,30))); }
+function addHistory(title, lyrics, genre, mood, score){
+  const h = loadHist();
+  h.unshift({ title: title||'(untitled)', lyrics, genre, mood, score: (score!=null?score:null), ts: Date.now() });
+  saveHist(h); renderHist();
+}
+function renderHist(){
+  const wrap = document.getElementById('history');
+  const h = loadHist();
+  if(!h.length){ wrap.innerHTML = '<div class="hist-empty">No songs generated yet.</div>'; return; }
+  wrap.innerHTML = h.map((e,i)=>{
+    const when = new Date(e.ts).toLocaleString();
+    const meta = [e.genre, e.mood ? e.mood.split(',')[0] : '', e.score!=null?e.score+'/100':''].filter(Boolean).join(' · ');
+    return `<div class="hist-item">
+      <div class="hist-meta"><span>${escapeHTML(meta)}</span><span>${when}</span></div>
+      <div class="hist-title">${escapeHTML(e.title)}</div>
+      <div class="hist-lyrics" id="hl-${i}">${escapeHTML(e.lyrics)}</div>
+      <div class="hist-actions">
+        <button class="hist-btn" data-act="expand" data-i="${i}">Expand</button>
+        <button class="hist-btn" data-act="copy" data-i="${i}">Copy lyrics</button>
+        <button class="hist-btn" data-act="copytitle" data-i="${i}">Copy title</button>
+      </div>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.hist-btn').forEach(b=>{
+    b.onclick = () => {
+      const i = +b.dataset.i, e = loadHist()[i];
+      if(b.dataset.act==='expand'){ const el=document.getElementById('hl-'+i); el.classList.toggle('expanded'); b.textContent = el.classList.contains('expanded')?'Collapse':'Expand'; }
+      else if(b.dataset.act==='copy'){ copyText(e.lyrics, b); }
+      else if(b.dataset.act==='copytitle'){ copyText(e.title, b); }
+    };
+  });
+}
+document.getElementById('clearhist').onclick = () => { if(confirm('Clear all saved songs?')){ localStorage.removeItem(LS_HIST); renderHist(); } };
+
 // ─── MAIN HANDLER ─────────────────────────────────────────────────────────────
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const theme = document.getElementById('theme').value.trim();
-  if (!getKey('anthropic') && !getKey('groq')) { setStatus('⚠ Add at least one API key above', true); return; }
-  if (!theme) { setStatus('⚠ Give it something to work with — a story, a concept, a feeling', true); return; }
+  if (!getKey('anthropic') && !getKey('groq')) { setStatus('Add at least one API key above', true); return; }
+  if (!theme) { setStatus('Give it something to work with — a story, a concept, a feeling', true); return; }
   if (currentController) currentController.abort();
   currentController = new AbortController();
   const signal = currentController.signal;
@@ -571,7 +610,6 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   clearStatus();
 
   try {
-    // Step 1: Structure
     setPipelineStep(1);
     const structuredStory = await aiCall(
       'You are a creative analyst for a world-class songwriter. Extract structured song material from raw input. Be precise and concrete. Never invent details not present in the source.',
@@ -579,84 +617,81 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
       0.3, 700, signal
     );
 
-    // Step 2: Write
     setPipelineStep(2);
-    const draft = await aiCall(
-      SYS,
-      buildWritePrompt(structuredStory, genre, mood, userLines, mode),
-      0.95, 1800, signal
-    );
+    const draft = await aiCall(SYS, buildWritePrompt(structuredStory, genre, mood, userLines, mode), 0.95, 1800, signal);
 
-    // Step 3: Polish
     setPipelineStep(3);
-    let final = await aiCall(
-      SYS,
-      buildPolishPrompt(draft, genre, structuredStory, mode),
-      0.4, 1800, signal
-    );
+    let final = await aiCall(SYS, buildPolishPrompt(draft, genre, structuredStory, mode), 0.4, 1800, signal);
 
-    // Step 3b: Auto grade-rewrite loop — drive toward 100, max 8 rounds
     let grade = null;
     const MAX_ROUNDS = mode === 'felt' ? 4 : 8;
     let bestSong = final, bestGrade = null;
     for (let round = 0; round < MAX_ROUNDS; round++) {
-      const rawGrade = await aiCall(
-        'You are a ruthless lyrics grader. Output only valid JSON.',
-        buildGradePrompt(final, structuredStory, mode),
-        0.2, 1200, signal
-      );
-      try { grade = parseGrade(rawGrade); }
-      catch(e) { break; }
-
+      const rawGrade = await aiCall('You are a ruthless lyrics grader. Output only valid JSON.', buildGradePrompt(final, structuredStory, mode), 0.2, 1200, signal);
+      try { grade = parseGrade(rawGrade); } catch(e) { break; }
       if (!bestGrade || grade.total > bestGrade.total) { bestGrade = grade; bestSong = final; }
-
       if (grade.total >= 100 || !grade.fixes || grade.fixes.length === 0) break;
       if (round === MAX_ROUNDS - 1) break;
-
-      final = await aiCall(
-        SYS,
-        buildTargetedRewritePrompt(final, grade.fixes, structuredStory),
-        0.5, 1800, signal
-      );
+      final = await aiCall(SYS, buildTargetedRewritePrompt(final, grade.fixes, structuredStory), 0.5, 1800, signal);
     }
     if (bestGrade && bestGrade.total >= (grade ? grade.total : 0)) final = bestSong;
     const finalGrade = bestGrade || grade;
 
-    // Step 4: Craft note
+    // Step 4: Title + Suno references (replaces craft note)
     setPipelineStep(4);
-    const craftNote = await aiCall(
-      SYS,
-      buildCraftNotePrompt(final, genre, mood, structuredStory),
-      0.5, 700, signal
-    );
+    let titleData = null;
+    try {
+      const rawTitle = await aiCall('You are a music supervisor. Output only valid JSON.', buildTitleSunoPrompt(final, genre, mood), 0.6, 500, signal);
+      titleData = parseTitleSuno(rawTitle);
+    } catch(e) { titleData = null; }
 
     hidePipeline(); clearStatus();
 
-    const gradeBadge = finalGrade ? `<span style="font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;color:${finalGrade.total>=97?'var(--green)':'var(--gold)'};border:1px solid currentColor;border-radius:50px;padding:3px 12px;margin-left:8px;">${finalGrade.total}/100</span>` : '';
+    const score = finalGrade ? finalGrade.total : null;
+    const gradeBadge = finalGrade ? `<span style="font-size:11px;letter-spacing:2px;color:${finalGrade.total>=97?'var(--green)':'var(--gold)'};border:1px solid currentColor;padding:3px 12px;margin-left:8px;">${finalGrade.total}/100</span>` : '';
+
+    const title = titleData?.title || '';
+    let titleHTML = '';
+    if (title) {
+      titleHTML = `<div class="title-box">
+        <div class="box-header"><div class="box-title">Suggested Title</div><button class="copy-btn" id="copy-title">Copy</button></div>
+        <div class="title-suggest">${escapeHTML(title)}</div>
+      </div>`;
+    }
+
+    let sunoHTML = '';
+    if (titleData?.refs?.length) {
+      const refLines = titleData.refs.map(r => `• ${r.artist} — "${r.song}"`).join('\n');
+      const prod = titleData.production ? `\n\nProduction feel: ${titleData.production}` : '';
+      const sunoBlock = `Style references for Suno:\n${refLines}${prod}`;
+      sunoHTML = `<div class="suno-box">
+        <div class="box-header"><div class="box-title">Suno Sound Reference</div><button class="copy-btn" id="copy-suno">Copy</button></div>
+        <div class="suno-text">${escapeHTML(sunoBlock)}</div>
+      </div>`;
+    }
 
     document.getElementById('output').innerHTML = `
       <div class="output-box">
-        <div class="box-header">
-          <div class="box-title">✦ Your Lyrics ${gradeBadge}</div>
-          <button class="copy-btn" id="copy-lyrics">Copy</button>
-        </div>
+        <div class="box-header"><div class="box-title">Your Lyrics ${gradeBadge}</div><button class="copy-btn" id="copy-lyrics">Copy</button></div>
         <div class="lyrics-text">${escapeHTML(final)}</div>
       </div>
-      <div class="craft-box">
-        <div class="box-header">
-          <div class="box-title">✦ Craft Note</div>
-          <button class="copy-btn" id="copy-craft">Copy</button>
-        </div>
-        <div class="craft-text">${escapeHTML(craftNote)}</div>
-      </div>`;
+      ${titleHTML}
+      ${sunoHTML}`;
 
     document.getElementById('copy-lyrics').addEventListener('click', function() { copyText(final, this); });
-    document.getElementById('copy-craft').addEventListener('click', function() { copyText(craftNote, this); });
+    if (title) document.getElementById('copy-title').addEventListener('click', function() { copyText(title, this); });
+    if (titleData?.refs?.length) document.getElementById('copy-suno').addEventListener('click', function() {
+      const refLines = titleData.refs.map(r => `${r.artist} — "${r.song}"`).join('\n');
+      copyText(refLines + (titleData.production ? '\n'+titleData.production : ''), this);
+    });
+
+    // save to history: lyrics + title (no craft note)
+    addHistory(title, final, genre, mood, score);
 
   } catch(e) {
     hidePipeline();
     if (e.name === 'AbortError') clearStatus();
-    else setStatus('⚠ ' + e.message, true);
+    else setStatus(e.message, true);
   } finally {
     btn.disabled = false;
     currentController = null;
