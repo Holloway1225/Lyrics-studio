@@ -94,7 +94,7 @@
     <div class="header-eyebrow">Signal Tools</div>
     <h1>lyrics studio</h1>
     <p>your lyrics · your voice · powered by claude + groq</p>
-    <div class="badge">v6.0</div>
+    <div class="badge">v6.1</div>
   </div>
 
   <div class="api-section">
@@ -525,7 +525,7 @@ function parseGrade(raw) {
 
 // ─── TITLE + SUNO REFERENCES PROMPT (replaces craft note) ──────────────────────
 function buildTitleSunoPrompt(finalLyrics, genre, mood) {
-  return `You are a music supervisor and A&R. Below is a finished song. Produce a release title and a Suno sound reference, derived from the song's ACTUAL mood and content — not from any preset genre lane.
+  return `You are a music supervisor and A&R. Below is a finished ${genre} song with a ${mood} mood. Produce a release title and a Suno sound reference.
 
 SONG:
 ${finalLyrics}
@@ -534,14 +534,18 @@ Do two things:
 
 1. TITLE: One evocative track title pulled from the song's strongest image or phrase. Short — one to four words. No quotation marks. It should feel like a real release title, not a description. Do not just reuse the first chorus line verbatim unless it genuinely is the best title.
 
-2. SUNO SOUND REFERENCE: Pick TWO real, well-known recording artists whose sound best matches THIS song's mood, energy, and subject — let the lyrics decide the lane, ignore any assumed house style. For each artist, name ONE representative song that best captures the specific sonic register this track should aim for. Then write one short line (under 20 words) describing the production feel to aim for in Suno.
+2. SUNO SOUND REFERENCE: Pick TWO real, well-known recording artists who actually work in the ${genre} genre (or an immediately adjacent sub-genre). The genre is the hard filter — both artists MUST be credible ${genre} artists. Within that genre, pick the two whose sound best fits this song's ${mood} mood and subject. For each artist, name ONE representative song that captures the exact sonic register this track should aim for. Then write one short line (under 20 words) on the production feel to aim for in Suno.
+
+GENRE LOCK — this is critical: do NOT pick artists from a different genre just because their vibe or lyrics feel similar. A ${genre} song gets ${genre} artists. (Example of what NOT to do: putting a folk/singer-songwriter artist like Phoebe Bridgers on a Rock track.)
+
+ONE NARROW EXCEPTION: you may name a cross-genre artist ONLY when a SPECIFIC, NAMEABLE sonic technique of theirs — not their overall vibe — would genuinely serve this track, and you state the technique explicitly. Example: "Billie Eilish — for her glitchy, close-mic whispered vocal layering" used on a Rock song. If you invoke the exception, the OTHER of the two artists must still be a core ${genre} artist, and you must name the specific technique in the song field or production line. If no specific technique justifies it, stay 100% inside ${genre}.
 
 Return ONLY valid JSON, no markdown fences, no preamble:
 {
   "title": "<the title>",
   "refs": [
-    {"artist": "<artist 1>", "song": "<representative song>"},
-    {"artist": "<artist 2>", "song": "<representative song>"}
+    {"artist": "<artist 1>", "song": "<representative song or technique note>"},
+    {"artist": "<artist 2>", "song": "<representative song or technique note>"}
   ],
   "production": "<one short line on the production feel>"
 }`;
