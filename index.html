@@ -123,7 +123,7 @@
     <div class="header-eyebrow">Signal Tools</div>
     <h1>lyrics studio</h1>
     <p>your lyrics · your voice · powered by claude + groq</p>
-    <div class="badge">v7.2</div>
+    <div class="badge">v7.5</div>
   </div>
 
   <!-- TAB NAV -->
@@ -214,7 +214,7 @@
     <div class="pipeline-steps" id="pipeline-steps">
       <div class="pipeline-step" id="step-1">1 · Reading your story on its own terms...</div>
       <div class="pipeline-step" id="step-2">2 · Writing the song...</div>
-      <div class="pipeline-step" id="step-3">3 · Grading & refining to 100...</div>
+      <div class="pipeline-step" id="step-3">3 · Polishing & grading...</div>
       <div class="pipeline-step" id="step-4">4 · Title & Suno references...</div>
     </div>
     <div id="output"></div>
@@ -452,12 +452,19 @@ ${source.trim()}
 
 STEP 1 (SILENT — think this through but do NOT print it): Detect the source's dramatic stance: Who is speaking? To whom? From what emotional position? Over what time scale (minutes / days / months / years)? Which of the ten song-types is it? What actually changes from start to finish? Also detect the source's SCALE and AMBIGUITY: is the "you" literally a person, or could it be God, the self, a former self, a witness, something unnamed? Is the imagery domestic/literal or cosmic/figurative? These are part of the stance and must be preserved too.
 
+═══ CONTAMINATION GUARD — THIS IS A HARD RULE ═══
+The SOURCE MATERIAL may be an existing copyrighted song. You are borrowing its STANCE, SCALE, and ARC only — never its content. You MUST NOT reuse, lightly reword, or paraphrase ANY of the following from the source:
+- Its hook or any repeated/title phrase (e.g. if the source repeats a line, that line and all near-variants are forbidden).
+- Its specific images, objects, settings, or nouns (e.g. if the source has a shoreline, blood, an eclipse, shadows, eyelids — none of those may appear, nor close synonyms like "coastline / dusk / shade").
+- Its distinctive phrasings or word pairings.
+Extract the ARCHITECTURE (who speaks to whom, the inward-folding address, the unanswered demand, the cosmic ambiguity, what changes) and build an ENTIRELY NEW physical world to carry it. Every image, the central repeated phrase, and the title must be invented and share NO vocabulary with the source. If you find yourself reaching for a word that appears in the source, choose a different world instead. The test: someone who knows the source song should NOT recognize this concept as derived from it — only the emotional shape should rhyme, never the words or pictures.
+
 STEP 2 — Build the concept(s) about this material. Output ONLY the formatted concept(s) below. Do not show your Step 1 reasoning, do not use markdown headers or asterisks, do not add preamble.${overrideNote}
 
 ALBUM FREQUENCY (a filter on subject matter, NOT a dictate on stance): ${a.freq}
 ALBUM THEME: ${a.theme}
 WHAT THIS ALBUM IS NOT: ${a.banned}
-The album frequency narrows what the song is ABOUT. It does not get to flatten the stance, scale, or ambiguity you detected in the source. CRITICAL: do NOT silently shrink a cosmic or ambiguous source into a domestic breakup. If the source's "you" might not be a literal ex-partner, the concept must NOT resolve it into one. If the source operates at a metaphysical or figurative scale, keep that scale — physically grounded does not mean residential. An anchor image can be concrete AND cosmic (a body on a shoreline, blood in twilight) without becoming "one toothbrush in the cup."${angle ? `\n\nADDITIONAL NUDGE FROM THE WRITER: ${angle}` : ''}
+The album frequency narrows what the song is ABOUT. It does not get to flatten the stance, scale, or ambiguity you detected in the source. CRITICAL: do NOT silently shrink a cosmic or ambiguous source into a domestic breakup. If the source's "you" might not be a literal person, the concept must NOT resolve it into one. If the source operates at a metaphysical or figurative scale, keep that scale — physically grounded does not mean residential. An anchor image can be concrete AND cosmic without becoming domestic — but it must be a NEW image, never one drawn from the source.${angle ? `\n\nADDITIONAL NUDGE FROM THE WRITER: ${angle}` : ''}
 
 ${count > 1 ? `Generate exactly ${count} concepts, each preserving the source's stance but exploring different specifics. Separate each with ---\n\n` : ''}Use the exact output format. No preamble, no numbering.`;
   }
@@ -638,6 +645,11 @@ function buildStructurePrompt(theme) {
 RAW MATERIAL:
 ${theme}
 
+═══ FIRST, A CHECK ═══
+Decide whether the RAW MATERIAL above is (A) the writer's own idea/story/notes, or (B) the finished lyrics of an existing song (signs: it is laid out in verses/choruses, has a clearly repeated hook line, reads as polished publishable lyrics rather than notes).
+- If (A): proceed normally — preserve the writer's specific details and images faithfully; do NOT invent details that contradict them.
+- If (B): this may be a copyrighted song. Borrow ONLY its architecture — song-type, who speaks to whom, the arc, the scale. You MUST NOT carry over its hook/title phrase, its specific images, objects, settings, or nouns, or its distinctive phrasings into the brief. Build the brief around an ENTIRELY NEW physical world that shares no vocabulary with the source, so the resulting song could never be recognized as derived from it. Only the emotional shape may rhyme — never the words or pictures.
+
 STEP 1 — IDENTIFY THE SONG'S NATURE (do this before anything else):
 - SONG-TYPE: Which of these does the material most resemble? Ritual (repeated action) / Confrontation (addressed to "you") / Inventory (objects, records, evidence) / Timeline (change across months or years) / System (wound as machine, procedure, debt, signal) / Confession (speaker admits own role) / Witness (watching someone else) / Aftermath (after the event) / Collective ("we") / Artifact (something left behind). Name it.
 - SPEAKER & ADDRESSEE: Who is speaking, and to whom? (self, a "you," a witness, no one)
@@ -765,24 +777,16 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
 
   try {
     setPipelineStep(1);
-    const structuredStory = await aiCall('You are a creative analyst for a world-class songwriter. Your job is to read raw material and extract a brief that is faithful to the dramatic stance the material already has. Detect its song-type before extracting. Never force a default shape. Never invent details that contradict the source.', buildStructurePrompt(theme), 0.3, 800, signal);
+    const structuredStory = await aiCall('You are a creative analyst for a world-class songwriter. Your job is to read raw material and extract a brief that is faithful to the dramatic stance the material already has. Detect its song-type before extracting. Never force a default shape. If the raw material is the writer\'s own idea, preserve its details faithfully. If it appears to be the lyrics of an existing song, borrow only its architecture and require an entirely new image set — never carry over its hook, images, or phrasing.', buildStructurePrompt(theme), 0.3, 800, signal);
     setPipelineStep(2);
     const draft = await aiCall(SYS, buildWritePrompt(structuredStory, genre, mood, userLines, mode), 0.95, 1800, signal);
     setPipelineStep(3);
-    let final = await aiCall(SYS, buildPolishPrompt(draft, genre, structuredStory, mode), 0.4, 1800, signal);
-    let grade = null;
-    const MAX_ROUNDS = mode === 'felt' ? 4 : 8;
-    let bestSong = final, bestGrade = null;
-    for (let round = 0; round < MAX_ROUNDS; round++) {
+    const final = await aiCall(SYS, buildPolishPrompt(draft, genre, structuredStory, mode), 0.4, 1800, signal);
+    let finalGrade = null;
+    try {
       const rawGrade = await aiCall('You are a ruthless lyrics grader. Output only valid JSON.', buildGradePrompt(final, structuredStory, mode), 0.2, 1200, signal);
-      try { grade = parseGrade(rawGrade); } catch(e) { break; }
-      if (!bestGrade || grade.total > bestGrade.total) { bestGrade = grade; bestSong = final; }
-      if (grade.total >= 100 || !grade.fixes || grade.fixes.length === 0) break;
-      if (round === MAX_ROUNDS - 1) break;
-      final = await aiCall(SYS, buildTargetedRewritePrompt(final, grade.fixes, structuredStory), 0.5, 1800, signal);
-    }
-    if (bestGrade && bestGrade.total >= (grade ? grade.total : 0)) final = bestSong;
-    const finalGrade = bestGrade || grade;
+      finalGrade = parseGrade(rawGrade);
+    } catch(e) { finalGrade = null; }
     setPipelineStep(4);
     let titleData = null;
     try { const rawTitle = await aiCall('You are a music supervisor. Output only valid JSON.', buildTitleSunoPrompt(final, genre, mood), 0.6, 500, signal); titleData = parseTitleSuno(rawTitle); } catch(e) { titleData = null; }
