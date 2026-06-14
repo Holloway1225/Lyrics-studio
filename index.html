@@ -102,6 +102,7 @@
   .album-freq.show { display: block; }
   .concept-result { margin-top: 26px; background: #05070a; border: 1px solid var(--line); padding: 20px; animation: fadeUp 0.4s ease both; }
   .concept-title { font-family: 'Major Mono Display', monospace; font-size: 18px; color: var(--cyan); margin-bottom: 14px; line-height: 1.3; }
+  .concept-stance { font-size: 10px; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; border: 1px solid rgba(255,193,77,0.25); background: rgba(255,193,77,0.04); padding: 6px 10px; display: inline-block; }
   .concept-body { font-size: 14px; line-height: 1.9; color: var(--text); white-space: pre-wrap; word-break: break-word; }
   .concept-send-btn { width: 100%; margin-top: 14px; padding: 13px; border: 1px solid var(--cyan); background: rgba(46,230,230,0.08); color: var(--cyan); font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
   .concept-send-btn:hover { background: var(--cyan); color: #05070a; }
@@ -122,7 +123,7 @@
     <div class="header-eyebrow">Signal Tools</div>
     <h1>lyrics studio</h1>
     <p>your lyrics · your voice · powered by claude + groq</p>
-    <div class="badge">v7.0</div>
+    <div class="badge">v7.1</div>
   </div>
 
   <!-- TAB NAV -->
@@ -211,7 +212,7 @@
     <button class="generate-btn" id="generate-btn">Write My Song</button>
     <div class="status" id="status-write"></div>
     <div class="pipeline-steps" id="pipeline-steps">
-      <div class="pipeline-step" id="step-1">1 · Studying your story...</div>
+      <div class="pipeline-step" id="step-1">1 · Reading your story on its own terms...</div>
       <div class="pipeline-step" id="step-2">2 · Writing the song...</div>
       <div class="pipeline-step" id="step-3">3 · Grading & refining to 100...</div>
       <div class="pipeline-step" id="step-4">4 · Title & Suno references...</div>
@@ -229,6 +230,32 @@
 
   <!-- ═══ CONCEPT GEN TAB ═══ -->
   <div id="tab-concept" class="tab-panel">
+
+    <div class="section-label" style="margin-top:24px;">Source Song / Real Material <span style="color:var(--dim);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
+    <div class="theme-hint">
+      <div class="theme-hint-title">Paste a real song, a true story, or existing lyrics here</div>
+      <div class="theme-hint-text">
+        When you put something here, the concept is built <strong style="color:var(--cyan);">about this material</strong> — it keeps the same dramatic stance (who's speaking, to whom, from what position), the same time scale, and the same thing that changes. It does not get flattened into house style.<br><br>
+        Leave this blank to generate a cold concept from the album frequency alone.
+      </div>
+    </div>
+    <textarea id="concept-source" rows="6" placeholder="Paste a real song / true story / existing lyrics — the concept will be built about THIS, preserving its stance..."></textarea>
+
+    <div class="section-label">Transform stance? <span style="color:var(--dim);font-size:9px;letter-spacing:1px">(ONLY APPLIES WHEN SOURCE IS PASTED)</span></div>
+    <select class="album-select" id="concept-override">
+      <option value="">Keep the input's stance (default)</option>
+      <option value="Ritual Song — built around a repeated action">→ Ritual (repeated action)</option>
+      <option value="Confrontation Song — addressed directly to 'you'">→ Confrontation (addressed to 'you')</option>
+      <option value="Inventory Song — built from objects, receipts, records, evidence">→ Inventory (objects/evidence)</option>
+      <option value="Timeline Song — tracks change across months or years">→ Timeline (across time)</option>
+      <option value="System Song — turns the wound into a machine, procedure, contract, signal, debt, algorithm, or archive">→ System (wound as machine)</option>
+      <option value="Confession Song — speaker admits their own role">→ Confession (admit own role)</option>
+      <option value="Witness Song — speaker watches someone else change, disappear, survive, or fail">→ Witness (watching another)</option>
+      <option value="Aftermath Song — begins after the central event has already happened">→ Aftermath (after the event)</option>
+      <option value="Collective Song — uses 'we' instead of 'I'">→ Collective ('we')</option>
+      <option value="Artifact Song — built around something left behind rather than an active relationship">→ Artifact (left behind)</option>
+    </select>
+
     <div class="section-label" style="margin-top:24px;">Album</div>
     <select class="album-select" id="concept-album" onchange="showAlbumFreq()">
       <option value="">— select album —</option>
@@ -368,35 +395,80 @@ async function aiCall(systemPrompt, userPrompt, temp=0.95, maxTokens=1400, signa
 }
 
 // ─── CONCEPT GENERATOR ───────────────────────────────────────────────────────
-const CONCEPT_SYSTEM = `You are a creative director for Cryptid Static, a dark glitch metal project. Your job is to generate vivid, physically-grounded song concept prompts that feed into a lyric generator.
+// v7.1: Two distinct modes.
+//  - SOURCE PRESENT  → faithful transformation. Detect the input's dramatic stance,
+//                       time scale, and arc; preserve them. Change specifics, not stance.
+//  - SOURCE ABSENT   → cold generation from album frequency, but NO forced lone-person mold.
+const CONCEPT_SYSTEM = `You are a creative director for Cryptid Static, a dark glitch metal project. You generate vivid, physically-grounded song concept prompts that feed a lyric generator.
 
-CRYPTID STATIC SONGWRITING RULES:
-- Every concept must be anchored in a SPECIFIC PHYSICAL DETAIL — an object, place, body sensation, sound, texture, or action. Abstract concepts alone are rejected.
-- The best Cryptid Static songs start from a concrete image that carries emotional weight: "I bruised my arm on the counter last Thursday / Purple sinking into yellow at the edge / I keep pressing on the bruise with my thumb / Just to feel one thing in me / Still react"
-- BANNED in concept prompts: coffee/café/morning imagery, generic emotion-naming ("loneliness," "grief," "pain"), neat resolutions, motivational arcs, anything that could be described as "uplifting"
-- Each concept must be physically specific enough that the lyric generator can pull real sensory images from it
-- Concepts should feel like something that actually happened to a real person, not a metaphor someone invented to make a point
+THE TEN SONG-TYPES (these are a DETECTOR, not a menu you pick from for fun):
+1. Ritual — built around a repeated action
+2. Confrontation — addressed directly to "you"
+3. Inventory — built from objects, receipts, records, evidence
+4. Timeline — tracks change across months or years
+5. System — turns the wound into a machine, procedure, contract, signal, debt, algorithm, archive
+6. Confession — speaker admits their own role
+7. Witness — speaker watches someone else change, disappear, survive, or fail
+8. Aftermath — begins after the central event has already happened
+9. Collective — uses "we" instead of "I"
+10. Artifact — built around something left behind rather than an active relationship
 
-OUTPUT FORMAT for each concept:
+THE MOST IMPORTANT RULE — TRANSFORM STANCE, NOT PROPS:
+The shallow, forbidden move is swapping one object for another (door→window, phone→radio, mirror→camera) while keeping the exact same dramatic stance. That is what makes every song sound identical. Variety of dramatic STANCE matters far more than variety of objects. Do NOT default to "a lone person performing a repeated action" — that is only one of ten types and it is overused.
+
+CRYPTID STATIC CRAFT RULES:
+- Every concept is anchored in a SPECIFIC PHYSICAL DETAIL — object, place, body sensation, sound, texture, action. Abstract concepts alone are rejected.
+- BANNED: coffee/cafe/morning imagery; generic emotion-naming ("loneliness," "grief," "pain"); neat resolutions; motivational arcs; anything "uplifting"; "not X, just X" and "not X, not X, just X" constructions.
+- A concept must feel like something that actually happened to a real person, not a metaphor invented to make a point.
+
+OUTPUT FORMAT for each concept (use these exact labels):
 TITLE SEED: [3-5 word working title]
-ANCHOR IMAGE: [The single most vivid physical detail — one sentence, concrete and specific]
-EMOTIONAL CORE: [What this song is ACTUALLY about underneath the surface — one sentence, no abstractions]
-SCENE: [2-3 sentences describing the specific situation, setting, and moment. Physical details only. What does the person see, hear, feel, touch?]
-THREAD: [One recurring object or image that should appear in multiple sections of the song, and how its meaning should shift from first to last appearance]
-WHAT IT SHOULD FEEL LIKE: [One sentence on the emotional register — not genre, not mood adjective, but what the listener should feel in their body when it ends]`;
+SONG-TYPE: [which of the ten types this concept IS — one or two words]
+STANCE: [who is speaking, to whom, from what position, across what time scale — one sentence]
+ANCHOR IMAGE: [the single most vivid physical detail — one sentence, concrete]
+SCENE: [2-3 sentences. Physical details only. What is seen, heard, felt, touched.]
+WHAT CHANGES: [what is different by the final chorus than at the start — one sentence. This is the arc. It is not optional.]
+CHORUS ENGINE: [the idea or action that keeps repeating — one line]
+EMOTIONAL BOUNDARY: [what this song must NOT become — one sentence, e.g. "must never become a reconciliation story"]`;
 
-function buildConceptPrompt(albumNum, angle, count) {
+function buildConceptPrompt(albumNum, angle, count, source, override) {
   const a = ALBUMS[albumNum];
-  const angleNote = angle ? `\n\nDIRECTIONAL NUDGE FROM THE WRITER:\n${angle}\nLet this nudge influence the concepts — but keep each concept grounded in physical specificity. Do not force the nudge if it doesn't serve the album's frequency.` : '';
-  return `Generate ${count} distinct song concept prompt${count>1?'s':''} for Cryptid Static's ${a.name}.
+
+  if (source && source.trim()) {
+    // ── FAITHFUL TRANSFORMATION MODE ──
+    const overrideNote = override
+      ? `\n\nSTANCE OVERRIDE — the writer has explicitly asked you to TRANSFORM the stance:\nRecast the material as: ${override}\nThis is the one case where changing the dramatic stance is allowed, because it was requested. Keep the emotional truth of the source; change the stance to the one named.`
+      : `\n\nSTANCE LOCK — the writer has NOT asked for a transformation:\nYou MAY NOT change the dramatic stance of the source. Detect what it is (speaker, addressee, position, time scale, song-type) and PRESERVE it. If the source is a confrontation, the concept stays a confrontation. If it spans years, it stays a timeline. If three people are present, it does not collapse to one. Change the specific details and images — never the stance. Door→window is allowed; confession→witness is NOT.`;
+
+    return `Read the SOURCE MATERIAL below and build ${count} song concept${count>1?'s':''} ABOUT IT for Cryptid Static's ${a.name}.
+
+SOURCE MATERIAL:
+"""
+${source.trim()}
+"""
+
+STEP 1 — Detect the source's dramatic stance: Who is speaking? To whom? From what emotional position? Over what time scale (minutes / days / months / years)? Which of the ten song-types is it? What actually changes from start to finish?
+
+STEP 2 — Build the concept(s) about this material.${overrideNote}
+
+ALBUM FREQUENCY (a filter on subject matter, NOT a dictate on stance): ${a.freq}
+ALBUM THEME: ${a.theme}
+WHAT THIS ALBUM IS NOT: ${a.banned}
+The album frequency narrows what the song is ABOUT. It does not get to flatten the stance you detected in the source.${angle ? `\n\nADDITIONAL NUDGE FROM THE WRITER: ${angle}` : ''}
+
+${count > 1 ? `Generate exactly ${count} concepts, each preserving the source's stance but exploring different specifics. Separate each with ---\n\n` : ''}Use the exact output format. No preamble, no numbering.`;
+  }
+
+  // ── COLD GENERATION MODE (no source) ──
+  const angleNote = angle ? `\n\nDIRECTIONAL NUDGE FROM THE WRITER:\n${angle}\nLet this influence the concepts, but keep each grounded in physical specificity. Do not force it if it doesn't serve the frequency.` : '';
+  return `Generate ${count} distinct song concept${count>1?'s':''} for Cryptid Static's ${a.name}.
 
 ALBUM FREQUENCY: ${a.freq}
 ALBUM THEME: ${a.theme}
 ALBUM TAGLINE: ${a.tagline}
-
 WHAT THIS ALBUM IS NOT: ${a.banned}
 
-Each concept must fit this album's specific frequency — not just general Cryptid Static territory. A concept that belongs on Album 1 (inherited damage) does not belong on Album 2 (self-erasure), etc. Be precise about the frequency.${angleNote}
+Each concept must fit this album's specific frequency. CRITICAL: vary the dramatic stance across concepts — do NOT make every one a lone person performing a repeated action. Pull from across the ten song-types (confrontation, witness, system, timeline, collective, inventory, aftermath, artifact, confession, ritual). If you generate more than one, no two may share the same song-type.${angleNote}
 
 ${count > 1 ? `Generate exactly ${count} concepts. Separate each with ---\n\n` : ''}Use the exact output format specified. Do not number the concepts or add any preamble.`;
 }
@@ -406,14 +478,16 @@ document.getElementById('concept-gen-btn').addEventListener('click', async () =>
   if (!albumVal) { setConceptStatus('Select an album first', true); return; }
   if (!getKey('anthropic') && !getKey('groq')) { setConceptStatus('Add at least one API key above', true); return; }
   const angle = document.getElementById('concept-angle').value.trim();
+  const source = document.getElementById('concept-source').value.trim();
+  const override = document.getElementById('concept-override').value;
   const count = parseInt(getSelected('count-group') || '1');
   const btn = document.getElementById('concept-gen-btn');
   btn.disabled = true;
   document.getElementById('concept-output').innerHTML = '';
-  setConceptStatus('Generating concepts from the frequency…');
+  setConceptStatus(source ? 'Reading your material and preserving its stance…' : 'Generating concepts from the frequency…');
 
   try {
-    const raw = await aiCall(CONCEPT_SYSTEM, buildConceptPrompt(albumVal, angle, count), 0.9, count * 600);
+    const raw = await aiCall(CONCEPT_SYSTEM, buildConceptPrompt(albumVal, angle, count, source, override), 0.9, count * 700);
     clearConceptStatus();
     const concepts = raw.split(/\n---\n/).map(s => s.trim()).filter(Boolean);
     const albumName = ALBUMS[albumVal].name;
@@ -423,14 +497,18 @@ document.getElementById('concept-gen-btn').addEventListener('click', async () =>
     concepts.forEach((c, i) => {
       const titleMatch = c.match(/TITLE SEED:\s*(.+)/i);
       const titleSeed = titleMatch ? titleMatch[1].trim() : `Concept ${i+1}`;
+      const typeMatch = c.match(/SONG-TYPE:\s*(.+)/i);
+      const songType = typeMatch ? typeMatch[1].trim() : '';
       const body = c.replace(/TITLE SEED:\s*.+\n?/i, '').trim();
-      savedConcepts.push({ titleSeed, body });
+      savedConcepts.push({ titleSeed, body, songType });
+      const stanceBadge = songType ? `<div class="concept-stance">Stance: ${escapeHTML(songType)}</div>` : '';
       html += `<div class="concept-result" id="concept-result-${i}">
         <div class="box-header">
           <div class="box-title">${escapeHTML(albumName)}</div>
           <button class="copy-btn" onclick="copyText(${JSON.stringify(c)}, this)">Copy</button>
         </div>
         <div class="concept-title">${escapeHTML(titleSeed)}</div>
+        ${stanceBadge}
         <div class="concept-body">${escapeHTML(body)}</div>
         <button class="concept-send-btn" onclick="sendToWriter(${JSON.stringify(c)}, ${i})">→ Send to Lyrics Studio</button>
       </div>`;
@@ -457,7 +535,7 @@ function loadConceptHist() { try { return JSON.parse(localStorage.getItem(LS_CON
 function saveConceptHist(h) { localStorage.setItem(LS_CONCEPT_HIST, JSON.stringify(h.slice(0,60))); }
 function addConceptHist(albumNum, albumName, concepts) {
   const h = loadConceptHist();
-  concepts.forEach(c => h.unshift({ albumNum, albumName, titleSeed: c.titleSeed, body: c.body, ts: Date.now() }));
+  concepts.forEach(c => h.unshift({ albumNum, albumName, titleSeed: c.titleSeed, body: c.body, songType: c.songType || '', ts: Date.now() }));
   saveConceptHist(h); renderConceptHist();
 }
 function renderConceptHist() {
@@ -465,7 +543,7 @@ function renderConceptHist() {
   const h = loadConceptHist();
   if (!h.length) { wrap.innerHTML = '<div class="hist-empty">No concepts generated yet.</div>'; return; }
   wrap.innerHTML = h.map((e,i) => `<div class="concept-hist-item">
-    <div class="concept-hist-album">${escapeHTML(e.albumName||'')} · ${new Date(e.ts).toLocaleDateString()}</div>
+    <div class="concept-hist-album">${escapeHTML(e.albumName||'')}${e.songType?' · '+escapeHTML(e.songType):''} · ${new Date(e.ts).toLocaleDateString()}</div>
     <div class="concept-hist-title">${escapeHTML(e.titleSeed||'')}</div>
     <div class="concept-hist-body" id="ch-${i}">${escapeHTML(e.body||'')}</div>
     <div class="hist-actions">
@@ -487,7 +565,7 @@ function sendConceptFromHist(text, btn) {
 }
 document.getElementById('clear-concept-hist').onclick = () => { if(confirm('Clear all concept history?')) { localStorage.removeItem(LS_CONCEPT_HIST); renderConceptHist(); } };
 
-// ─── SONGWRITER PROMPTS (unchanged from v6.1) ────────────────────────────────
+// ─── SONGWRITER PROMPTS ───────────────────────────────────────────────────────
 const SONGWRITER_SYSTEM = `You are a world-class songwriter with deep expertise across every genre. You think like a poet, feel like a therapist, and craft like a musician who has written #1 hits, Grammy-winning albums, and cult-classic underground records. You understand song architecture, emotional arc, subtext, and the difference between a lyric that sounds good and one that cuts.
 
 SCORING FRAMEWORK — every song is evaluated on these 6 categories. Write to pass all 6.
@@ -535,19 +613,47 @@ const GENRE_EXAMPLES = {
   "Christian Worship": `GOOD LINE: "I've shown you every broken part / the ones I hid for years / and still you call me by my name / and meet me right here"`
 };
 
+// v7.1 — STRUCTURE PASS REWRITE.
+// Old version forced every input through CENTRAL METAPHOR / 4 fixed beats / single
+// object / "complicated not resolved" — which is the lone-person-and-an-object mold.
+// New version detects the input's actual song-type and stance FIRST, then returns a
+// brief that adapts to that type instead of homogenizing it.
 function buildStructurePrompt(theme) {
-  return `You are a creative analyst for a world-class songwriter. Analyze the following raw material and extract a structured creative brief.\n\nRAW MATERIAL:\n${theme}\n\nReturn ONLY this structure:\n\nCENTRAL IMAGE OR METAPHOR:\n[One sentence. Physical and concrete.]\n\nMOVEMENTS:\n[BEAT 1 (V1 situation), BEAT 2 (V2 shift), BEAT 3 (bridge turn), BEAT 4 (resolution or non-resolution). One concrete sentence per beat.]\n\nKEY IMAGES:\n[8–10 specific physical or sensory details. Real and concrete only.]\n\nMOTIFS TO THREAD:\n[2 repeating images with evolved meaning across sections.]\n\nTURNING POINT:\n[One sentence — the moment where something shifts.]\n\nCHORUS CANDIDATE:\n[Most emotionally loaded image or moment. Concrete only.]\n\nEMOTIONAL DESTINATION:\n[What the listener feels at the END. Complicated, not resolved.]`;
+  return `You are a creative analyst for a world-class songwriter. Read the raw material below and extract a creative brief that is FAITHFUL TO WHAT THE MATERIAL ACTUALLY IS. Do not force it into a default shape.
+
+RAW MATERIAL:
+${theme}
+
+STEP 1 — IDENTIFY THE SONG'S NATURE (do this before anything else):
+- SONG-TYPE: Which of these does the material most resemble? Ritual (repeated action) / Confrontation (addressed to "you") / Inventory (objects, records, evidence) / Timeline (change across months or years) / System (wound as machine, procedure, debt, signal) / Confession (speaker admits own role) / Witness (watching someone else) / Aftermath (after the event) / Collective ("we") / Artifact (something left behind). Name it.
+- SPEAKER & ADDRESSEE: Who is speaking, and to whom? (self, a "you," a witness, no one)
+- TIME SCALE: A single moment? A day? Months? Years?
+- WHAT CHANGES: What is different at the end than at the start? (If genuinely nothing changes in the situation, the change is internal — name what the speaker comes to admit or notice.)
+
+RULE: Do NOT default to "a lone person performing a repeated action with one symbolic object" unless the material genuinely IS that. If the material is a confrontation, keep it a confrontation. If it spans years, keep the timeline. If there is no single central object, do not invent one.
+
+STEP 2 — Return ONLY this brief, adapting it to the song-type you identified:
+
+SONG-TYPE: [the type from Step 1]
+STANCE: [speaker → addressee, time scale — one sentence]
+SITUATION (V1): [the concrete opening situation — one or two sentences, physical]
+SHIFT (V2): [how the second movement differs from the first — new info, time jump, escalation, or a turn in the speaker. Not a repeat of V1.]
+TURN (BRIDGE): [the reversal, confession, collapse, or realization that reframes what came before]
+KEY IMAGES: [6–10 specific physical or sensory details drawn from or faithfully extending the material. Concrete only. Never invent details that contradict the source.]
+MOTIFS TO THREAD: [1–2 recurring images whose meaning shifts across the song. If the song-type is Inventory or Artifact, these may be objects; if Confrontation or Witness, they may be gestures or repeated phrases. Fit the type.]
+CHORUS CANDIDATE: [the most emotionally loaded moment — concrete. For a Confrontation this is what's said to "you"; for a Ritual it's the repeated act; for a Timeline it's the line true across all the years.]
+EMOTIONAL DESTINATION: [what the listener feels at the END — complicated, not resolved.]`;
 }
 
 function buildWritePrompt(structuredStory, genre, mood, userLines, mode) {
   const sacred = userLines ? `\nSACRED LINES (must appear verbatim):\n${userLines}\n` : '';
   const examples = GENRE_EXAMPLES[genre] || '';
-  return `Write a complete ${genre} song with a ${mood} vibe.\n${sacred}\nSTRUCTURED MATERIAL:\n${structuredStory}\n\nQUALITY REFERENCE for ${genre}:\n${examples}\n\nFORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]\n${mode === 'felt' ? 'FELT MODE: Chorus repeats core line. Verses breathe. Hook states feeling directly. Build for first-listen.' : ''}\nOutput complete song. No title header. No commentary.`;
+  return `Write a complete ${genre} song with a ${mood} vibe.\n${sacred}\nSTRUCTURED MATERIAL:\n${structuredStory}\n\nHonor the SONG-TYPE and STANCE in the brief above — do not silently convert a confrontation into a solitary reflection, or a timeline into a single frozen moment. The brief's stance is the song's spine.\n\nQUALITY REFERENCE for ${genre}:\n${examples}\n\nFORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]\n${mode === 'felt' ? 'FELT MODE: Chorus repeats core line. Verses breathe. Hook states feeling directly. Build for first-listen.' : ''}\nOutput complete song. No title header. No commentary.`;
 }
 
 function buildPolishPrompt(draft, genre, structuredStory, mode) {
   const feltNote = mode === 'felt' ? '\n\nFELT MODE: Do NOT vary repeated hook lines. Do NOT add images to plain verse lines. Keep chorus short and simple. Singability is top priority.' : '';
-  return `You are a ruthless line editor. Apply every test. Fix what fails. Leave what passes untouched.\n\nGENRE: ${genre}\nSOURCE MATERIAL:\n${structuredStory}\nDRAFT:\n${draft}\n\nTESTS: Fingerprint, Filler, Silence (no explanation-after-image), Compression, Stock Metaphor, Chorus peak, Verse 2 shift, Bridge new info, Meter, Motif payoff, Outro tension.\n\nOutput complete revised song. Nothing else.${feltNote}`;
+  return `You are a ruthless line editor. Apply every test. Fix what fails. Leave what passes untouched.\n\nGENRE: ${genre}\nSOURCE MATERIAL:\n${structuredStory}\nDRAFT:\n${draft}\n\nTESTS: Fingerprint, Filler, Silence (no explanation-after-image), Compression, Stock Metaphor, Chorus peak, Verse 2 shift, Bridge new info, Meter, Motif payoff, Outro tension. Also: does the song still hold the SONG-TYPE and STANCE from the source brief? If editing drifted it back toward a generic lone-reflection, pull it back to its stance.\n\nOutput complete revised song. Nothing else.${feltNote}`;
 }
 
 function buildGradePrompt(lyrics, structuredStory, mode) {
@@ -645,7 +751,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
 
   try {
     setPipelineStep(1);
-    const structuredStory = await aiCall('You are a creative analyst for a world-class songwriter. Extract structured song material from raw input. Be precise and concrete. Never invent details not present in the source.', buildStructurePrompt(theme), 0.3, 700, signal);
+    const structuredStory = await aiCall('You are a creative analyst for a world-class songwriter. Your job is to read raw material and extract a brief that is faithful to the dramatic stance the material already has. Detect its song-type before extracting. Never force a default shape. Never invent details that contradict the source.', buildStructurePrompt(theme), 0.3, 800, signal);
     setPipelineStep(2);
     const draft = await aiCall(SYS, buildWritePrompt(structuredStory, genre, mood, userLines, mode), 0.95, 1800, signal);
     setPipelineStep(3);
