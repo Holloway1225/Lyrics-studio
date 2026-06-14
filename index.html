@@ -123,7 +123,7 @@
     <div class="header-eyebrow">Signal Tools</div>
     <h1>lyrics studio</h1>
     <p>your lyrics · your voice · powered by claude + groq</p>
-    <div class="badge">v7.1</div>
+    <div class="badge">v7.2</div>
   </div>
 
   <!-- TAB NAV -->
@@ -305,6 +305,7 @@ const CONFIG = { GROQ_URL: 'https://api.groq.com/openai/v1/chat/completions', GR
 const LS_HIST = 'lyrics_history';
 const LS_CONCEPT_HIST = 'cs_concept_history';
 let currentController = null;
+let LAST_CONCEPTS = [];
 
 // ─── ALBUM DATA ──────────────────────────────────────────────────────────────
 const ALBUMS = {
@@ -421,15 +422,17 @@ CRYPTID STATIC CRAFT RULES:
 - BANNED: coffee/cafe/morning imagery; generic emotion-naming ("loneliness," "grief," "pain"); neat resolutions; motivational arcs; anything "uplifting"; "not X, just X" and "not X, not X, just X" constructions.
 - A concept must feel like something that actually happened to a real person, not a metaphor invented to make a point.
 
-OUTPUT FORMAT for each concept (use these exact labels):
+OUTPUT FORMAT for each concept (use these exact labels, plain text, NO markdown headers or asterisks, NO reasoning shown before or after):
 TITLE SEED: [3-5 word working title]
 SONG-TYPE: [which of the ten types this concept IS — one or two words]
-STANCE: [who is speaking, to whom, from what position, across what time scale — one sentence]
-ANCHOR IMAGE: [the single most vivid physical detail — one sentence, concrete]
+STANCE: [who is speaking, to whom, from what position, across what time scale, and at what scale of reality (literal/domestic vs cosmic/figurative/ambiguous) — one or two sentences]
+ANCHOR IMAGE: [the single most vivid physical detail — one sentence, concrete; may be cosmic in scale, not necessarily domestic]
 SCENE: [2-3 sentences. Physical details only. What is seen, heard, felt, touched.]
 WHAT CHANGES: [what is different by the final chorus than at the start — one sentence. This is the arc. It is not optional.]
 CHORUS ENGINE: [the idea or action that keeps repeating — one line]
-EMOTIONAL BOUNDARY: [what this song must NOT become — one sentence, e.g. "must never become a reconciliation story"]`;
+EMOTIONAL BOUNDARY: [what this song must NOT become — one sentence, e.g. "must never become a reconciliation story"]
+
+Never output your stance-detection reasoning, never use "STEP 1", never use markdown ** asterisks or # headers. Begin every concept directly with "TITLE SEED:".`;
 
 function buildConceptPrompt(albumNum, angle, count, source, override) {
   const a = ALBUMS[albumNum];
@@ -447,14 +450,14 @@ SOURCE MATERIAL:
 ${source.trim()}
 """
 
-STEP 1 — Detect the source's dramatic stance: Who is speaking? To whom? From what emotional position? Over what time scale (minutes / days / months / years)? Which of the ten song-types is it? What actually changes from start to finish?
+STEP 1 (SILENT — think this through but do NOT print it): Detect the source's dramatic stance: Who is speaking? To whom? From what emotional position? Over what time scale (minutes / days / months / years)? Which of the ten song-types is it? What actually changes from start to finish? Also detect the source's SCALE and AMBIGUITY: is the "you" literally a person, or could it be God, the self, a former self, a witness, something unnamed? Is the imagery domestic/literal or cosmic/figurative? These are part of the stance and must be preserved too.
 
-STEP 2 — Build the concept(s) about this material.${overrideNote}
+STEP 2 — Build the concept(s) about this material. Output ONLY the formatted concept(s) below. Do not show your Step 1 reasoning, do not use markdown headers or asterisks, do not add preamble.${overrideNote}
 
 ALBUM FREQUENCY (a filter on subject matter, NOT a dictate on stance): ${a.freq}
 ALBUM THEME: ${a.theme}
 WHAT THIS ALBUM IS NOT: ${a.banned}
-The album frequency narrows what the song is ABOUT. It does not get to flatten the stance you detected in the source.${angle ? `\n\nADDITIONAL NUDGE FROM THE WRITER: ${angle}` : ''}
+The album frequency narrows what the song is ABOUT. It does not get to flatten the stance, scale, or ambiguity you detected in the source. CRITICAL: do NOT silently shrink a cosmic or ambiguous source into a domestic breakup. If the source's "you" might not be a literal ex-partner, the concept must NOT resolve it into one. If the source operates at a metaphysical or figurative scale, keep that scale — physically grounded does not mean residential. An anchor image can be concrete AND cosmic (a body on a shoreline, blood in twilight) without becoming "one toothbrush in the cup."${angle ? `\n\nADDITIONAL NUDGE FROM THE WRITER: ${angle}` : ''}
 
 ${count > 1 ? `Generate exactly ${count} concepts, each preserving the source's stance but exploring different specifics. Separate each with ---\n\n` : ''}Use the exact output format. No preamble, no numbering.`;
   }
@@ -493,6 +496,7 @@ document.getElementById('concept-gen-btn').addEventListener('click', async () =>
     const albumName = ALBUMS[albumVal].name;
     let html = '';
     const savedConcepts = [];
+    LAST_CONCEPTS = [];
 
     concepts.forEach((c, i) => {
       const titleMatch = c.match(/TITLE SEED:\s*(.+)/i);
@@ -501,16 +505,17 @@ document.getElementById('concept-gen-btn').addEventListener('click', async () =>
       const songType = typeMatch ? typeMatch[1].trim() : '';
       const body = c.replace(/TITLE SEED:\s*.+\n?/i, '').trim();
       savedConcepts.push({ titleSeed, body, songType });
+      LAST_CONCEPTS.push(c);
       const stanceBadge = songType ? `<div class="concept-stance">Stance: ${escapeHTML(songType)}</div>` : '';
       html += `<div class="concept-result" id="concept-result-${i}">
         <div class="box-header">
           <div class="box-title">${escapeHTML(albumName)}</div>
-          <button class="copy-btn" onclick="copyText(${JSON.stringify(c)}, this)">Copy</button>
+          <button class="copy-btn" onclick="copyConcept(${i}, this)">Copy</button>
         </div>
         <div class="concept-title">${escapeHTML(titleSeed)}</div>
         ${stanceBadge}
         <div class="concept-body">${escapeHTML(body)}</div>
-        <button class="concept-send-btn" onclick="sendToWriter(${JSON.stringify(c)}, ${i})">→ Send to Lyrics Studio</button>
+        <button class="concept-send-btn" onclick="sendConcept(${i})">→ Send to Lyrics Studio</button>
       </div>`;
     });
     document.getElementById('concept-output').innerHTML = html;
@@ -521,7 +526,15 @@ document.getElementById('concept-gen-btn').addEventListener('click', async () =>
   btn.disabled = false;
 });
 
-function sendToWriter(conceptText, idx) {
+function copyConcept(idx, btn) {
+  const text = LAST_CONCEPTS[idx];
+  if (text == null) return;
+  copyText(text, btn);
+}
+
+function sendConcept(idx) {
+  const conceptText = LAST_CONCEPTS[idx];
+  if (conceptText == null) return;
   switchTab('write');
   document.getElementById('theme').value = conceptText;
   document.getElementById('theme').focus();
@@ -548,20 +561,21 @@ function renderConceptHist() {
     <div class="concept-hist-body" id="ch-${i}">${escapeHTML(e.body||'')}</div>
     <div class="hist-actions">
       <button class="hist-btn" onclick="toggleConceptExpand(${i},this)">Expand</button>
-      <button class="hist-btn" onclick="copyText(${JSON.stringify((e.titleSeed||'')+'\n\n'+(e.body||''))}, this)">Copy</button>
-      <button class="hist-btn" onclick="sendConceptFromHist(${JSON.stringify((e.titleSeed||'')+'\n\n'+(e.body||''))}, this)">→ Write tab</button>
+      <button class="hist-btn" data-chist-copy="${i}">Copy</button>
+      <button class="hist-btn" data-chist-send="${i}">→ Write tab</button>
     </div>
   </div>`).join('');
+  wrap.querySelectorAll('.hist-btn[data-chist-copy]').forEach(b => {
+    b.onclick = () => { const e = loadConceptHist()[+b.dataset.chistCopy]; if (e) copyText((e.titleSeed||'')+'\n\n'+(e.body||''), b); };
+  });
+  wrap.querySelectorAll('.hist-btn[data-chist-send]').forEach(b => {
+    b.onclick = () => { const e = loadConceptHist()[+b.dataset.chistSend]; if (e) { switchTab('write'); document.getElementById('theme').value = (e.titleSeed||'')+'\n\n'+(e.body||''); b.textContent = '✓ Sent'; } };
+  });
 }
 function toggleConceptExpand(i, btn) {
   const el = document.getElementById('ch-'+i);
   el.classList.toggle('expanded');
   btn.textContent = el.classList.contains('expanded') ? 'Collapse' : 'Expand';
-}
-function sendConceptFromHist(text, btn) {
-  switchTab('write');
-  document.getElementById('theme').value = text;
-  btn.textContent = '✓ Sent';
 }
 document.getElementById('clear-concept-hist').onclick = () => { if(confirm('Clear all concept history?')) { localStorage.removeItem(LS_CONCEPT_HIST); renderConceptHist(); } };
 
