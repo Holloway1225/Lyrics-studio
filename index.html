@@ -82,11 +82,15 @@
   <div class="header">
     <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
     <h1>Your Lyrics.<br>Your Voice.</h1>
-    <p>100% Original · Powered by Groq + Gemini</p>
+    <p>100% Original · Powered by Claude + Groq</p>
   </div>
 
   <div class="api-section" style="margin-top:28px">
     <div class="section-label" style="margin-top:0">API Keys</div>
+    <div class="api-row">
+      <div class="api-label">CLAUDE</div>
+      <input type="password" id="api-claude" class="api-input" placeholder="sk-ant-..." aria-label="Claude API key">
+    </div>
     <div class="api-row">
       <div class="api-label">GROQ</div>
       <input type="password" id="api-groq" class="api-input" placeholder="gsk_..." aria-label="Groq API key">
@@ -95,7 +99,7 @@
       <div class="api-label">GEMINI</div>
       <input type="password" id="api-gemini" class="api-input" placeholder="AIza..." aria-label="Gemini API key">
     </div>
-    <div class="api-hint">Groq is used first. Gemini kicks in automatically if Groq hits its limit.<br>Groq: console.groq.com · Gemini: aistudio.google.com</div>
+    <div class="api-hint">Claude writes first (best quality). Groq, then Gemini, kick in automatically if Claude is unavailable.<br>Claude: console.anthropic.com · Groq: console.groq.com · Gemini: aistudio.google.com</div>
     <div class="api-warning">⚠ Keys are stored in your browser only. Do not use on a shared or public device.</div>
     <div class="api-saved" id="api-saved">✓ Keys saved to this browser</div>
     <div class="active-model" id="active-model"></div>
@@ -158,10 +162,13 @@
 <script>
 // ─── Config ────────────────────────────────────────────────────────────────────
 const CONFIG = {
+  CLAUDE_URL: 'https://api.anthropic.com/v1/messages',
+  CLAUDE_MODEL: 'claude-sonnet-4-6',
+  CLAUDE_VERSION: '2023-06-01',
   GROQ_URL: 'https://api.groq.com/openai/v1/chat/completions',
   GROQ_MODEL: 'llama-3.3-70b-versatile',
   GEMINI_MODEL: 'gemini-2.5-flash',
-  TIMEOUT_MS: 60000,
+  TIMEOUT_MS: 90000,
 };
 
 // ─── AbortController ref ───────────────────────────────────────────────────────
@@ -170,11 +177,11 @@ let currentController = null;
 // ─── On load ───────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
   // Restore API keys
-  ['groq', 'gemini'].forEach(k => {
+  ['claude', 'groq', 'gemini'].forEach(k => {
     const v = localStorage.getItem(`key_${k}`);
     if (v) document.getElementById(`api-${k}`).value = v;
   });
-  if (localStorage.getItem('key_groq') || localStorage.getItem('key_gemini')) {
+  if (localStorage.getItem('key_claude') || localStorage.getItem('key_groq') || localStorage.getItem('key_gemini')) {
     document.getElementById('api-saved').style.display = 'block';
   }
   // Restore genre + mood selections
@@ -192,7 +199,7 @@ function restoreToggle(groupId, value) {
 
 // ─── Save keys ─────────────────────────────────────────────────────────────────
 document.getElementById('save-keys-btn').addEventListener('click', () => {
-  ['groq', 'gemini'].forEach(k => {
+  ['claude', 'groq', 'gemini'].forEach(k => {
     const v = document.getElementById(`api-${k}`).value.trim();
     if (v) localStorage.setItem(`key_${k}`, v);
   });
@@ -293,11 +300,70 @@ function fetchWithTimeout(url, options, ms) {
   ]);
 }
 
-// ─── Core AI call ──────────────────────────────────────────────────────────────
-async function aiCall(prompt, temperature = 0.95, maxTokens = 1200, signal = null) {
+// ─── Strip stray markdown from model output ─────────────────────────────────────
+function cleanText(text) {
+  return text
+    .replace(/\*\*[\s\S]*?\*\*/g, '')
+    .replace(/\*[^*]+\*/g, '')
+    .replace(/_{1,2}[^_]+_{1,2}/g, '')
+    .replace(/^\s*---+\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// ─── Core AI call: Claude → Groq → Gemini ───────────────────────────────────────
+async function aiCall(prompt, temperature = 0.95, maxTokens = 1400, signal = null) {
+  const claudeKey = getKey('claude');
   const groqKey   = getKey('groq');
   const geminiKey = getKey('gemini');
 
+  // ── 1. Claude (primary) ──
+  if (claudeKey) {
+    try {
+      const res = await fetchWithTimeout(CONFIG.CLAUDE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': claudeKey,
+          'anthropic-version': CONFIG.CLAUDE_VERSION,
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: CONFIG.CLAUDE_MODEL,
+          max_tokens: maxTokens,
+          temperature,
+          messages: [{ role: 'user', content: prompt }]
+        }),
+        signal
+      }, CONFIG.TIMEOUT_MS);
+
+      if (res.ok) {
+        const data = await res.json();
+        const text = (data.content || [])
+          .map(b => (b.type === 'text' ? b.text : ''))
+          .filter(Boolean)
+          .join('\n')
+          .trim();
+        if (text) {
+          showModel('✦ Using Claude');
+          return cleanText(text);
+        }
+        throw new Error('Empty response from Claude');
+      }
+      // Non-OK: decide whether to fall through
+      let errMsg = `Claude error ${res.status}`;
+      try { const err = await res.json(); errMsg = err?.error?.message || errMsg; } catch (e) {}
+      const isOverload = res.status === 429 || res.status === 529 || res.status >= 500;
+      if (!isOverload && !groqKey && !geminiKey) throw new Error(errMsg);
+      showModel('⚡ Claude unavailable — switching to backup');
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      if (!groqKey && !geminiKey) throw e;
+      showModel('⚡ Claude unavailable — switching to backup');
+    }
+  }
+
+  // ── 2. Groq (first fallback) ──
   if (groqKey) {
     try {
       const res = await fetchWithTimeout(CONFIG.GROQ_URL, {
@@ -315,20 +381,20 @@ async function aiCall(prompt, temperature = 0.95, maxTokens = 1200, signal = nul
 
       if (res.ok) {
         const data = await res.json();
-        showModel('✦ Using Groq');
-        return data.choices[0].message.content.trim();
+        showModel('✦ Using Groq (backup)');
+        return cleanText(data.choices[0].message.content.trim());
       }
       const err = await res.json();
       const isRateLimit = err?.error?.message?.toLowerCase().includes('rate limit') || String(res.status).startsWith('429');
-      if (!isRateLimit) throw new Error(err?.error?.message || `Groq error ${res.status}`);
+      if (!isRateLimit && !geminiKey) throw new Error(err?.error?.message || `Groq error ${res.status}`);
       showModel('⚡ Groq limit reached — switching to Gemini');
     } catch (e) {
       if (e.name === 'AbortError') throw e;
-      const isRateLimit = e.message.toLowerCase().includes('rate limit') || e.message.includes('429');
-      if (!isRateLimit && !geminiKey) throw e;
+      if (!geminiKey) throw e;
     }
   }
 
+  // ── 3. Gemini (last fallback) ──
   if (geminiKey) {
     const res = await fetchWithTimeout(
       `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.GEMINI_MODEL}:generateContent?key=${geminiKey}`,
@@ -351,18 +417,11 @@ async function aiCall(prompt, temperature = 0.95, maxTokens = 1200, signal = nul
     const candidate = data.candidates?.[0];
     let text = candidate?.content?.parts?.[0]?.text || candidate?.output || '';
     if (!text) throw new Error('Empty response from Gemini');
-    text = text
-      .replace(/\*\*[\s\S]*?\*\*/g, '')
-      .replace(/\*[^*]+\*/g, '')
-      .replace(/_{1,2}[^_]+_{1,2}/g, '')
-      .replace(/^\s*---+\s*$/gm, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-    showModel('✦ Using Gemini');
-    return text;
+    showModel('✦ Using Gemini (backup)');
+    return cleanText(text);
   }
 
-  throw new Error('No API key — add your Groq or Gemini key above');
+  throw new Error('No API key — add your Claude, Groq, or Gemini key above');
 }
 
 // ─── Genre examples ────────────────────────────────────────────────────────────
@@ -526,7 +585,7 @@ Output the complete revised song. Nothing else.`;
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const theme = document.getElementById('theme').value.trim();
 
-  if (!getKey('groq') && !getKey('gemini')) { setStatus('⚠ Add at least one API key above', true); return; }
+  if (!getKey('claude') && !getKey('groq') && !getKey('gemini')) { setStatus('⚠ Add at least one API key above', true); return; }
   if (!theme) { setStatus('⚠ Give it something to work with — a story, a concept, a feeling', true); return; }
 
   // Cancel any in-flight request
@@ -547,15 +606,15 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   try {
     // Step 1 — Structure
     setPipelineStep(1);
-    const structuredStory = await aiCall(buildStructurePrompt(theme), 0.3, 600, signal);
+    const structuredStory = await aiCall(buildStructurePrompt(theme), 0.3, 800, signal);
 
     // Step 2 — Draft
     setPipelineStep(2);
-    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines), 0.95, 1400, signal);
+    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines), 0.95, 1600, signal);
 
     // Step 3 — Polish
     setPipelineStep(3);
-    const final = await aiCall(buildPolishPrompt(draft, genre, structuredStory), 0.4, 1400, signal);
+    const final = await aiCall(buildPolishPrompt(draft, genre, structuredStory), 0.4, 1600, signal);
 
     hidePipeline();
     clearStatus();
