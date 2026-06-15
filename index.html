@@ -123,7 +123,7 @@
     <div class="header-eyebrow">Signal Tools</div>
     <h1>lyrics studio</h1>
     <p>your lyrics · your voice · powered by claude + groq</p>
-    <div class="badge">v7.7</div>
+    <div class="badge">v7.8</div>
   </div>
 
   <!-- TAB NAV -->
@@ -429,8 +429,34 @@ EMOTIONAL BOUNDARY: [what this song must NOT become — one sentence, e.g. "must
 
 Never output your stance-detection reasoning, never use "STEP 1", never use markdown ** asterisks or # headers. Begin every concept directly with "TITLE SEED:".`;
 
+// Shared concept vocabulary list (used by both the concept grounding and the write grounding).
+const CONCEPT_WORDS = ['system','signal','frequency','static','transmission','protocol','rewired','rewire','broadcast','interference','the code','glitch','wires','circuit','machine','program','algorithm','wavelength','feedback loop','the void','antenna','radio','dish','channel','bandwidth'];
+
+// Concept-stage grounding. Keeps the concept brief in concrete physical reality
+// instead of defaulting to signal/frequency/system imagery. Album-aware:
+//  - Album 3 (Static Human) is THE systems album — vocabulary allowed but must stay
+//    anchored to a real scene, never pure abstraction.
+//  - All other albums: that vocabulary is banned as the SUBJECT unless the writer
+//    invited it in their own source/angle text.
+function buildConceptGroundingRule(albumNum, angle, source) {
+  const userText = ((angle||'') + ' ' + (source||'')).toLowerCase();
+  const userInvited = CONCEPT_WORDS.some(w => userText.includes(w));
+  const list = CONCEPT_WORDS.join(', ');
+
+  if (albumNum === '3') {
+    return `\n\n═══ GROUNDING (Static Human is the systems album) ═══\nThis album engages systems, labor, surveillance, and machinery — so that subject matter is allowed. BUT the concept must still live in a CONCRETE physical scene a person could photograph: a specific workplace, a specific machine, a specific body doing a specific task. Do NOT let it float off into abstract "signal / frequency / the void" metaphor. The anchor image must be a real object in a real place, not a concept. Use the conceptual vocabulary sparingly and only when tied to something physical.`;
+  }
+
+  if (userInvited) {
+    return `\n\n═══ GROUNDING ═══\nThe writer's own input uses some signal/system vocabulary, so you may reflect it — but keep the concept anchored to a concrete physical scene and real objects, never abstract "frequency/signal/the void" metaphor floating free of a place. Every conceptual word must attach to something a person could physically touch or see.`;
+  }
+
+  return `\n\n═══ GROUNDING (READ THIS — IT OVERRIDES YOUR INSTINCTS) ═══\nBuild this concept from CONCRETE PHYSICAL REALITY — real people, places, objects, body sensations, actions. Do NOT default to the signal/transmission/frequency/machine register. The following words are BANNED from this concept (the writer did not ask for them): ${list}. The Cryptid Static brand does NOT require radios, dishes, signals, or frequencies — those are an overused crutch. A haunting is a person in a room, an object left behind, a habit that won't die — not a transmission. The anchor image must be something that physically exists in the world (a coat, a parked car, a stairwell, a hand, a voicemail), never an abstract signal or system. If you catch yourself reaching for "frequency" or "signal," choose a real physical object instead.`;
+}
+
 function buildConceptPrompt(albumNum, angle, count, source, override) {
   const a = ALBUMS[albumNum];
+  const grounding = buildConceptGroundingRule(albumNum, angle, source);
 
   if (source && source.trim()) {
     const overrideNote = override
@@ -460,7 +486,7 @@ ALBUM THEME: ${a.theme}
 WHAT THIS ALBUM IS NOT: ${a.banned}
 The album frequency narrows what the song is ABOUT. It does not get to flatten the stance, scale, or ambiguity you detected in the source. CRITICAL: do NOT silently shrink a cosmic or ambiguous source into a domestic breakup. If the source's "you" might not be a literal person, the concept must NOT resolve it into one. If the source operates at a metaphysical or figurative scale, keep that scale — physically grounded does not mean residential. An anchor image can be concrete AND cosmic without becoming domestic — but it must be a NEW image, never one drawn from the source.${angle ? `\n\nADDITIONAL NUDGE FROM THE WRITER: ${angle}` : ''}
 
-${count > 1 ? `Generate exactly ${count} concepts, each preserving the source's stance but exploring different specifics. Separate each with ---\n\n` : ''}Use the exact output format. No preamble, no numbering.`;
+${count > 1 ? `Generate exactly ${count} concepts, each preserving the source's stance but exploring different specifics. Separate each with ---\n\n` : ''}Use the exact output format. No preamble, no numbering.${grounding}`;
   }
 
   const angleNote = angle ? `\n\nDIRECTIONAL NUDGE FROM THE WRITER:\n${angle}\nLet this influence the concepts, but keep each grounded in physical specificity. Do not force it if it doesn't serve the frequency.` : '';
@@ -473,7 +499,7 @@ WHAT THIS ALBUM IS NOT: ${a.banned}
 
 Each concept must fit this album's specific frequency. CRITICAL: vary the dramatic stance across concepts — do NOT make every one a lone person performing a repeated action. Pull from across the ten song-types (confrontation, witness, system, timeline, collective, inventory, aftermath, artifact, confession, ritual). If you generate more than one, no two may share the same song-type.${angleNote}
 
-${count > 1 ? `Generate exactly ${count} concepts. Separate each with ---\n\n` : ''}Use the exact output format specified. Do not number the concepts or add any preamble.`;
+${count > 1 ? `Generate exactly ${count} concepts. Separate each with ---\n\n` : ''}Use the exact output format specified. Do not number the concepts or add any preamble.${grounding}`;
 }
 
 document.getElementById('concept-gen-btn').addEventListener('click', async () => {
@@ -612,7 +638,7 @@ const FELT_OVERRIDE = `\n\n═══ FELT / RADIO MODE IS ACTIVE ═══\nRepe
 // (system, signal, frequency, static...) regardless of the actual story.
 // Dark Glitch Metal: vocabulary allowed but capped. All other genres: banned
 // unless the user put those words in their own idea.
-const CONCEPT_WORDS = ['system','signal','frequency','static','transmission','protocol','rewired','rewire','broadcast','interference','the code','glitch','wires','circuit','machine','program','algorithm','wavelength','feedback loop','the void'];
+// Note: CONCEPT_WORDS is the shared list defined above near buildConceptGroundingRule.
 function buildGroundingRule(genre, theme) {
   const userInvited = CONCEPT_WORDS.some(w => (theme||'').toLowerCase().includes(w));
   const list = CONCEPT_WORDS.join(', ');
