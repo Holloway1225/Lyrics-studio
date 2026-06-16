@@ -47,6 +47,9 @@
   .theme-hint-text { font-family: 'Lora', Georgia, serif; font-size: 12px; color: var(--muted); line-height: 1.7; font-style: italic; }
   .theme-hint-good { color: var(--green); font-style: normal; }
   .theme-hint-bad { color: var(--error); font-style: normal; text-decoration: line-through; }
+  .prestructured-badge { display: none; align-items: center; gap: 8px; background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.3); border-radius: 10px; padding: 11px 14px; margin-bottom: 12px; font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 1.5px; color: var(--green); line-height: 1.5; }
+  .prestructured-badge.visible { display: flex; }
+  .prestructured-badge .badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 8px rgba(52,211,153,0.6); }
   textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); font-family: 'Lora', Georgia, serif; font-size: 15px; resize: none; outline: none; -webkit-appearance: none; transition: border-color 0.2s; line-height: 1.6; }
   textarea:focus { border-color: rgba(168,85,247,0.6); }
   textarea::placeholder { color: var(--muted); font-style: italic; font-size: 13px; }
@@ -70,6 +73,7 @@
   .pipeline-step { font-family: 'Inconsolata', monospace; font-size: 11px; letter-spacing: 2px; padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); transition: all 0.3s; }
   .pipeline-step.active { color: var(--accent); border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.07); animation: pulse 1.2s ease infinite; }
   .pipeline-step.done { color: var(--green); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.04); }
+  .pipeline-step.skipped { color: var(--muted); border-color: var(--border); background: var(--surface); opacity: 0.5; text-decoration: line-through; }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 </style>
@@ -142,11 +146,15 @@
     <div class="theme-hint-title">Anything goes — the more vivid, the better</div>
     <div class="theme-hint-text">
       Give it a personal story, a Bible story, a metaphor, a concept, a character, a feeling — anything. The tool works from whatever you hand it. The only rule: be specific. Vague input makes vague songs.<br><br>
+      <span class="theme-hint-good">Already ran it through the Concept Expander? Paste that structured output straight in here — the Studio will detect it and skip its own analysis pass, going right to the draft.</span><br><br>
       <span class="theme-hint-good">✓ "Abraham takes Isaac up the mountain. Isaac keeps asking where the lamb is. Abraham can't answer. He binds his son, raises the knife — and then hears his name called from heaven. A ram appears in the thicket. He holds his son and weeps."</span><br><br>
       <span class="theme-hint-good">✓ "Anxiety is a machine bolted to my chest. It hums all night. I've tried every switch and none of them turn it off. Some days I stop fighting it and just carry it around. I want to write about learning to live with the weight instead of being destroyed by it."</span><br><br>
-      <span class="theme-hint-good">✓ "I came home from a double shift, front door was wide open, her shoes were gone but my daughter's jacket was still on the hook. She came back drunk an hour later. I grabbed my daughter out of the car. Called the cops. Watched them arrest her while my daughter slept on my shoulder."</span><br><br>
       <span class="theme-hint-bad">✗ Too vague: "Write a song about hope and struggle"</span>
     </div>
+  </div>
+  <div class="prestructured-badge" id="prestructured-badge">
+    <span class="badge-dot"></span>
+    <span>Pre-structured input detected — skipping analysis, going straight to the draft.</span>
   </div>
   <textarea id="theme" rows="5" placeholder="A personal story, a Bible story, a metaphor, a feeling, a concept — anything vivid and specific. The more detail you give, the better the song." aria-label="Your idea or story"></textarea>
 
@@ -179,6 +187,33 @@ const CONFIG = {
 // ─── AbortController ref ───────────────────────────────────────────────────────
 let currentController = null;
 
+// ─── Detect pre-structured input (from Concept Expander) ────────────────────────
+// If the theme already contains the Studio's own structure schema, we skip the
+// analysis pass and feed it straight into the draft stage.
+function isPreStructured(text) {
+  const t = (text || '').toUpperCase();
+  const hasMovements = t.includes('MOVEMENTS:');
+  const hasKeyImages = t.includes('KEY IMAGES:');
+  const hasCentral   = t.includes('CENTRAL IMAGE');
+  // Require at least the two load-bearing sections the draft stage relies on.
+  return hasMovements && hasKeyImages && hasCentral;
+}
+
+// Strip the handoff marker line if present, so it doesn't leak into the prompt.
+function normalizeStructured(text) {
+  let t = (text || '');
+  // Drop everything up to and including the BRIEF:/PROMPT: delimiter the
+  // Concept Expander emits, plus its INVENTED_DETAILS preamble if pasted whole.
+  const delim = t.match(/(?:^|\n)\s*(?:BRIEF|PROMPT)\s*:\s*\n/i);
+  if (delim) {
+    t = t.slice(delim.index + delim[0].length);
+  }
+  return t
+    .replace(/^\s*===\s*STRUCTURED FOR LYRICS STUDIO\s*===\s*$/im, '')
+    .replace(/^\s*INVENTED_DETAILS\s*:[\s\S]*?(?=CENTRAL IMAGE)/i, '')
+    .trim();
+}
+
 // ─── On load ───────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
   // Restore API keys
@@ -194,6 +229,12 @@ window.addEventListener('load', () => {
   const savedMood  = localStorage.getItem('pref_mood');
   if (savedGenre) restoreToggle('genre-group', savedGenre);
   if (savedMood)  restoreToggle('mood-group',  savedMood);
+});
+
+// Live badge: show when pasted input is already structured
+document.getElementById('theme').addEventListener('input', (e) => {
+  const badge = document.getElementById('prestructured-badge');
+  badge.classList.toggle('visible', isPreStructured(e.target.value));
 });
 
 function restoreToggle(groupId, value) {
@@ -291,6 +332,10 @@ function setPipelineStep(n) {
     else if (i === n) el.className = 'pipeline-step active';
     else            el.className = 'pipeline-step';
   });
+}
+function markStepSkipped(n) {
+  const el = document.getElementById(`step-${n}`);
+  if (el) el.className = 'pipeline-step skipped';
 }
 function hidePipeline() {
   document.getElementById('pipeline-steps').classList.remove('visible');
@@ -623,10 +668,20 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   document.getElementById('active-model').style.display = 'none';
   clearStatus();
 
+  const preStructured = isPreStructured(theme);
+
   try {
-    // Step 1 — Structure
-    setPipelineStep(1);
-    const structuredStory = await aiCall(buildStructurePrompt(theme), 0.3, 800, signal);
+    let structuredStory;
+
+    if (preStructured) {
+      // ── Skip Step 1 — input is already structured (from Concept Expander) ──
+      structuredStory = normalizeStructured(theme);
+      markStepSkipped(1);
+    } else {
+      // Step 1 — Structure
+      setPipelineStep(1);
+      structuredStory = await aiCall(buildStructurePrompt(theme), 0.3, 800, signal);
+    }
 
     // Step 2 — Draft
     setPipelineStep(2);
