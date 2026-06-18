@@ -742,6 +742,45 @@ ABSOLUTE RULES:
 Output the complete song with only the flagged sections changed. Nothing else.`;
 }
 
+// ─── Soft-line analysis: flags lines that SAG relative to the song's best line ──
+// This does NOT rewrite anything automatically. It surfaces the soft lines with
+// the song's strongest line as the benchmark, plus 2-3 candidate rewrites and a
+// confidence read on each. The WRITER picks, edits their own, or keeps the
+// original. Confidence = "the model's most predictable choice", NOT a verdict —
+// the best line is often the lower-confidence, less-conventional one, and that
+// framing is shown in the UI. Flagging is the real value; rewrites are a starting
+// point. Aggressive mode: flag generously, the writer is the filter.
+function buildSoftLinePrompt(finalSong) {
+  return `You are a song editor with a brutal ear. Below is a finished song. Most of it is strong. Your job is NOT to rewrite it. Your job is to find the lines that SAG relative to the song's own strongest line, and surface them for the writer to judge.
+
+THE SONG:
+${finalSong}
+
+METHOD:
+1. First, identify the single STRONGEST line in the song — the most specific, most physical, most unforgettable. This is the benchmark.
+2. Then read every other line against it. A line SAGS when it is noticeably weaker than the benchmark: it retreats to abstraction or concept-words while neighbors stay concrete, it uses a tired construction (e.g. "it isn't X / it isn't Y", "I am the ___"), it names a feeling instead of showing it, or it goes vague right when the lines around it are sharp. A line sitting next to a much stronger line is the most common sag.
+3. Flag GENEROUSLY. Anything that is even slightly softer than the benchmark gets flagged. The writer is the filter, not you — your job is to surface candidates, not pre-judge. Aim for 3 to 8 flagged lines on a typical song. Do NOT flag the benchmark line itself or lines that genuinely match its strength.
+
+For each sagging line, provide 2-3 candidate rewrites that stay in the song's existing world and use objects already present. Then rate each candidate's confidence 0-100 — your honest read of which is the strongest replacement. Be willing to rate a candidate LOW if it's only a safe, conventional fix; do not inflate. It is fine for the highest candidate to be in the 50s if none are clearly great.
+
+Return ONLY valid JSON, no preamble, no backticks, exactly this shape:
+{
+  "benchmark": "the verbatim strongest line in the song",
+  "soft_lines": [
+    {
+      "line": "the verbatim sagging line",
+      "section": "which section it's in, e.g. Verse 3",
+      "why": "one sentence: the mechanical reason it sags next to the benchmark — name the word or construction",
+      "candidates": [
+        {"text": "candidate rewrite 1", "confidence": 0},
+        {"text": "candidate rewrite 2", "confidence": 0}
+      ]
+    }
+  ]
+}
+If nothing sags, return {"benchmark": "...", "soft_lines": []}.`;
+}
+
 
 function extractJSON(text) {
   if (!text) return null;
@@ -806,6 +845,124 @@ function renderDiagnostics(d) {
       ${row('KNIFE', flag(!!knife.present, 'present', 'missing'), knife.note || '') }
       ${knifeLine}
     </div>`;
+}
+
+// ─── Soft-line panel ───────────────────────────────────────────────────────────
+// Surfaces sagging lines with the song's benchmark line as the bar. For each:
+// candidate rewrites (sorted by confidence), a "keep original" option, and an
+// "edit your own" field — both always present as first-class choices. A swap
+// replaces the exact line in the song only when the writer accepts it.
+// Confidence is framed as "most predictable choice", not a verdict.
+function confColor(c) {
+  if (c >= 70) return 'var(--green)';
+  if (c >= 45) return 'var(--gold)';
+  return 'var(--muted)';
+}
+
+function renderSoftPanel(soft, getSong, setSong) {
+  const slot = document.getElementById('softline-slot');
+  if (!slot) return;
+
+  const benchmark = soft.benchmark || '';
+  const lines = soft.soft_lines || [];
+
+  const benchHtml = benchmark
+    ? `<div style="font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:4px">Your strongest line — the bar</div>
+       <div style="font-family:'Lora',serif;font-style:italic;color:var(--green);font-size:14px;line-height:1.6;margin-bottom:14px">"${escapeHTML(benchmark)}"</div>`
+    : '';
+
+  const cardHtml = lines.map((item, idx) => {
+    const cands = (item.candidates || []).slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+    const candHtml = cands.map((c, ci) => `
+      <button class="soft-cand" data-line="${idx}" data-text="${escapeHTML(c.text || '')}"
+        style="display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-bottom:7px;cursor:pointer;font-family:'Lora',serif;font-size:13px;color:var(--text);line-height:1.5;transition:border-color .15s">
+        <span style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span>"${escapeHTML(c.text || '')}"</span>
+          <span style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:1px;color:${confColor(c.confidence || 0)};white-space:nowrap">${c.confidence || 0}%</span>
+        </span>
+      </button>`).join('');
+
+    return `
+      <div class="soft-card" id="soft-card-${idx}" style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;background:rgba(0,0,0,0.2)">
+        <div style="font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">${escapeHTML(item.section || 'flagged')} — sags</div>
+        <div style="font-family:'Lora',serif;font-size:14px;color:var(--text);line-height:1.6;margin-bottom:6px">"${escapeHTML(item.line || '')}"</div>
+        <div style="font-family:'Inconsolata',monospace;font-size:10px;color:var(--muted);letter-spacing:0.5px;line-height:1.6;margin-bottom:12px">${escapeHTML(item.why || '')}</div>
+        ${candHtml}
+        <input type="text" class="soft-own" data-line="${idx}" placeholder="…or write your own"
+          style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-family:'Lora',serif;font-size:13px;outline:none;margin-bottom:7px">
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <button class="soft-own-apply" data-line="${idx}"
+            style="background:rgba(168,85,247,0.15);border:1px solid var(--accent);border-radius:50px;padding:7px 16px;color:#f0abfc;font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:1px;cursor:pointer">Use mine</button>
+          <button class="soft-keep" data-line="${idx}"
+            style="background:transparent;border:1px solid var(--border);border-radius:50px;padding:7px 16px;color:var(--muted);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:1px;cursor:pointer">Keep original</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  slot.innerHTML = `
+    <div class="output-box" style="margin-top:16px;border-color:rgba(251,191,36,0.3)">
+      <div class="box-header" style="margin-bottom:6px">
+        <div class="box-title" style="color:var(--gold)">✦ Soft lines — your call</div>
+      </div>
+      <div style="font-family:'Inconsolata',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;line-height:1.7;margin-bottom:14px">
+        Lines that sag next to your strongest. Nothing changes until you pick.
+        Confidence = the model's most predictable choice, not the best one —
+        your best fix is often the low-% option, or your own.
+      </div>
+      ${benchHtml}
+      ${cardHtml}
+    </div>`;
+
+  // store originals so a swap targets the exact current line text
+  const originals = lines.map(l => l.line || '');
+
+  function applyLine(idx, newText) {
+    newText = (newText || '').trim();
+    if (!newText) return;
+    const song = getSong();
+    const orig = originals[idx];
+    if (!orig || song.indexOf(orig) === -1) {
+      // line already changed or not found verbatim — mark card and skip
+      markResolved(idx, newText, true);
+      return;
+    }
+    setSong(song.replace(orig, newText));
+    originals[idx] = newText; // future edits target the new text
+    markResolved(idx, newText, false);
+  }
+
+  function markResolved(idx, newText, warn) {
+    const card = document.getElementById('soft-card-' + idx);
+    if (!card) return;
+    card.style.borderColor = 'var(--green)';
+    card.style.opacity = '0.7';
+    card.innerHTML = `
+      <div style="font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--green);text-transform:uppercase;margin-bottom:6px">${warn ? 'noted — line had already shifted' : 'updated in the song'}</div>
+      <div style="font-family:'Lora',serif;font-size:14px;color:var(--text);line-height:1.6">"${escapeHTML(newText)}"</div>`;
+  }
+
+  function markKept(idx) {
+    const card = document.getElementById('soft-card-' + idx);
+    if (!card) return;
+    card.style.borderColor = 'var(--border)';
+    card.style.opacity = '0.55';
+    card.innerHTML = `
+      <div style="font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">kept original</div>
+      <div style="font-family:'Lora',serif;font-size:14px;color:var(--muted);line-height:1.6">"${escapeHTML(originals[idx])}"</div>`;
+  }
+
+  slot.querySelectorAll('.soft-cand').forEach(btn => {
+    btn.addEventListener('click', () => applyLine(+btn.dataset.line, btn.dataset.text));
+  });
+  slot.querySelectorAll('.soft-own-apply').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const inp = slot.querySelector(`.soft-own[data-line="${btn.dataset.line}"]`);
+      applyLine(+btn.dataset.line, inp ? inp.value : '');
+    });
+  });
+  slot.querySelectorAll('.soft-keep').forEach(btn => {
+    btn.addEventListener('click', () => markKept(+btn.dataset.line));
+  });
 }
 
 // ─── Main generate function ────────────────────────────────────────────────────
@@ -889,6 +1046,14 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
       ? `<div style="font-family:'Inconsolata',monospace;font-size:10px;color:var(--green);letter-spacing:1px;margin-bottom:10px">✓ Auto-corrected flagged sections before output</div>`
       : '';
 
+    // Mutable song state — the soft-line panel patches lines into this and the
+    // lyrics display + Copy button always reflect the writer's accepted edits.
+    let currentSong = final;
+
+    function renderSong() {
+      document.querySelector('#output .lyrics-text').textContent = currentSong;
+    }
+
     document.getElementById('output').innerHTML = `
       ${correctedNote}
       <div class="output-box" style="margin-top:0">
@@ -896,17 +1061,30 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
           <div class="box-title">✦ Your Lyrics</div>
           <button class="copy-btn" id="copy-lyrics" aria-label="Copy lyrics">Copy</button>
         </div>
-        <div class="lyrics-text">${escapeHTML(final)}</div>
+        <div class="lyrics-text">${escapeHTML(currentSong)}</div>
       </div>
+      <div id="softline-slot"></div>
       <div id="diag-slot"></div>`;
 
     document.getElementById('copy-lyrics').addEventListener('click', function () {
-      copyText(final, this);
+      copyText(currentSong, this);
     });
 
     if (diag) {
       document.getElementById('diag-slot').innerHTML = renderDiagnostics(diag);
     }
+
+    // ── Soft-line pass: surface sagging lines for the writer to resolve. ──
+    // Read-only proposal. Nothing changes until the writer accepts a swap.
+    (async () => {
+      try {
+        const rawSoft = await aiCall(buildSoftLinePrompt(currentSong), 0.6, 1600, signal);
+        const soft = extractJSON(rawSoft);
+        if (soft && Array.isArray(soft.soft_lines) && soft.soft_lines.length) {
+          renderSoftPanel(soft, () => currentSong, (updated) => { currentSong = updated; renderSong(); });
+        }
+      } catch (e) { /* soft-line pass is optional; never blocks the song */ }
+    })();
 
   } catch (e) {
     hidePipeline();
