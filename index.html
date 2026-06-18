@@ -178,6 +178,7 @@
     <div class="pipeline-step" id="step-1">① Studying your story...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
     <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
+    <div class="pipeline-step" id="step-4">④ Checking & auto-correcting...</div>
   </div>
   <div id="output"></div>
 
@@ -336,8 +337,9 @@ function showModel(msg) {
 // ─── Pipeline step UI ──────────────────────────────────────────────────────────
 function setPipelineStep(n) {
   document.getElementById('pipeline-steps').classList.add('visible');
-  [1, 2, 3].forEach(i => {
+  [1, 2, 3, 4].forEach(i => {
     const el = document.getElementById(`step-${i}`);
+    if (!el) return;
     if (i < n)      el.className = 'pipeline-step done';
     else if (i === n) el.className = 'pipeline-step active';
     else            el.className = 'pipeline-step';
@@ -349,7 +351,7 @@ function markStepSkipped(n) {
 }
 function hidePipeline() {
   document.getElementById('pipeline-steps').classList.remove('visible');
-  [1, 2, 3].forEach(i => { document.getElementById(`step-${i}`).className = 'pipeline-step'; });
+  [1, 2, 3, 4].forEach(i => { const el = document.getElementById(`step-${i}`); if (el) el.className = 'pipeline-step'; });
 }
 
 // ─── Fetch with timeout ────────────────────────────────────────────────────────
@@ -668,7 +670,7 @@ function buildDiagnosticsPrompt(finalSong) {
 THE FINISHED SONG:
 ${finalSong}
 
-Run these three reads:
+Run these four reads:
 
 1. METAPHOR DISCIPLINE — Strong lyrics stay inside ONE physical world (a house, a fire, a car, a radio signal) and dig deeper. AI-sounding lyrics scatter across unrelated worlds (oceans, then angels, then highways, then mirrors) for no reason. Name the central world. List any images that break out of it without justification.
 
@@ -676,15 +678,71 @@ Run these three reads:
 
 3. KNIFE LINE — Strong songs usually have ONE line that is clear, simple, and brutal — the line the whole song exists for. This is NOT the singable hook; it's the hardest truth. Find the best candidate, or report none.
 
+4. CONCRETE CHORUS — The chorus must carry a SPECIFIC PHYSICAL OBJECT or action from the verses (a voicemail, a drawer, a hand crossing air, a typed name). A chorus FAILS this if it leans on abstract concept-words doing the emotional work instead — especially "signal / line / frequency / static / sign of life / connection / transmission" or any naming of the theme. Concept words read as concrete to a careless ear but they are not objects. If the chorus's strongest content is a concept rather than a physical thing already present in the verses, mark concrete=false and name the verse object it SHOULD have been built around instead.
+
 Return ONLY valid JSON, no preamble, no backticks, in exactly this shape:
 {
   "world": {"central": "string or null", "obeys": true, "stray": ["image", "..."], "note": "one sentence"},
   "escalation": {"moves": true, "note": "one sentence"},
-  "knife": {"present": true, "line": "verbatim line or null", "note": "one sentence"}
+  "knife": {"present": true, "line": "verbatim line or null", "note": "one sentence"},
+  "chorus": {"concrete": true, "leans_on": "the concept word it leans on, or null", "better_object": "a physical object from the verses to rebuild around, or null", "note": "one sentence"}
 }`;
 }
 
-// Robust JSON extraction (brace-depth tracking), same approach as the grader.
+// ─── Auto-correction: rewrites ONLY the mechanically-failed parts ───────────────
+// Taste calls stay with the writer. This pass touches a section only when a
+// diagnostic flagged a RULE failure (scattered world, flat verse 2, concept
+// chorus). It is told explicitly to leave everything else alone, including any
+// section that passed. If nothing failed, the caller skips this pass entirely.
+function diagnosticsHaveFailure(d) {
+  if (!d) return false;
+  const worldBad   = d.world && (d.world.obeys === false || (d.world.stray && d.world.stray.length > 0));
+  const escBad     = d.escalation && d.escalation.moves === false;
+  const chorusBad  = d.chorus && d.chorus.concrete === false;
+  return !!(worldBad || escBad || chorusBad);
+}
+
+function buildCorrectionPrompt(finalSong, structuredStory, genre, d) {
+  const tasks = [];
+
+  if (d.chorus && d.chorus.concrete === false) {
+    const obj = d.chorus.better_object ? `Rebuild it around this physical thing from the verses: "${d.chorus.better_object}".` : 'Rebuild it around a specific physical object or action that already appears in the verses.';
+    const leans = d.chorus.leans_on ? ` It currently leans on the concept word "${d.chorus.leans_on}" — remove that as the load-bearing element.` : '';
+    tasks.push(`- THE CHORUS fails the concrete test.${leans} ${obj} The chorus must hold an OBJECT, not a concept. Keep its singability and line count. Do not let "signal / line / frequency / static / sign of life / connection" carry the emotional weight — an object carries it.`);
+  }
+  if (d.world && (d.world.obeys === false || (d.world.stray && d.world.stray.length > 0))) {
+    const stray = (d.world.stray && d.world.stray.length) ? ` Specifically these stray images: ${d.world.stray.join(', ')}.` : '';
+    const central = d.world.central ? ` The song's real world is: ${d.world.central}.` : '';
+    tasks.push(`- THE IMAGERY scatters across more than one world.${central}${stray} Replace the stray images with details that belong to the song's central world. Do not invent a new world.`);
+  }
+  if (d.escalation && d.escalation.moves === false) {
+    tasks.push(`- VERSE 2 does not escalate — it restates Verse 1 with new objects instead of raising the cost. Rewrite Verse 2 so the situation gets worse or the consequence becomes visible. Verse 1 = the problem exists; Verse 2 = the cost shows.`);
+  }
+
+  return `You are a surgical line editor. Below is a finished song that is mostly strong. A diagnostic has flagged ONLY the specific problems listed under FIXES. Your job is to fix EXACTLY those and change nothing else.
+
+GENRE: ${genre}
+
+THE STRUCTURED STORY (source of truth for real details):
+${structuredStory}
+
+THE SONG:
+${finalSong}
+
+FIXES (do only these):
+${tasks.join('\n')}
+
+ABSOLUTE RULES:
+- Touch ONLY the sections named in FIXES. Every other line stays VERBATIM — same words, same order.
+- Do not "improve" lines that weren't flagged. Strong lines stay exactly as they are.
+- Keep every section label exactly as written: [Verse 1], [Chorus], etc.
+- Any rewritten line must use a concrete physical detail, never name the feeling.
+- No commentary, no notes, no explanation.
+
+Output the complete song with only the flagged sections changed. Nothing else.`;
+}
+
+
 function extractJSON(text) {
   if (!text) return null;
   const start = text.indexOf('{');
@@ -715,12 +773,15 @@ function renderDiagnostics(d) {
   const world = d.world || {};
   const esc = d.escalation || {};
   const knife = d.knife || {};
+  const chorus = d.chorus || {};
 
   const worldOk = world.obeys !== false && (!world.stray || world.stray.length === 0);
   const strayTxt = (world.stray && world.stray.length) ? ` — stray: ${escapeHTML(world.stray.join(', '))}` : '';
   const centralTxt = world.central ? ` (${escapeHTML(world.central)})` : '';
 
   const knifeLine = knife.line ? `<div style="font-family:'Lora',serif;font-style:italic;color:var(--text);font-size:13px;margin-top:4px;line-height:1.6">"${escapeHTML(knife.line)}"</div>` : '';
+
+  const chorusOk = chorus.concrete !== false;
 
   const row = (label, flagHtml, note) => `
     <div style="padding:11px 0;border-bottom:1px solid var(--border)">
@@ -741,6 +802,7 @@ function renderDiagnostics(d) {
       </div>
       ${row('WORLD', flag(worldOk, 'one world' + centralTxt, 'scattered' + centralTxt) , (world.note || '') + strayTxt)}
       ${row('MOVEMENT', flag(esc.moves !== false, 'escalates', 'restates'), esc.note || '')}
+      ${row('CHORUS', flag(chorusOk, 'concrete', 'concept'), chorus.note || '')}
       ${row('KNIFE', flag(!!knife.present, 'present', 'missing'), knife.note || '') }
       ${knifeLine}
     </div>`;
@@ -790,13 +852,46 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
 
     // Step 3 — Polish
     setPipelineStep(3);
-    const final = await aiCall(buildPolishPrompt(draft, genre, structuredStory), 0.4, 1600, signal);
+    let final = await aiCall(buildPolishPrompt(draft, genre, structuredStory), 0.4, 1600, signal);
+
+    // Step 4 — Diagnose, then auto-correct ONLY mechanically-failed parts.
+    // Taste calls (which line to build around) are left to the writer. This pass
+    // touches a section only when a RULE failed: scattered world, flat verse 2,
+    // concept chorus. Strong sections are passed through verbatim.
+    setPipelineStep(4);
+    let diag = null;
+    try {
+      const rawDiag = await aiCall(buildDiagnosticsPrompt(final), 0.2, 700, signal);
+      diag = extractJSON(rawDiag);
+    } catch (e) { /* diagnostics optional */ }
+
+    let corrected = false;
+    if (diag && diagnosticsHaveFailure(diag)) {
+      try {
+        const fixed = await aiCall(buildCorrectionPrompt(final, structuredStory, genre, diag), 0.5, 1600, signal);
+        if (fixed && fixed.length > 40) {
+          final = fixed;
+          corrected = true;
+          // Re-diagnose the corrected version so the flags reflect what shipped.
+          try {
+            const rawDiag2 = await aiCall(buildDiagnosticsPrompt(final), 0.2, 700, signal);
+            const diag2 = extractJSON(rawDiag2);
+            if (diag2) diag = diag2;
+          } catch (e) { /* keep first diag if re-read fails */ }
+        }
+      } catch (e) { /* if correction fails, keep the polished version */ }
+    }
 
     hidePipeline();
     clearStatus();
 
+    const correctedNote = corrected
+      ? `<div style="font-family:'Inconsolata',monospace;font-size:10px;color:var(--green);letter-spacing:1px;margin-bottom:10px">✓ Auto-corrected flagged sections before output</div>`
+      : '';
+
     document.getElementById('output').innerHTML = `
-      <div class="output-box">
+      ${correctedNote}
+      <div class="output-box" style="margin-top:0">
         <div class="box-header">
           <div class="box-title">✦ Your Lyrics</div>
           <button class="copy-btn" id="copy-lyrics" aria-label="Copy lyrics">Copy</button>
@@ -809,18 +904,9 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
       copyText(final, this);
     });
 
-    // ── Diagnostics: separate, non-blocking, read-only. Failure is silent. ──
-    (async () => {
-      try {
-        const raw = await aiCall(buildDiagnosticsPrompt(final), 0.2, 700, signal);
-        const parsed = extractJSON(raw);
-        if (parsed) {
-          document.getElementById('diag-slot').innerHTML = renderDiagnostics(parsed);
-        }
-      } catch (e) {
-        // Diagnostics are optional; never disrupt the song output.
-      }
-    })();
+    if (diag) {
+      document.getElementById('diag-slot').innerHTML = renderDiagnostics(diag);
+    }
 
   } catch (e) {
     hidePipeline();
