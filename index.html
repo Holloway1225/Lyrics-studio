@@ -158,6 +158,16 @@
   </div>
   <textarea id="theme" rows="5" placeholder="A personal story, a Bible story, a metaphor, a feeling, a concept — anything vivid and specific. The more detail you give, the better the song." aria-label="Your idea or story"></textarea>
 
+  <div class="section-label">The Wound <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL — SHARPENS THE SOURCE)</span></div>
+  <div class="theme-hint">
+    <div class="theme-hint-title">Two layers — name the object, not the feeling</div>
+    <div class="theme-hint-text">
+      Surface: what is literally happening in the room. Underneath: what it actually means. Don't name the feeling — name the physical thing that proves it. This goes straight into the draft as context; it doesn't get processed into a template.<br><br>
+      <span class="theme-hint-good">✓ "Surface: the chair across the table still gets moved when I clean. Underneath: I'm still making room for someone who stopped coming home."</span>
+    </div>
+  </div>
+  <textarea id="wound" rows="2" placeholder="Surface: what's physically happening.  Underneath: what it actually means." aria-label="The wound"></textarea>
+
   <div class="section-label">Lines to Protect <span style="color:var(--muted);font-size:9px;letter-spacing:1px">(OPTIONAL)</span></div>
   <textarea id="user-lines" rows="2" placeholder="Any lines you've already written that must appear verbatim in the final song..." aria-label="Your protected lines"></textarea>
 
@@ -561,16 +571,19 @@ EMOTIONAL DESTINATION:
 [What should the listener feel at the end of this song? One sentence. Infer from the arc of the material.]`;
 }
 
-function buildPrompt(structuredStory, genre, mood, userLines) {
+function buildPrompt(structuredStory, genre, mood, userLines, wound) {
   const sacred = userLines
     ? `\nSACRED LINES — these must appear verbatim in the final song, build around them:\n${userLines}\n`
+    : '';
+  const woundBlock = wound
+    ? `\nTHE WOUND (the writer's own framing — surface = what's physically happening, underneath = what it means). Let this sit under the whole song. Do not state the "underneath" directly anywhere; prove it through the surface.\n${wound}\n`
     : '';
   const examples = GENRE_EXAMPLES[genre] || '';
   return `You are a world class songwriter and ghostwriter. You have been given structured source material — it could be a personal story, a Bible story, a metaphor, a concept, or anything else. Your job is to turn it into a song that follows its arc exactly, in the order it was given.
 
 GENRE: ${genre}
 MOOD: ${mood}
-${sacred}
+${sacred}${woundBlock}
 THE STRUCTURED MATERIAL — follow this arc exactly, in this order:
 ${structuredStory}
 
@@ -646,6 +659,93 @@ RULES:
 Output the complete revised song. Nothing else.`;
 }
 
+// ─── Diagnostics: read-only pass AFTER the song exists ──────────────────────────
+// These do NOT rewrite anything. They report what the finished song is missing,
+// the same way the grader works diagnostically. Single Groq/Claude call, JSON only.
+function buildDiagnosticsPrompt(finalSong) {
+  return `You are a diagnostic reader for a songwriter. You are NOT editing or rewriting. You read the finished lyric and report three things only. Be honest and specific.
+
+THE FINISHED SONG:
+${finalSong}
+
+Run these three reads:
+
+1. METAPHOR DISCIPLINE — Strong lyrics stay inside ONE physical world (a house, a fire, a car, a radio signal) and dig deeper. AI-sounding lyrics scatter across unrelated worlds (oceans, then angels, then highways, then mirrors) for no reason. Name the central world. List any images that break out of it without justification.
+
+2. ESCALATION — In a strong song, verse 2 raises the cost or deepens the situation past verse 1; it does not just restate verse 1 with new objects. Decide whether the song moves or repeats.
+
+3. KNIFE LINE — Strong songs usually have ONE line that is clear, simple, and brutal — the line the whole song exists for. This is NOT the singable hook; it's the hardest truth. Find the best candidate, or report none.
+
+Return ONLY valid JSON, no preamble, no backticks, in exactly this shape:
+{
+  "world": {"central": "string or null", "obeys": true, "stray": ["image", "..."], "note": "one sentence"},
+  "escalation": {"moves": true, "note": "one sentence"},
+  "knife": {"present": true, "line": "verbatim line or null", "note": "one sentence"}
+}`;
+}
+
+// Robust JSON extraction (brace-depth tracking), same approach as the grader.
+function extractJSON(text) {
+  if (!text) return null;
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) {
+      if (esc) { esc = false; }
+      else if (c === '\\') { esc = true; }
+      else if (c === '"') { inStr = false; }
+    } else {
+      if (c === '"') inStr = true;
+      else if (c === '{') depth++;
+      else if (c === '}') { depth--; if (depth === 0) {
+        try { return JSON.parse(text.slice(start, i + 1)); } catch (e) { return null; }
+      } }
+    }
+  }
+  return null;
+}
+
+function renderDiagnostics(d) {
+  if (!d) return '';
+  const flag = (ok, okLabel, badLabel) =>
+    `<span style="font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:1px;color:${ok ? 'var(--green)' : 'var(--error)'}">${ok ? okLabel : badLabel}</span>`;
+
+  const world = d.world || {};
+  const esc = d.escalation || {};
+  const knife = d.knife || {};
+
+  const worldOk = world.obeys !== false && (!world.stray || world.stray.length === 0);
+  const strayTxt = (world.stray && world.stray.length) ? ` — stray: ${escapeHTML(world.stray.join(', '))}` : '';
+  const centralTxt = world.central ? ` (${escapeHTML(world.central)})` : '';
+
+  const knifeLine = knife.line ? `<div style="font-family:'Lora',serif;font-style:italic;color:var(--text);font-size:13px;margin-top:4px;line-height:1.6">"${escapeHTML(knife.line)}"</div>` : '';
+
+  const row = (label, flagHtml, note) => `
+    <div style="padding:11px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <span style="font-family:'Inconsolata',monospace;font-size:10px;letter-spacing:3px;color:var(--accent)">${label}</span>
+        ${flagHtml}
+      </div>
+      ${note ? `<div style="font-family:'Inconsolata',monospace;font-size:10px;color:var(--muted);letter-spacing:0.5px;line-height:1.6;margin-top:6px">${escapeHTML(note)}</div>` : ''}
+    </div>`;
+
+  return `
+    <div class="output-box" style="margin-top:16px;border-color:var(--border)">
+      <div class="box-header" style="margin-bottom:6px">
+        <div class="box-title">✦ Diagnostics — read only</div>
+      </div>
+      <div style="font-family:'Inconsolata',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;line-height:1.6;margin-bottom:8px">
+        These don't change the song. They tell you what to look at by hand.
+      </div>
+      ${row('WORLD', flag(worldOk, 'one world' + centralTxt, 'scattered' + centralTxt) , (world.note || '') + strayTxt)}
+      ${row('MOVEMENT', flag(esc.moves !== false, 'escalates', 'restates'), esc.note || '')}
+      ${row('KNIFE', flag(!!knife.present, 'present', 'missing'), knife.note || '') }
+      ${knifeLine}
+    </div>`;
+}
+
 // ─── Main generate function ────────────────────────────────────────────────────
 document.getElementById('generate-btn').addEventListener('click', async () => {
   const theme = document.getElementById('theme').value.trim();
@@ -661,6 +761,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   const genre     = getSelected('genre-group');
   const mood      = getSelected('mood-group');
   const userLines = document.getElementById('user-lines').value.trim();
+  const wound     = document.getElementById('wound').value.trim();
   const btn       = document.getElementById('generate-btn');
 
   btn.disabled = true;
@@ -685,7 +786,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
 
     // Step 2 — Draft
     setPipelineStep(2);
-    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines), 0.95, 1600, signal);
+    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines, wound), 0.95, 1600, signal);
 
     // Step 3 — Polish
     setPipelineStep(3);
@@ -701,11 +802,25 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
           <button class="copy-btn" id="copy-lyrics" aria-label="Copy lyrics">Copy</button>
         </div>
         <div class="lyrics-text">${escapeHTML(final)}</div>
-      </div>`;
+      </div>
+      <div id="diag-slot"></div>`;
 
     document.getElementById('copy-lyrics').addEventListener('click', function () {
       copyText(final, this);
     });
+
+    // ── Diagnostics: separate, non-blocking, read-only. Failure is silent. ──
+    (async () => {
+      try {
+        const raw = await aiCall(buildDiagnosticsPrompt(final), 0.2, 700, signal);
+        const parsed = extractJSON(raw);
+        if (parsed) {
+          document.getElementById('diag-slot').innerHTML = renderDiagnostics(parsed);
+        }
+      } catch (e) {
+        // Diagnostics are optional; never disrupt the song output.
+      }
+    })();
 
   } catch (e) {
     hidePipeline();
