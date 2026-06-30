@@ -74,6 +74,12 @@
   .pipeline-step.active { color: var(--accent); border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.07); animation: pulse 1.2s ease infinite; }
   .pipeline-step.done { color: var(--green); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.04); }
   .pipeline-step.skipped { color: var(--muted); border-color: var(--border); background: var(--surface); opacity: 0.5; text-decoration: line-through; }
+  .truth-box { margin-top: 16px; background: rgba(251,191,36,0.04); border: 1px solid rgba(251,191,36,0.25); border-radius: 14px; padding: 18px; }
+  .truth-row { padding: 9px 0; border-bottom: 1px solid rgba(251,191,36,0.12); }
+  .truth-row:last-child { border-bottom: none; }
+  .truth-key { font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 3px; color: var(--gold); text-transform: uppercase; margin-bottom: 4px; }
+  .truth-val { font-family: 'Lora', serif; font-size: 14px; color: var(--text); line-height: 1.6; }
+  .truth-val.knife { font-style: italic; color: #fde68a; }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 </style>
@@ -175,7 +181,8 @@
 
   <div class="status" id="status"></div>
   <div class="pipeline-steps" id="pipeline-steps">
-    <div class="pipeline-step" id="step-1">① Studying your story...</div>
+    <div class="pipeline-step" id="step-0">⓪ Finding what it's really about...</div>
+    <div class="pipeline-step" id="step-1">① Structuring the story...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
     <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
     <div class="pipeline-step" id="step-4">④ Checking & auto-correcting...</div>
@@ -199,22 +206,16 @@ const CONFIG = {
 let currentController = null;
 
 // ─── Detect pre-structured input (from Concept Expander) ────────────────────────
-// If the theme already contains the Studio's own structure schema, we skip the
-// analysis pass and feed it straight into the draft stage.
 function isPreStructured(text) {
   const t = (text || '').toUpperCase();
   const hasMovements = t.includes('MOVEMENTS:');
   const hasKeyImages = t.includes('KEY IMAGES:');
   const hasCentral   = t.includes('CENTRAL IMAGE');
-  // Require at least the two load-bearing sections the draft stage relies on.
   return hasMovements && hasKeyImages && hasCentral;
 }
 
-// Strip the handoff marker line if present, so it doesn't leak into the prompt.
 function normalizeStructured(text) {
   let t = (text || '');
-  // Drop everything up to and including the BRIEF:/PROMPT: delimiter the
-  // Concept Expander emits, plus its INVENTED_DETAILS preamble if pasted whole.
   const delim = t.match(/(?:^|\n)\s*(?:BRIEF|PROMPT)\s*:\s*\n/i);
   if (delim) {
     t = t.slice(delim.index + delim[0].length);
@@ -227,7 +228,6 @@ function normalizeStructured(text) {
 
 // ─── On load ───────────────────────────────────────────────────────────────────
 window.addEventListener('load', () => {
-  // Restore API keys
   ['claude', 'groq', 'gemini'].forEach(k => {
     const v = localStorage.getItem(`key_${k}`);
     if (v) document.getElementById(`api-${k}`).value = v;
@@ -235,14 +235,12 @@ window.addEventListener('load', () => {
   if (localStorage.getItem('key_claude') || localStorage.getItem('key_groq') || localStorage.getItem('key_gemini')) {
     document.getElementById('api-saved').style.display = 'block';
   }
-  // Restore genre + mood selections
   const savedGenre = localStorage.getItem('pref_genre');
   const savedMood  = localStorage.getItem('pref_mood');
   if (savedGenre) restoreToggle('genre-group', savedGenre);
   if (savedMood)  restoreToggle('mood-group',  savedMood);
 });
 
-// Live badge: show when pasted input is already structured
 document.getElementById('theme').addEventListener('input', (e) => {
   const badge = document.getElementById('prestructured-badge');
   badge.classList.toggle('visible', isPreStructured(e.target.value));
@@ -254,7 +252,6 @@ function restoreToggle(groupId, value) {
   });
 }
 
-// ─── Save keys ─────────────────────────────────────────────────────────────────
 document.getElementById('save-keys-btn').addEventListener('click', () => {
   ['claude', 'groq', 'gemini'].forEach(k => {
     const v = document.getElementById(`api-${k}`).value.trim();
@@ -267,7 +264,6 @@ function getKey(k) {
   return document.getElementById(`api-${k}`).value.trim();
 }
 
-// ─── Toggle groups ─────────────────────────────────────────────────────────────
 document.querySelectorAll('.toggle-group').forEach(group => {
   group.querySelectorAll('.toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -283,7 +279,6 @@ function getSelected(id) {
   return document.querySelector(`#${id} .toggle-btn.active`)?.dataset.value || '';
 }
 
-// ─── Copy helper ───────────────────────────────────────────────────────────────
 function copyText(text, btn) {
   const fallback = () => {
     const ta = document.createElement('textarea');
@@ -309,7 +304,6 @@ function copyText(text, btn) {
   } else { fallback(); }
 }
 
-// ─── HTML escape ───────────────────────────────────────────────────────────────
 function escapeHTML(str) {
   return str
     .replace(/&/g, '&amp;')
@@ -319,7 +313,6 @@ function escapeHTML(str) {
     .replace(/'/g, '&#039;');
 }
 
-// ─── Status UI ─────────────────────────────────────────────────────────────────
 function setStatus(msg, isError = false) {
   const el = document.getElementById('status');
   el.textContent = msg;
@@ -334,10 +327,9 @@ function showModel(msg) {
   el.style.display = 'block';
 }
 
-// ─── Pipeline step UI ──────────────────────────────────────────────────────────
 function setPipelineStep(n) {
   document.getElementById('pipeline-steps').classList.add('visible');
-  [1, 2, 3, 4].forEach(i => {
+  [0, 1, 2, 3, 4].forEach(i => {
     const el = document.getElementById(`step-${i}`);
     if (!el) return;
     if (i < n)      el.className = 'pipeline-step done';
@@ -351,10 +343,9 @@ function markStepSkipped(n) {
 }
 function hidePipeline() {
   document.getElementById('pipeline-steps').classList.remove('visible');
-  [1, 2, 3, 4].forEach(i => { const el = document.getElementById(`step-${i}`); if (el) el.className = 'pipeline-step'; });
+  [0, 1, 2, 3, 4].forEach(i => { const el = document.getElementById(`step-${i}`); if (el) el.className = 'pipeline-step'; });
 }
 
-// ─── Fetch with timeout ────────────────────────────────────────────────────────
 function fetchWithTimeout(url, options, ms) {
   return Promise.race([
     fetch(url, options),
@@ -362,7 +353,6 @@ function fetchWithTimeout(url, options, ms) {
   ]);
 }
 
-// ─── Strip stray markdown from model output ─────────────────────────────────────
 function cleanText(text) {
   return text
     .replace(/\*\*[\s\S]*?\*\*/g, '')
@@ -373,13 +363,11 @@ function cleanText(text) {
     .trim();
 }
 
-// ─── Core AI call: Claude → Groq → Gemini ───────────────────────────────────────
 async function aiCall(prompt, temperature = 0.95, maxTokens = 1400, signal = null) {
   const claudeKey = getKey('claude');
   const groqKey   = getKey('groq');
   const geminiKey = getKey('gemini');
 
-  // ── 1. Claude (primary) ──
   if (claudeKey) {
     try {
       const res = await fetchWithTimeout(CONFIG.CLAUDE_URL, {
@@ -412,7 +400,6 @@ async function aiCall(prompt, temperature = 0.95, maxTokens = 1400, signal = nul
         }
         throw new Error('Empty response from Claude');
       }
-      // Non-OK: decide whether to fall through
       let errMsg = `Claude error ${res.status}`;
       try { const err = await res.json(); errMsg = err?.error?.message || errMsg; } catch (e) {}
       const isOverload = res.status === 429 || res.status === 529 || res.status >= 500;
@@ -425,7 +412,6 @@ async function aiCall(prompt, temperature = 0.95, maxTokens = 1400, signal = nul
     }
   }
 
-  // ── 2. Groq (first fallback) ──
   if (groqKey) {
     try {
       const res = await fetchWithTimeout(CONFIG.GROQ_URL, {
@@ -456,7 +442,6 @@ async function aiCall(prompt, temperature = 0.95, maxTokens = 1400, signal = nul
     }
   }
 
-  // ── 3. Gemini (last fallback) ──
   if (geminiKey) {
     const res = await fetchWithTimeout(
       `https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.GEMINI_MODEL}:generateContent?key=${geminiKey}`,
@@ -545,47 +530,108 @@ BAD CHORUS: "I hear you screaming in the dark / your spirit won't let go / blood
 NOTE: Spare, atmospheric, presence-of-absence. What's NOT there does the work — the empty seat, the indentation in paper, the gesture with nothing to land on. Maximum restraint. Banned: horror literalism, ghosts, screaming, blood, haunted houses.`
 };
 
+// ─── STAGE 0: TRUTH DISCOVERY (NEW) ─────────────────────────────────────────────
+// Runs BEFORE structure. Decides what the song is actually about and what single
+// line it exists to earn, so every stage after it works from a thesis instead of
+// guessing. This is the fix for "every song sounds the same": without it, the
+// structure stage averages the input into competent mush. With it, the whole
+// pipeline orbits one buried truth and one knife line.
+function buildTruthPrompt(theme, wound, genre) {
+  const woundBlock = wound ? `\nTHE WRITER'S WOUND (surface = what's physically happening, underneath = what it means):\n${wound}\n` : '';
+  return `You are the writing partner a songwriter talks to BEFORE a single line gets written. You have raw material. Your job is not to summarize it. Your job is to find the buried, uncomfortable truth inside it — the thing the song is really about underneath what it appears to be about — and the one brutal line the whole song will exist to earn.
+
+This is the single most important step. A song built on a surface reading sounds like every other song. A song built on a buried truth sounds inevitable.
+
+GENRE: ${genre}
+THE RAW MATERIAL:
+${theme}
+${woundBlock}
+Interrogate it. Ask: What is this narrator NOT saying out loud? What have they already decided before the song starts? What would they deny if you asked them directly? What is the cost they're pretending not to see?
+
+Return ONLY this, nothing else, each on its own line after the label:
+
+HIDDEN_THESIS: [The real subject, one sentence. Not the surface event — the thing underneath it the narrator is circling. This is the song's spine; every section must serve it.]
+THE_LIE: [The thing the narrator tells themselves or others, one sentence. What they perform.]
+THE_TRUTH: [What's actually true underneath the lie, one sentence. The thing the song slowly admits.]
+THE_CONTRADICTION: [The emotional contradiction that creates tension — they want X but do Y, they know X but choose Y. One sentence.]
+THE_KNIFE: [The single hardest, clearest, most brutal line this song exists to earn. NOT the singable hook — the one true thing said plainly, the line that lands like a knife. Write the actual line, in the genre's voice. One line.]
+THE_COST: [What it costs the narrator, rendered as a concrete consequence, not a feeling. One sentence.]
+THE_DECISION: [What the narrator has ALREADY decided before the song begins. One sentence — this keeps the song from being indecisive.]`;
+}
+
+function parseTruth(raw) {
+  const grab = (label) => {
+    const m = raw.match(new RegExp(label + '\\s*:\\s*(.+?)(?:\\n[A-Z_]+\\s*:|$)', 'is'));
+    return m ? m[1].trim().replace(/^\[|\]$/g, '').trim() : '';
+  };
+  return {
+    thesis: grab('HIDDEN_THESIS'),
+    lie: grab('THE_LIE'),
+    truth: grab('THE_TRUTH'),
+    contradiction: grab('THE_CONTRADICTION'),
+    knife: grab('THE_KNIFE'),
+    cost: grab('THE_COST'),
+    decision: grab('THE_DECISION'),
+  };
+}
+
+function truthBlockForPrompt(t) {
+  if (!t) return '';
+  return `THE BURIED TRUTH OF THIS SONG (discovered before writing — every section must serve this):
+HIDDEN THESIS: ${t.thesis}
+THE LIE (what the narrator performs): ${t.lie}
+THE TRUTH (what the song admits): ${t.truth}
+THE CONTRADICTION: ${t.contradiction}
+THE KNIFE (the one line this song exists to earn — build toward it, do not state it early, let it land once): ${t.knife}
+THE COST (concrete consequence): ${t.cost}
+ALREADY DECIDED (before the song starts): ${t.decision}`;
+}
+
 // ─── Prompts ───────────────────────────────────────────────────────────────────
-function buildStructurePrompt(theme) {
+function buildStructurePrompt(theme, truth) {
+  const truthBlock = truth ? `\n${truthBlockForPrompt(truth)}\n\nThe structure below must SERVE the hidden thesis above. Every movement gathers evidence for it. The turning point is where the lie cracks and the truth shows. Do not drift from it.\n` : '';
   return `You are a creative analyst for a world-class songwriter. You have been given raw material — it could be a personal story, a Bible story, a metaphor, a concept, a character, a feeling, or anything else. Your job is to extract what a songwriter needs from it. Do not editorialize. Do not invent details that aren't there. Just organize what already exists.
 
 THE RAW MATERIAL:
 ${theme}
-
+${truthBlock}
 Extract and return ONLY this structure, nothing else:
 
 CENTRAL IMAGE OR METAPHOR:
 [The single most vivid or powerful image at the heart of this material. One sentence. If the input is a metaphor (e.g. "anxiety as a machine"), name it explicitly here.]
 
 MOVEMENTS:
-[The stages this material moves through — beginning, escalation, turning point, resolution or landing. List each as a concrete beat, one per line. If it's a Bible story, follow the narrative. If it's a metaphor or concept, map its arc from start to finish.]
+[The stages this material moves through — beginning, escalation, turning point, resolution or landing. List each as a concrete beat, one per line. Each movement must gather evidence for the hidden thesis. If it's a Bible story, follow the narrative. If it's a metaphor or concept, map its arc from start to finish.]
 
 KEY IMAGES:
 [6-10 specific physical or sensory details present in the material — objects, places, sounds, actions, textures. Real and concrete only. Do not invent anything not implied by the input.]
 
 TURNING POINT:
-[The single moment where something shifts — a decision, a revelation, a collapse, a surrender, a rescue. One sentence. Stay close to the material.]
+[The single moment where the lie cracks and the truth shows — a decision, a revelation, a collapse, a surrender. One sentence. Stay close to the material.]
 
 CHORUS CANDIDATE:
 [The most emotionally loaded image or moment. Should be a concrete scene or image, not an abstract theme. One or two sentences.]
 
 EMOTIONAL DESTINATION:
-[What should the listener feel at the end of this song? One sentence. Infer from the arc of the material.]`;
+[What should the listener feel at the end of this song? One sentence. Infer from the arc of the material and the cost.]`;
 }
 
-function buildPrompt(structuredStory, genre, mood, userLines, wound) {
+function buildPrompt(structuredStory, genre, mood, userLines, wound, truth) {
   const sacred = userLines
     ? `\nSACRED LINES — these must appear verbatim in the final song, build around them:\n${userLines}\n`
     : '';
   const woundBlock = wound
     ? `\nTHE WOUND (the writer's own framing — surface = what's physically happening, underneath = what it means). Let this sit under the whole song. Do not state the "underneath" directly anywhere; prove it through the surface.\n${wound}\n`
     : '';
+  const truthBlock = truth
+    ? `\n${truthBlockForPrompt(truth)}\n\nWrite the song so every verse gathers evidence FOR the hidden thesis. Never explain it. Only prove it. The knife line must be earned — build toward it across the song and let it land once, at full force, where it hits hardest (usually the bridge or final chorus). Do not soften it. Do not state the thesis as a slogan anywhere.\n`
+    : '';
   const examples = GENRE_EXAMPLES[genre] || '';
-  return `You are a world class songwriter and ghostwriter. You have been given structured source material — it could be a personal story, a Bible story, a metaphor, a concept, or anything else. Your job is to turn it into a song that follows its arc exactly, in the order it was given.
+  return `You are a world class songwriter and ghostwriter. You have been given structured source material and the buried truth of the song. Your job is to turn it into a song that follows its arc exactly, in the order it was given, and that exists to earn its knife line.
 
 GENRE: ${genre}
 MOOD: ${mood}
-${sacred}${woundBlock}
+${sacred}${woundBlock}${truthBlock}
 THE STRUCTURED MATERIAL — follow this arc exactly, in this order:
 ${structuredStory}
 
@@ -597,13 +643,19 @@ RULES:
 1. FOLLOW THE ARC
 The song must follow the MOVEMENTS from the structured material in order. What comes first goes in Verse 1. What comes next goes in Verse 2. The turning point goes in the Bridge. The resolution or final beat goes in the Outro. Do not reorder.
 
-2. USE THE REAL DETAILS
-Every specific detail in the KEY IMAGES is gold — names, objects, places, actions, textures. Use them directly. Do not swap for generic alternatives. If the input says "a ram in the thicket" that stays a ram in the thicket. If it says "a machine bolted to my chest" that machine stays bolted to the chest.
+2. SERVE THE THESIS, EARN THE KNIFE
+Every verse gathers evidence for the hidden thesis. Never explain it — only prove it through concrete scene. The knife line is the line the whole song exists for; build toward it and let it land once at full force. Do not state it early, do not repeat it into dullness, do not soften it.
 
-3. FINGERPRINT RULE
+3. USE THE REAL DETAILS
+Every specific detail in the KEY IMAGES is gold — names, objects, places, actions, textures. Use them directly. Do not swap for generic alternatives.
+
+4. FINGERPRINT RULE
 Every line must be irreplaceable — it could only exist in this song about this story. If a line could appear in a different song, rewrite it until it couldn't.
 
-4. BANNED PATTERNS:
+5. ONE WORLD
+Stay inside ONE physical world (a house, a fire, a car, a bar, a phone screen) and dig deeper into it. Do not scatter across unrelated image-worlds. If the material gives you a bar, the glass, the ice, the bottle, the window all belong; storms and oceans and stars do not.
+
+6. BANNED PATTERNS:
 - Identity stacking: "I am the [noun] / I am the [noun]"
 - Stock pairs: storm+fire, dark+light, broken+whole, rise+fall
 - Emotion naming: "I felt empty" "I was devastated" "the pain inside"
@@ -612,30 +664,39 @@ Every line must be irreplaceable — it could only exist in this song about this
 - Any line that names the feeling instead of showing the moment
 - Repeating a metaphor or image across multiple sections
 
-5. CHORUS RULE
+7. CHORUS RULE
 The chorus must contain a specific image or detail from the KEY IMAGES — not a summary of the theme. It must feel like it could only come from this specific material. Max 4 lines, each under 10 words.
 
-6. BRIDGE AND OUTRO
-The bridge is where the narrator realizes something — use the TURNING POINT from the structured material. The outro lands on the EMOTIONAL DESTINATION. Do not go abstract or motivational. Stay in the imagery.
+8. ESCALATION
+Verse 2 must raise the cost or deepen the situation past Verse 1. Verse 1 = the problem exists; Verse 2 = the cost shows. Do not restate Verse 1 with new objects.
+
+9. BRIDGE AND OUTRO
+The bridge is where the narrator realizes something — use the TURNING POINT. The outro lands on the EMOTIONAL DESTINATION. Do not go abstract or motivational. Stay in the imagery.
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
 Output the complete song. Every section. No truncating. No commentary.`;
 }
 
-function buildPolishPrompt(draft, genre, structuredStory) {
+function buildPolishPrompt(draft, genre, structuredStory, truth) {
+  const truthBlock = truth ? `\nTHE BURIED TRUTH (the song must serve this — use it to judge whether lines pull toward the thesis):
+HIDDEN THESIS: ${truth.thesis}
+THE KNIFE (the line the song exists to earn): ${truth.knife}\n` : '';
   return `You are a ruthless line editor for a world-class songwriter. You have been given a first draft and the structured story it came from. Your job is to make it consistently great — not to rewrite it, but to find and fix every weak line while leaving strong ones untouched.
 
 GENRE: ${genre}
 
 THE STRUCTURED STORY (source of truth):
 ${structuredStory}
-
+${truthBlock}
 THE DRAFT:
 ${draft}
 
 YOUR TASK:
 
 Go through every line. Apply these tests in order:
+
+TEST 0 — THESIS TEST
+Does this line pull toward the hidden thesis, or drift away from it? If it drifts — if it's decoration that serves no part of the buried truth — cut it or rewrite it to gather evidence for the thesis.
 
 TEST 1 — FINGERPRINT TEST
 Could this line appear in a different song about a different story? If yes, rewrite it using a specific image from the structured story.
@@ -649,27 +710,32 @@ Does the chorus contain at least one specific physical detail from the KEY IMAGE
 TEST 4 — REPETITION TEST
 Does any metaphor, image, or phrase appear more than once across different sections? If yes, cut the weaker instance.
 
-TEST 5 — ENDING TEST
+TEST 5 — KNIFE TEST
+Is the knife line present, earned, and landed once at full force? If it's missing, restore it. If it's stated too early or repeated into dullness, fix its placement so it lands once where it hits hardest. Do not soften it.
+
+TEST 6 — ENDING TEST
 Does the outro stay in the imagery and emotional destination from the structured material, or does it go abstract or generically motivational? If abstract, pull it back to a concrete image from the KEY IMAGES.
 
 RULES:
 - Keep every section label exactly as written: [Verse 1], [Chorus], etc.
 - Do not add sections. Do not remove sections.
-- If a line passes all 5 tests, do not touch it.
+- If a line passes all tests, do not touch it.
 - Do not add commentary, explanations, or notes.
 
 Output the complete revised song. Nothing else.`;
 }
 
-// ─── Diagnostics: read-only pass AFTER the song exists ──────────────────────────
-// Now receives the WOUND and the source CONCEPT so it can check the song against
-// what it was supposed to MEAN — not just read it in isolation. This is the gap
-// that let "the lie is never named" slip through before: the pass had the lyrics
-// but not the source, so it couldn't know the thesis went abstract.
-function buildDiagnosticsPrompt(finalSong, wound, theme) {
-  const context = (wound || theme)
+function buildDiagnosticsPrompt(finalSong, wound, theme, truth) {
+  const truthBlock = truth ? `THE BURIED TRUTH (discovered before writing — judge the song against THIS):
+HIDDEN THESIS: ${truth.thesis}
+THE LIE: ${truth.lie}
+THE TRUTH: ${truth.truth}
+THE KNIFE (the line the song exists to earn): ${truth.knife}
+THE COST: ${truth.cost}
+` : '';
+  const context = (truth || wound || theme)
     ? `WHAT THIS SONG WAS SUPPOSED TO BE ABOUT (the source — use this to judge whether the song actually LANDS its own meaning):
-${theme ? 'CONCEPT/SOURCE:\n' + theme + '\n' : ''}${wound ? 'THE WOUND:\n' + wound + '\n' : ''}
+${truthBlock}${theme ? 'CONCEPT/SOURCE:\n' + theme + '\n' : ''}${wound ? 'THE WOUND:\n' + wound + '\n' : ''}
 `
     : '';
   return `You are a diagnostic reader for a songwriter. You are NOT editing or rewriting. You read the finished lyric and report on it. Be honest and specific.
@@ -677,49 +743,58 @@ ${theme ? 'CONCEPT/SOURCE:\n' + theme + '\n' : ''}${wound ? 'THE WOUND:\n' + wou
 ${context}THE FINISHED SONG:
 ${finalSong}
 
-Run these five reads:
+Run these reads:
 
-1. METAPHOR DISCIPLINE — Strong lyrics stay inside ONE physical world (a house, a fire, a car, a phone screen) and dig deeper. AI-sounding lyrics scatter across unrelated worlds for no reason. Name the central world. List any images that break out of it without justification — including subtle register breaks (e.g. a speech/voice image like "throat" or "say" inside a song built entirely on silent digital touch).
+1. METAPHOR DISCIPLINE — Strong lyrics stay inside ONE physical world (a house, a fire, a car, a phone screen) and dig deeper. AI-sounding lyrics scatter across unrelated worlds for no reason. Name the central world. List any images that break out of it without justification — including subtle register breaks.
 
 2. ESCALATION — In a strong song, verse 2 raises the cost or deepens the situation past verse 1; it does not just restate verse 1 with new objects. Decide whether the song moves or repeats.
 
-3. KNIFE LINE — Strong songs usually have ONE line that is clear, simple, and brutal — the line the whole song exists for. This is NOT the singable hook; it's the hardest truth. Find the best candidate, or report none.
+3. KNIFE LINE — Strong songs usually have ONE line that is clear, simple, and brutal — the line the whole song exists for. Using the KNIFE from the buried truth above as the target: is that line (or an equally hard line serving the same truth) present and earned, or merely stated flatly / missing? Find the best candidate in the song, or report none.
 
-4. CONCRETE CHORUS — The chorus must carry a SPECIFIC PHYSICAL OBJECT or action from the verses. A chorus FAILS if it leans on abstract concept-words doing the emotional work — "signal / line / frequency / static / connection / the lie / the truth" or any naming of the theme. CRITICAL: when a chorus couplet pairs a CONCRETE line with an ABSTRACT one (e.g. "one hand holding on to you / one hand holding onto the lie" — "you" is concrete here, "the lie" is the abstraction), the failure is the ABSTRACT line, NOT its concrete neighbor. Flag the abstract half and name the physical object from the song it should become instead.
+4. THESIS SERVED — Using the HIDDEN THESIS above: does every section pull toward it, or do sections drift into decoration that serves no part of the buried truth? Name any section that drifts.
 
-5. WOUND NAMED — Using the SOURCE above: the song's central wound or core realization should be RENDERED somewhere as a concrete thing, not left as an abstract label. If the source says the wound is e.g. "inability to let go" or "I'm maintaining contact with a ghost," the song fails this if it gestures at the wound with concept-words ("the lie", "what that makes me", "letting go") but never gives it a physical shape the listener can see. If the thesis line of the song names a concept the song never makes concrete, say so and point at where it could land as an object. If the wound IS rendered concretely, say where.
+5. CONCRETE CHORUS — The chorus must carry a SPECIFIC PHYSICAL OBJECT or action from the verses. A chorus FAILS if it leans on abstract concept-words doing the emotional work. When a chorus couplet pairs a CONCRETE line with an ABSTRACT one, the failure is the ABSTRACT line, NOT its concrete neighbor. Flag the abstract half and name the physical object from the song it should become instead.
+
+6. WOUND NAMED — Using the SOURCE above: the song's central wound or core realization should be RENDERED somewhere as a concrete thing, not left as an abstract label. If the thesis line of the song names a concept the song never makes concrete, say so and point at where it could land as an object. If the wound IS rendered concretely, say where.
 
 Return ONLY valid JSON, no preamble, no backticks, in exactly this shape:
 {
   "world": {"central": "string or null", "obeys": true, "stray": ["image", "..."], "note": "one sentence"},
   "escalation": {"moves": true, "note": "one sentence"},
   "knife": {"present": true, "line": "verbatim line or null", "note": "one sentence"},
+  "thesis": {"served": true, "drifting_section": "section name or null", "note": "one sentence"},
   "chorus": {"concrete": true, "leans_on": "the abstract line or concept word, or null", "better_object": "a physical object from the song to rebuild around, or null", "note": "one sentence"},
   "wound": {"named": true, "abstract_thesis_line": "the verbatim line that labels the wound abstractly, or null", "could_land": "where/how it could become a concrete object, or null", "note": "one sentence"}
 }`;
 }
 
-// ─── Auto-correction: rewrites ONLY the mechanically-failed parts ───────────────
-// Taste calls stay with the writer. This pass touches a section only when a
-// diagnostic flagged a RULE failure (scattered world, flat verse 2, concept
-// chorus). It is told explicitly to leave everything else alone, including any
-// section that passed. If nothing failed, the caller skips this pass entirely.
 function diagnosticsHaveFailure(d) {
   if (!d) return false;
   const worldBad   = d.world && (d.world.obeys === false || (d.world.stray && d.world.stray.length > 0));
   const escBad     = d.escalation && d.escalation.moves === false;
   const chorusBad  = d.chorus && d.chorus.concrete === false;
   const woundBad   = d.wound && d.wound.named === false;
-  return !!(worldBad || escBad || chorusBad || woundBad);
+  const knifeBad   = d.knife && d.knife.present === false;
+  const thesisBad  = d.thesis && d.thesis.served === false;
+  return !!(worldBad || escBad || chorusBad || woundBad || knifeBad || thesisBad);
 }
 
-function buildCorrectionPrompt(finalSong, structuredStory, genre, d) {
+function buildCorrectionPrompt(finalSong, structuredStory, genre, d, truth) {
   const tasks = [];
 
+  if (d.knife && d.knife.present === false) {
+    const target = truth && truth.knife ? ` The line the song is supposed to earn is: "${truth.knife}" — restore it (or a line that lands the same truth as hard) and place it where it hits hardest, once, at full force.` : ' Restore or build the one hard, plain, brutal line the song exists to earn, and let it land once.';
+    tasks.push(`- THE KNIFE LINE is missing or merely stated flatly.${target} Do not soften it. Do not repeat it into dullness.`);
+  }
+  if (d.thesis && d.thesis.served === false) {
+    const drift = d.thesis.drifting_section ? ` The section that drifts is: ${d.thesis.drifting_section}.` : '';
+    const thesisTxt = truth && truth.thesis ? ` The hidden thesis is: ${truth.thesis}.` : '';
+    tasks.push(`- A SECTION DRIFTS from the hidden thesis.${drift}${thesisTxt} Rewrite that section so it gathers concrete evidence for the thesis instead of decorating. Do not state the thesis as a slogan — prove it through scene.`);
+  }
   if (d.chorus && d.chorus.concrete === false) {
     const obj = d.chorus.better_object ? `Rebuild it around this physical thing from the verses: "${d.chorus.better_object}".` : 'Rebuild it around a specific physical object or action that already appears in the verses.';
     const leans = d.chorus.leans_on ? ` It currently leans on the concept word "${d.chorus.leans_on}" — remove that as the load-bearing element.` : '';
-    tasks.push(`- THE CHORUS fails the concrete test.${leans} ${obj} The chorus must hold an OBJECT, not a concept. Keep its singability and line count. Do not let "signal / line / frequency / static / sign of life / connection" carry the emotional weight — an object carries it.`);
+    tasks.push(`- THE CHORUS fails the concrete test.${leans} ${obj} The chorus must hold an OBJECT, not a concept. Keep its singability and line count.`);
   }
   if (d.world && (d.world.obeys === false || (d.world.stray && d.world.stray.length > 0))) {
     const stray = (d.world.stray && d.world.stray.length) ? ` Specifically these stray images: ${d.world.stray.join(', ')}.` : '';
@@ -758,18 +833,13 @@ ABSOLUTE RULES:
 Output the complete song with only the flagged sections changed. Nothing else.`;
 }
 
-// ─── Soft-line analysis: flags lines that SAG relative to the song's best line ──
-// This does NOT rewrite anything automatically. It surfaces the soft lines with
-// the song's strongest line as the benchmark, plus 2-3 candidate rewrites and a
-// confidence read on each. The WRITER picks, edits their own, or keeps the
-// original. Confidence = "the model's most predictable choice", NOT a verdict —
-// the best line is often the lower-confidence, less-conventional one, and that
-// framing is shown in the UI. Flagging is the real value; rewrites are a starting
-// point. Aggressive mode: flag generously, the writer is the filter.
-function buildSoftLinePrompt(finalSong, wound, theme) {
-  const context = (wound || theme)
+function buildSoftLinePrompt(finalSong, wound, theme, truth) {
+  const truthBlock = truth ? `THE KNIFE (the song's hardest intended line — protect it, judge sags against it too): ${truth.knife}
+HIDDEN THESIS: ${truth.thesis}
+` : '';
+  const context = (truth || wound || theme)
     ? `WHAT THIS SONG WAS SUPPOSED TO BE ABOUT (judge soft lines partly against whether they serve this):
-${theme ? 'CONCEPT/SOURCE:\n' + theme + '\n' : ''}${wound ? 'THE WOUND:\n' + wound + '\n' : ''}
+${truthBlock}${theme ? 'CONCEPT/SOURCE:\n' + theme + '\n' : ''}${wound ? 'THE WOUND:\n' + wound + '\n' : ''}
 `
     : '';
   return `You are a song editor with a brutal ear. Below is a finished song. Most of it is strong. Your job is NOT to rewrite it. Your job is to find the lines that SAG relative to the song's own strongest line, and surface them for the writer to judge.
@@ -780,9 +850,9 @@ ${finalSong}
 METHOD:
 1. First, identify the single STRONGEST line in the song — the most specific, most physical, most unforgettable. This is the benchmark.
 2. Then read every other line against it. A line SAGS when it is noticeably weaker than the benchmark: it retreats to abstraction or concept-words while neighbors stay concrete, it uses a tired construction (e.g. "it isn't X / it isn't Y", "I am the ___", "what that makes me"), it names a feeling instead of showing it, or it goes vague right when the lines around it are sharp.
-3. COUPLET RULE — when two adjacent lines pair a CONCRETE line with an ABSTRACT one, the sagging line is the ABSTRACT one, never its concrete neighbor. Example: in "one hand holding on to you / one hand holding onto the lie", flag "the lie" (abstract), NOT "holding on to you" (concrete — "you" is an established object). Do not flag the strong half of a couplet just because it sits near a weak half.
+3. COUPLET RULE — when two adjacent lines pair a CONCRETE line with an ABSTRACT one, the sagging line is the ABSTRACT one, never its concrete neighbor.
 4. THESIS RULE — if the song's central wound (see SOURCE) is gestured at with a concept word but never rendered as a physical object, flag that thesis line specifically. The most important sag is a thesis the song states but never shows.
-5. Flag GENEROUSLY — anything even slightly softer than the benchmark. Aim for 3 to 8 flagged lines. Do NOT flag the benchmark itself or lines that match its strength.
+5. Flag GENEROUSLY — anything even slightly softer than the benchmark. Aim for 3 to 8 flagged lines. Do NOT flag the benchmark itself, the knife line, or lines that match its strength.
 
 For each sagging line, provide 2-3 candidate rewrites that stay in the song's existing world and use objects already present. Rate each candidate's confidence 0-100 — your honest read of which is strongest. Rate LOW (40s-50s) if a candidate is only a safe, conventional fix; do not inflate.
 
@@ -803,7 +873,6 @@ Return ONLY valid JSON, no preamble, no backticks, exactly this shape:
 }
 If nothing sags, return {"benchmark": "...", "soft_lines": []}.`;
 }
-
 
 function extractJSON(text) {
   if (!text) return null;
@@ -827,6 +896,29 @@ function extractJSON(text) {
   return null;
 }
 
+function renderTruth(t) {
+  if (!t || (!t.thesis && !t.knife)) return '';
+  const row = (label, val, knife) => val
+    ? `<div class="truth-row"><div class="truth-key">${label}</div><div class="truth-val${knife ? ' knife' : ''}">${escapeHTML(val)}</div></div>`
+    : '';
+  return `
+    <div class="truth-box">
+      <div class="box-header" style="margin-bottom:6px">
+        <div class="box-title" style="color:var(--gold)">✦ What this song is really about</div>
+      </div>
+      <div style="font-family:'Inconsolata',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;line-height:1.6;margin-bottom:8px">
+        Found before writing. Every stage after this serves it.
+      </div>
+      ${row('Hidden thesis', t.thesis)}
+      ${row('The lie', t.lie)}
+      ${row('The truth', t.truth)}
+      ${row('The contradiction', t.contradiction)}
+      ${row('The knife — the line it exists to earn', t.knife, true)}
+      ${row('The cost', t.cost)}
+      ${row('Already decided', t.decision)}
+    </div>`;
+}
+
 function renderDiagnostics(d) {
   if (!d) return '';
   const flag = (ok, okLabel, badLabel) =>
@@ -836,6 +928,7 @@ function renderDiagnostics(d) {
   const esc = d.escalation || {};
   const knife = d.knife || {};
   const chorus = d.chorus || {};
+  const thesis = d.thesis || {};
 
   const worldOk = world.obeys !== false && (!world.stray || world.stray.length === 0);
   const strayTxt = (world.stray && world.stray.length) ? ` — stray: ${escapeHTML(world.stray.join(', '))}` : '';
@@ -864,21 +957,16 @@ function renderDiagnostics(d) {
       <div style="font-family:'Inconsolata',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;line-height:1.6;margin-bottom:8px">
         These don't change the song. They tell you what to look at by hand.
       </div>
+      ${row('THESIS', flag(thesis.served !== false, 'served', 'drifts'), (thesis.note || '') + (thesis.drifting_section ? ' — ' + thesis.drifting_section : ''))}
+      ${row('KNIFE', flag(!!knife.present, 'earned', 'missing/flat'), knife.note || '') }
+      ${knifeLine}
       ${row('WORLD', flag(worldOk, 'one world' + centralTxt, 'scattered' + centralTxt) , (world.note || '') + strayTxt)}
       ${row('MOVEMENT', flag(esc.moves !== false, 'escalates', 'restates'), esc.note || '')}
       ${row('CHORUS', flag(chorusOk, 'concrete', 'concept'), chorus.note || '')}
       ${row('WOUND', flag(woundOk, 'rendered', 'unnamed'), woundD.note || '')}
-      ${row('KNIFE', flag(!!knife.present, 'present', 'missing'), knife.note || '') }
-      ${knifeLine}
     </div>`;
 }
 
-// ─── Soft-line panel ───────────────────────────────────────────────────────────
-// Surfaces sagging lines with the song's benchmark line as the bar. For each:
-// candidate rewrites (sorted by confidence), a "keep original" option, and an
-// "edit your own" field — both always present as first-class choices. A swap
-// replaces the exact line in the song only when the writer accepts it.
-// Confidence is framed as "most predictable choice", not a verdict.
 function confColor(c) {
   if (c >= 70) return 'var(--green)';
   if (c >= 45) return 'var(--gold)';
@@ -939,7 +1027,6 @@ function renderSoftPanel(soft, getSong, setSong) {
       ${cardHtml}
     </div>`;
 
-  // store originals so a swap targets the exact current line text
   const originals = lines.map(l => l.line || '');
 
   function applyLine(idx, newText) {
@@ -948,12 +1035,11 @@ function renderSoftPanel(soft, getSong, setSong) {
     const song = getSong();
     const orig = originals[idx];
     if (!orig || song.indexOf(orig) === -1) {
-      // line already changed or not found verbatim — mark card and skip
       markResolved(idx, newText, true);
       return;
     }
     setSong(song.replace(orig, newText));
-    originals[idx] = newText; // future edits target the new text
+    originals[idx] = newText;
     markResolved(idx, newText, false);
   }
 
@@ -998,7 +1084,6 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   if (!getKey('claude') && !getKey('groq') && !getKey('gemini')) { setStatus('⚠ Add at least one API key above', true); return; }
   if (!theme) { setStatus('⚠ Give it something to work with — a story, a concept, a feeling', true); return; }
 
-  // Cancel any in-flight request
   if (currentController) currentController.abort();
   currentController = new AbortController();
   const signal = currentController.signal;
@@ -1017,47 +1102,58 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
   const preStructured = isPreStructured(theme);
 
   try {
+    let truth = null;
     let structuredStory;
 
     if (preStructured) {
-      // ── Skip Step 1 — input is already structured (from Concept Expander) ──
+      // Pre-structured input from the Concept Expander already carries its own
+      // arc. Skip Truth Discovery AND structure analysis — go straight to draft.
       structuredStory = normalizeStructured(theme);
+      markStepSkipped(0);
       markStepSkipped(1);
     } else {
-      // Step 1 — Structure
+      // Stage 0 — Truth Discovery (NEW). The writer's brain. Find the buried
+      // thesis and the knife line BEFORE anything is structured or written.
+      setPipelineStep(0);
+      try {
+        const rawTruth = await aiCall(buildTruthPrompt(theme, wound, genre), 0.7, 700, signal);
+        truth = parseTruth(rawTruth);
+        if (!truth.thesis && !truth.knife) truth = null; // parse failed; degrade gracefully
+      } catch (e) {
+        if (e.name === 'AbortError') throw e;
+        truth = null; // never block the song if truth discovery fails
+      }
+
+      // Stage 1 — Structure (now serves the thesis)
       setPipelineStep(1);
-      structuredStory = await aiCall(buildStructurePrompt(theme), 0.3, 800, signal);
+      structuredStory = await aiCall(buildStructurePrompt(theme, truth), 0.3, 900, signal);
     }
 
-    // Step 2 — Draft
+    // Stage 2 — Draft (writes to earn the knife)
     setPipelineStep(2);
-    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines, wound), 0.95, 1600, signal);
+    const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines, wound, truth), 0.95, 1600, signal);
 
-    // Step 3 — Polish
+    // Stage 3 — Polish
     setPipelineStep(3);
-    let final = await aiCall(buildPolishPrompt(draft, genre, structuredStory), 0.4, 1600, signal);
+    let final = await aiCall(buildPolishPrompt(draft, genre, structuredStory, truth), 0.4, 1600, signal);
 
-    // Step 4 — Diagnose, then auto-correct ONLY mechanically-failed parts.
-    // Taste calls (which line to build around) are left to the writer. This pass
-    // touches a section only when a RULE failed: scattered world, flat verse 2,
-    // concept chorus. Strong sections are passed through verbatim.
+    // Stage 4 — Diagnose, then auto-correct ONLY mechanically-failed parts.
     setPipelineStep(4);
     let diag = null;
     try {
-      const rawDiag = await aiCall(buildDiagnosticsPrompt(final, wound, theme), 0.2, 700, signal);
+      const rawDiag = await aiCall(buildDiagnosticsPrompt(final, wound, theme, truth), 0.2, 800, signal);
       diag = extractJSON(rawDiag);
     } catch (e) { /* diagnostics optional */ }
 
     let corrected = false;
     if (diag && diagnosticsHaveFailure(diag)) {
       try {
-        const fixed = await aiCall(buildCorrectionPrompt(final, structuredStory, genre, diag), 0.5, 1600, signal);
+        const fixed = await aiCall(buildCorrectionPrompt(final, structuredStory, genre, diag, truth), 0.5, 1600, signal);
         if (fixed && fixed.length > 40) {
           final = fixed;
           corrected = true;
-          // Re-diagnose the corrected version so the flags reflect what shipped.
           try {
-            const rawDiag2 = await aiCall(buildDiagnosticsPrompt(final, wound, theme), 0.2, 700, signal);
+            const rawDiag2 = await aiCall(buildDiagnosticsPrompt(final, wound, theme, truth), 0.2, 800, signal);
             const diag2 = extractJSON(rawDiag2);
             if (diag2) diag = diag2;
           } catch (e) { /* keep first diag if re-read fails */ }
@@ -1072,8 +1168,6 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
       ? `<div style="font-family:'Inconsolata',monospace;font-size:10px;color:var(--green);letter-spacing:1px;margin-bottom:10px">✓ Auto-corrected flagged sections before output</div>`
       : '';
 
-    // Mutable song state — the soft-line panel patches lines into this and the
-    // lyrics display + Copy button always reflect the writer's accepted edits.
     let currentSong = final;
 
     function renderSong() {
@@ -1089,6 +1183,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
         </div>
         <div class="lyrics-text">${escapeHTML(currentSong)}</div>
       </div>
+      <div id="truth-slot"></div>
       <div id="softline-slot"></div>
       <div id="diag-slot"></div>`;
 
@@ -1096,15 +1191,17 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
       copyText(currentSong, this);
     });
 
+    if (truth) {
+      document.getElementById('truth-slot').innerHTML = renderTruth(truth);
+    }
+
     if (diag) {
       document.getElementById('diag-slot').innerHTML = renderDiagnostics(diag);
     }
 
-    // ── Soft-line pass: surface sagging lines for the writer to resolve. ──
-    // Read-only proposal. Nothing changes until the writer accepts a swap.
     (async () => {
       try {
-        const rawSoft = await aiCall(buildSoftLinePrompt(currentSong, wound, theme), 0.6, 1600, signal);
+        const rawSoft = await aiCall(buildSoftLinePrompt(currentSong, wound, theme, truth), 0.6, 1600, signal);
         const soft = extractJSON(rawSoft);
         if (soft && Array.isArray(soft.soft_lines) && soft.soft_lines.length) {
           renderSoftPanel(soft, () => currentSong, (updated) => { currentSong = updated; renderSong(); });
