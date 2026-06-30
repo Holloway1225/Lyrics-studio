@@ -184,8 +184,9 @@
     <div class="pipeline-step" id="step-0">⓪ Finding what it's really about...</div>
     <div class="pipeline-step" id="step-1">① Structuring the story...</div>
     <div class="pipeline-step" id="step-2">② Writing the song...</div>
-    <div class="pipeline-step" id="step-3">③ Sharpening every line...</div>
-    <div class="pipeline-step" id="step-4">④ Checking & auto-correcting...</div>
+    <div class="pipeline-step" id="step-3">③ Making it followable...</div>
+    <div class="pipeline-step" id="step-4">④ Sharpening every line...</div>
+    <div class="pipeline-step" id="step-5">⑤ Checking & auto-correcting...</div>
   </div>
   <div id="output"></div>
 
@@ -329,7 +330,7 @@ function showModel(msg) {
 
 function setPipelineStep(n) {
   document.getElementById('pipeline-steps').classList.add('visible');
-  [0, 1, 2, 3, 4].forEach(i => {
+  [0, 1, 2, 3, 4, 5].forEach(i => {
     const el = document.getElementById(`step-${i}`);
     if (!el) return;
     if (i < n)      el.className = 'pipeline-step done';
@@ -343,7 +344,7 @@ function markStepSkipped(n) {
 }
 function hidePipeline() {
   document.getElementById('pipeline-steps').classList.remove('visible');
-  [0, 1, 2, 3, 4].forEach(i => { const el = document.getElementById(`step-${i}`); if (el) el.className = 'pipeline-step'; });
+  [0, 1, 2, 3, 4, 5].forEach(i => { const el = document.getElementById(`step-${i}`); if (el) el.className = 'pipeline-step'; });
 }
 
 function fetchWithTimeout(url, options, ms) {
@@ -677,6 +678,57 @@ FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge]
 Output the complete song. Every section. No truncating. No commentary.`;
 }
 
+// ─── CLARITY PASS (NEW) ─────────────────────────────────────────────────────────
+// The fix for "great images, but it reads like jumble." Every other stage rewards
+// concrete-over-abstract and image density, so they strip out the plain connective
+// lines that tell a listener WHAT HAPPENED. Result: eight strong images in a row
+// with no through-line — knives with no handle. This pass runs right after the
+// draft and asks the opposite question: could a first-time listener follow this on
+// one listen? It guarantees each section has at least one plain, orienting line
+// that states a fact, and that the basic who/why/what is actually answered. It is
+// allowed to ADD plain lines and simplify over-literary ones — the only stage with
+// that license. It must NOT touch the knife line or the chorus hook.
+function buildClarityPrompt(draft, genre, structuredStory, truth) {
+  const knifeBlock = truth && truth.knife ? `\nPROTECTED — the knife line (do NOT simplify, weaken, or move it): "${truth.knife}"\n` : '';
+  const thesisBlock = truth && truth.thesis ? `\nThe song's spine (what it's about): ${truth.thesis}\n` : '';
+  return `You are a song doctor with one job: make this song FOLLOWABLE on a single listen, without draining its strength.
+
+GENRE: ${genre}
+${thesisBlock}${knifeBlock}
+THE STRUCTURED STORY (the facts the song is built on):
+${structuredStory}
+
+THE DRAFT:
+${draft}
+
+THE PROBLEM YOU ARE FIXING:
+This draft may be all image and no through-line — beautiful fragments stacked on each other with nothing plain to orient the listener. A stranger hearing it once should be able to follow WHAT IS HAPPENING, WHO is involved, and WHY. Right now they may be drowning in evocative lines with no solid ground to stand on. Strong songs ALTERNATE: a plain line that tells you what's happening, then an image that makes you feel it. Plain lines are not filler — they are the handle on the knife.
+
+YOUR TASK — apply in order:
+
+1. ORIENTATION CHECK
+Read it as a first-time listener. At each section, ask: do I know what's literally happening here? If a section is pure image with no plain statement of fact, that section FAILS. The listener needs at least one line per section that just tells them something true and clear, in plain words.
+
+2. PROTECT, THEN ADD
+Find the plain, load-bearing lines already in the draft and keep them. Then, in any section that is all image, convert ONE line to a plain orienting statement, or add one if the section can hold it without breaking meter. A plain line names a fact: who did what, what was decided, where this is. It does NOT have to be clever. "She told me she was leaving" is allowed and often better than a metaphor for it.
+
+3. SIMPLIFY ONE-PER-SECTION IF NEEDED
+If a section stacks two or more dense, over-literary lines back to back with no breath between them, simplify the weaker one into plain speech so the strong one has room to land. Do not flatten the whole song — the images are the point. You are adding handles, not removing blades.
+
+4. ANSWER THE BASICS
+By the end, the song must let a listener answer: Who is the other person (even just "someone who said they'd stay")? Why did the narrator do the central thing? What was the cost or the choice? If any of these is never stated plainly anywhere, make the smallest change that states it once, in the most natural section for it.
+
+ABSOLUTE RULES:
+- Do NOT touch the knife line or the chorus hook. Those are earned; leave them exactly.
+- Keep every section label exactly as written: [Verse 1], [Chorus], etc.
+- Do not add or remove sections.
+- Keep the genre's voice and the song's meter. Plain does not mean clumsy.
+- Change the FEWEST lines necessary to make it followable. If a section is already clear, leave it untouched.
+- No commentary. Output the complete song only.
+
+Output the complete revised song. Nothing else.`;
+}
+
 function buildPolishPrompt(draft, genre, structuredStory, truth) {
   const truthBlock = truth ? `\nTHE BURIED TRUTH (the song must serve this — use it to judge whether lines pull toward the thesis):
 HIDDEN THESIS: ${truth.thesis}
@@ -720,6 +772,7 @@ RULES:
 - Keep every section label exactly as written: [Verse 1], [Chorus], etc.
 - Do not add sections. Do not remove sections.
 - If a line passes all tests, do not touch it.
+- CLARITY GUARD: some lines are deliberately plain — they orient the listener by stating a fact (who/why/what/where). Do NOT "upgrade" a plain orienting line into an image just because it's less dense than its neighbors. Plain connective lines are load-bearing, not filler. Only rewrite a line if it is genuinely weak (fingerprint/filler failure), not merely because it is plain.
 - Do not add commentary, explanations, or notes.
 
 Output the complete revised song. Nothing else.`;
@@ -757,6 +810,8 @@ Run these reads:
 
 6. WOUND NAMED — Using the SOURCE above: the song's central wound or core realization should be RENDERED somewhere as a concrete thing, not left as an abstract label. If the thesis line of the song names a concept the song never makes concrete, say so and point at where it could land as an object. If the wound IS rendered concretely, say where.
 
+7. FOLLOWABLE — Read the song as a first-time listener hearing it once. Can they follow what is literally happening, who the other person is, and why the narrator did the central thing? A song FAILS this if it is all image and fragment with no plain orienting lines — beautiful pieces with no through-line. Name the first section where a new listener would get lost, and what basic fact is never stated plainly anywhere in the song.
+
 Return ONLY valid JSON, no preamble, no backticks, in exactly this shape:
 {
   "world": {"central": "string or null", "obeys": true, "stray": ["image", "..."], "note": "one sentence"},
@@ -764,7 +819,8 @@ Return ONLY valid JSON, no preamble, no backticks, in exactly this shape:
   "knife": {"present": true, "line": "verbatim line or null", "note": "one sentence"},
   "thesis": {"served": true, "drifting_section": "section name or null", "note": "one sentence"},
   "chorus": {"concrete": true, "leans_on": "the abstract line or concept word, or null", "better_object": "a physical object from the song to rebuild around, or null", "note": "one sentence"},
-  "wound": {"named": true, "abstract_thesis_line": "the verbatim line that labels the wound abstractly, or null", "could_land": "where/how it could become a concrete object, or null", "note": "one sentence"}
+  "wound": {"named": true, "abstract_thesis_line": "the verbatim line that labels the wound abstractly, or null", "could_land": "where/how it could become a concrete object, or null", "note": "one sentence"},
+  "followable": {"clear": true, "lost_section": "section name or null", "missing_fact": "the basic who/why/what never stated plainly, or null", "note": "one sentence"}
 }`;
 }
 
@@ -776,7 +832,8 @@ function diagnosticsHaveFailure(d) {
   const woundBad   = d.wound && d.wound.named === false;
   const knifeBad   = d.knife && d.knife.present === false;
   const thesisBad  = d.thesis && d.thesis.served === false;
-  return !!(worldBad || escBad || chorusBad || woundBad || knifeBad || thesisBad);
+  const clarityBad = d.followable && d.followable.clear === false;
+  return !!(worldBad || escBad || chorusBad || woundBad || knifeBad || thesisBad || clarityBad);
 }
 
 function buildCorrectionPrompt(finalSong, structuredStory, genre, d, truth) {
@@ -808,6 +865,12 @@ function buildCorrectionPrompt(finalSong, structuredStory, genre, d, truth) {
     const thesis = d.wound.abstract_thesis_line ? ` The line that labels it abstractly is: "${d.wound.abstract_thesis_line}".` : '';
     const where = d.wound.could_land ? ` It could become concrete here: ${d.wound.could_land}.` : '';
     tasks.push(`- THE WOUND IS NAMED ABSTRACTLY, never rendered as an object.${thesis}${where} Rewrite that line so the wound becomes a specific physical thing the listener can see — an object or action already in the song's world — instead of a concept word. Do not explain the feeling; show the thing. Preserve rhythm, length, and any rhyme.`);
+  }
+
+  if (d.followable && d.followable.clear === false) {
+    const lost = d.followable.lost_section ? ` A first-time listener gets lost at: ${d.followable.lost_section}.` : '';
+    const fact = d.followable.missing_fact ? ` The basic fact never stated plainly is: ${d.followable.missing_fact}.` : '';
+    tasks.push(`- THE SONG IS HARD TO FOLLOW — it's image-stacked with no plain through-line.${lost}${fact} In the named section (or the most natural place), convert ONE line to a plain orienting statement that tells the listener what is literally happening — who, why, or what was decided. Plain is fine; it does not need to be clever. Add a handle to the knives. Do not touch the knife line or the chorus hook. Change only what's needed to make it followable on one listen.`);
   }
 
   return `You are a surgical line editor. Below is a finished song that is mostly strong. A diagnostic has flagged ONLY the specific problems listed under FIXES. Your job is to fix EXACTLY those and change nothing else.
@@ -853,6 +916,7 @@ METHOD:
 3. COUPLET RULE — when two adjacent lines pair a CONCRETE line with an ABSTRACT one, the sagging line is the ABSTRACT one, never its concrete neighbor.
 4. THESIS RULE — if the song's central wound (see SOURCE) is gestured at with a concept word but never rendered as a physical object, flag that thesis line specifically. The most important sag is a thesis the song states but never shows.
 5. Flag GENEROUSLY — anything even slightly softer than the benchmark. Aim for 3 to 8 flagged lines. Do NOT flag the benchmark itself, the knife line, or lines that match its strength.
+6. CLARITY EXEMPTION — do NOT flag a line just for being plain. Some lines are deliberately simple because they orient the listener by stating a fact (who/why/what/where). A plain connective line is load-bearing, not a sag. Only flag a plain line if it is genuinely dead weight (says nothing, advances nothing), never merely because it is less dense or less poetic than its neighbors.
 
 For each sagging line, provide 2-3 candidate rewrites that stay in the song's existing world and use objects already present. Rate each candidate's confidence 0-100 — your honest read of which is strongest. Rate LOW (40s-50s) if a candidate is only a safe, conventional fix; do not inflate.
 
@@ -939,6 +1003,8 @@ function renderDiagnostics(d) {
   const chorusOk = chorus.concrete !== false;
   const woundD = d.wound || {};
   const woundOk = woundD.named !== false;
+  const followD = d.followable || {};
+  const followOk = followD.clear !== false;
 
   const row = (label, flagHtml, note) => `
     <div style="padding:11px 0;border-bottom:1px solid var(--border)">
@@ -964,6 +1030,7 @@ function renderDiagnostics(d) {
       ${row('MOVEMENT', flag(esc.moves !== false, 'escalates', 'restates'), esc.note || '')}
       ${row('CHORUS', flag(chorusOk, 'concrete', 'concept'), chorus.note || '')}
       ${row('WOUND', flag(woundOk, 'rendered', 'unnamed'), woundD.note || '')}
+      ${row('FOLLOWABLE', flag(followOk, 'clear', 'jumbled'), (followD.note || '') + (followD.lost_section ? ' — lost at ' + followD.lost_section : '') + (followD.missing_fact ? ' — missing: ' + followD.missing_fact : ''))}
     </div>`;
 }
 
@@ -1133,12 +1200,24 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     setPipelineStep(2);
     const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines, wound, truth), 0.95, 1600, signal);
 
-    // Stage 3 — Polish
+    // Stage 2.5 — Clarity (NEW): add the plain through-line before sharpening
+    // stages can strip it. This is the fix for "great images, reads like jumble."
     setPipelineStep(3);
-    let final = await aiCall(buildPolishPrompt(draft, genre, structuredStory, truth), 0.4, 1600, signal);
+    let clarified = draft;
+    try {
+      const c = await aiCall(buildClarityPrompt(draft, genre, structuredStory, truth), 0.5, 1600, signal);
+      if (c && c.length > 40) clarified = c;
+    } catch (e) {
+      if (e.name === 'AbortError') throw e;
+      /* clarity optional; fall back to the raw draft */
+    }
+
+    // Stage 3 — Polish
+    setPipelineStep(4);
+    let final = await aiCall(buildPolishPrompt(clarified, genre, structuredStory, truth), 0.4, 1600, signal);
 
     // Stage 4 — Diagnose, then auto-correct ONLY mechanically-failed parts.
-    setPipelineStep(4);
+    setPipelineStep(5);
     let diag = null;
     try {
       const rawDiag = await aiCall(buildDiagnosticsPrompt(final, wound, theme, truth), 0.2, 800, signal);
