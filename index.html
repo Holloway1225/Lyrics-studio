@@ -76,10 +76,14 @@
   <div class="header">
     <div class="header-eyebrow">✦ Suno Lyrics Studio ✦</div>
     <h1>Your Lyrics.<br>Your Voice.</h1>
-    <p>100% Original · Powered by Groq + Gemini</p>
+    <p>100% Original · Powered by Claude + Groq</p>
   </div>
   <div class="api-section" style="margin-top:28px">
     <div class="section-label" style="margin-top:0">API Keys</div>
+    <div class="api-row">
+      <div class="api-label">CLAUDE</div>
+      <input type="password" id="api-claude" class="api-input" placeholder="sk-ant-...">
+    </div>
     <div class="api-row">
       <div class="api-label">GROQ</div>
       <input type="password" id="api-groq" class="api-input" placeholder="gsk_...">
@@ -88,7 +92,7 @@
       <div class="api-label">GEMINI</div>
       <input type="password" id="api-gemini" class="api-input" placeholder="AIza...">
     </div>
-    <div class="api-hint">Groq is used first. Gemini kicks in automatically if Groq hits its limit.<br>Groq: console.groq.com · Gemini: aistudio.google.com</div>
+    <div class="api-hint">Claude writes first (best quality). Groq, then Gemini, kick in automatically if Claude is unavailable.<br>Claude: console.anthropic.com · Groq: console.groq.com · Gemini: aistudio.google.com</div>
     <div class="api-saved" id="api-saved">✓ Keys saved to this browser</div>
     <div class="active-model" id="active-model"></div>
     <button onclick="saveKeys()" style="margin-top:12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:8px 16px;color:var(--accent);font-family:'Inconsolata',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;">Save Keys</button>
@@ -139,16 +143,19 @@
   <div id="output"></div>
 </div>
 <script>
+const CLAUDE_URL="https://api.anthropic.com/v1/messages";
+const CLAUDE_MODEL="claude-sonnet-4-6";
+const CLAUDE_VERSION="2023-06-01";
 const GROQ_URL="https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL="llama-3.3-70b-versatile";
 const GEMINI_MODEL="gemini-2.5-flash";
 
 window.addEventListener('load',()=>{
-  ['groq','gemini'].forEach(k=>{const v=localStorage.getItem(`key_${k}`);if(v)document.getElementById(`api-${k}`).value=v;});
-  if(localStorage.getItem('key_groq')||localStorage.getItem('key_gemini')){document.getElementById('api-saved').style.display='block';}
+  ['claude','groq','gemini'].forEach(k=>{const v=localStorage.getItem(`key_${k}`);if(v)document.getElementById(`api-${k}`).value=v;});
+  if(localStorage.getItem('key_claude')||localStorage.getItem('key_groq')||localStorage.getItem('key_gemini')){document.getElementById('api-saved').style.display='block';}
 });
 function saveKeys(){
-  ['groq','gemini'].forEach(k=>{const v=document.getElementById(`api-${k}`).value.trim();if(v)localStorage.setItem(`key_${k}`,v);});
+  ['claude','groq','gemini'].forEach(k=>{const v=document.getElementById(`api-${k}`).value.trim();if(v)localStorage.setItem(`key_${k}`,v);});
   document.getElementById('api-saved').style.display='block';
 }
 function getKey(k){return document.getElementById(`api-${k}`).value.trim();}
@@ -157,6 +164,10 @@ function getSelected(id){return document.querySelector(`#${id} .toggle-btn.activ
 function copyText(text,btn){const fallback=()=>{const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}catch(e){btn.textContent='Failed';}document.body.removeChild(ta);};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);}).catch(fallback);}else{fallback();}}
 function setStatus(msg,isError=false){const el=document.getElementById('status');el.textContent=msg;el.className='status visible'+(isError?' error':' pulsing');}
 function clearStatus(){document.getElementById('status').className='status';}
+
+function cleanText(text){
+  return text.replace(/\*\*[\s\S]*?\*\*/g,'').replace(/\*[^*]+\*/g,'').replace(/_{1,2}[^_]+_{1,2}/g,'').replace(/^\s*---+\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
+}
 
 const GENRE_EXAMPLES={
   "Pop":`GOOD LINE: "I found your hoodie in the back seat / still smells like the last time we were easy"
@@ -201,20 +212,53 @@ GOOD CHORUS: "Where else would I go / you have the words of life / where else wo
 BAD CHORUS: "I will worship you forever / you are worthy of my praise"`
 };
 
-async function aiCall(prompt,temperature=0.95,maxTokens=1200){
+async function aiCall(prompt,temperature=0.95,maxTokens=2000){
+  const claudeKey=getKey('claude');
   const groqKey=getKey('groq');
   const geminiKey=getKey('gemini');
+
+  if(claudeKey){
+    try{
+      const res=await fetch(CLAUDE_URL,{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key':claudeKey,
+          'anthropic-version':CLAUDE_VERSION,
+          'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body:JSON.stringify({model:CLAUDE_MODEL,max_tokens:maxTokens,temperature,messages:[{role:'user',content:prompt}]})
+      });
+      if(res.ok){
+        const data=await res.json();
+        const text=(data.content||[]).map(b=>b.type==='text'?b.text:'').filter(Boolean).join('\n').trim();
+        if(text){showModel('✦ Using Claude');return cleanText(text);}
+        throw new Error('Empty response from Claude');
+      }
+      let errMsg=`Claude error ${res.status}`;
+      try{const err=await res.json();errMsg=err?.error?.message||errMsg;}catch(e){}
+      const isOverload=res.status===429||res.status===529||res.status>=500;
+      if(!isOverload&&!groqKey&&!geminiKey)throw new Error(errMsg);
+      showModel('⚡ Claude unavailable — switching to backup');
+    }catch(e){
+      if(!groqKey&&!geminiKey)throw e;
+      showModel('⚡ Claude unavailable — switching to backup');
+    }
+  }
+
   if(groqKey){
     try{
       const res=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${groqKey}`},body:JSON.stringify({model:GROQ_MODEL,messages:[{role:'user',content:prompt}],max_tokens:maxTokens,temperature,top_p:0.9})});
-      if(res.ok){const data=await res.json();showModel('✦ Using Groq');return data.choices[0].message.content.trim();}
+      if(res.ok){const data=await res.json();showModel('✦ Using Groq (backup)');return cleanText(data.choices[0].message.content.trim());}
       const err=await res.json();
-      if(!err?.error?.message?.toLowerCase().includes('rate limit')&&!String(res.status).startsWith('429')){throw new Error(err?.error?.message||`Groq error ${res.status}`);}
+      const isRateLimit=err?.error?.message?.toLowerCase().includes('rate limit')||String(res.status).startsWith('429');
+      if(!isRateLimit&&!geminiKey)throw new Error(err?.error?.message||`Groq error ${res.status}`);
       showModel('⚡ Groq limit reached — switching to Gemini');
     }catch(e){
-      if(!e.message.toLowerCase().includes('rate limit')&&!e.message.includes('429')){if(!geminiKey)throw e;}
+      if(!geminiKey)throw e;
     }
   }
+
   if(geminiKey){
     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature,maxOutputTokens:maxTokens}})});
     if(!res.ok){const err=await res.json();throw new Error(err?.error?.message||`Gemini error ${res.status}`);}
@@ -222,11 +266,10 @@ async function aiCall(prompt,temperature=0.95,maxTokens=1200){
     const candidate=data.candidates?.[0];
     let text=candidate?.content?.parts?.[0]?.text||candidate?.output||'';
     if(!text)throw new Error('Empty response from Gemini');
-    text=text.replace(/\*\*[\s\S]*?\*\*/g,'').replace(/\*[^*]+\*/g,'').replace(/_{1,2}[^_]+_{1,2}/g,'').replace(/^\s*---+\s*$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
-    showModel('✦ Using Gemini');
-    return text;
+    showModel('✦ Using Gemini (backup)');
+    return cleanText(text);
   }
-  throw new Error('No API key — add your Groq or Gemini key above');
+  throw new Error('No API key — add your Claude, Groq, or Gemini key above');
 }
 
 function showModel(msg){const el=document.getElementById('active-model');el.textContent=msg;el.style.display='block';}
@@ -234,7 +277,7 @@ function showModel(msg){const el=document.getElementById('active-model');el.text
 function buildPrompt(theme,genre,mood,userLines){
   const sacred=userLines?`\nSACRED LINES — these must appear verbatim in the final song, build around them:\n${userLines}\n`:'';
   const examples=GENRE_EXAMPLES[genre]||'';
-  return `You are a world class songwriter and ghostwriter. Someone has told you their real story. Your job is to turn it into a song that follows the exact sequence of events they described — in the order they described them.
+  return `You are a world class songwriter and ghostwriter. Someone has told you their real story. Your job is to turn it into a complete song that follows the exact sequence of events they described — in the order they described them.
 
 GENRE: ${genre}
 MOOD: ${mood}
@@ -270,22 +313,32 @@ The chorus must contain a specific image or detail from the story — not a summ
 6. BRIDGE AND OUTRO
 The bridge is where the narrator realizes something — use the turning point from the story. The outro lands on the last real moment they described. Do not go abstract. Stay in the scene.
 
-FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
-Output the complete song. Every section. No truncating. No commentary.`;
+REQUIRED FORMAT — output ALL eight sections below, fully written, in this exact order:
+[Verse 1]
+[Pre-Chorus]
+[Chorus]
+[Verse 2]
+[Pre-Chorus]
+[Chorus]
+[Bridge]
+[Outro]
+
+Do not stop after Verse 1. Do not summarize or abbreviate any section. Write the complete song from [Verse 1] through [Outro] in a single response, every section fully written out. No commentary, no notes, no explanation before or after the song — output the lyrics only.`;
 }
 
 async function generate(){
   const theme=document.getElementById('theme').value.trim();
-  if(!getKey('groq')&&!getKey('gemini')){setStatus('⚠ Add at least one API key above',true);return;}
+  if(!getKey('claude')&&!getKey('groq')&&!getKey('gemini')){setStatus('⚠ Add at least one API key above',true);return;}
   if(!theme){setStatus('⚠ Tell your story first',true);return;}
   const genre=getSelected('genre-group');
   const mood=getSelected('mood-group');
   const userLines=document.getElementById('user-lines').value.trim();
   document.getElementById('generate-btn').disabled=true;
   document.getElementById('output').innerHTML='';
+  document.getElementById('active-model').style.display='none';
   setStatus('✦ Writing your song...');
   try{
-    const lyrics=await aiCall(buildPrompt(theme,genre,mood,userLines),0.95,1200);
+    const lyrics=await aiCall(buildPrompt(theme,genre,mood,userLines),0.95,2000);
     clearStatus();
     document.getElementById('output').innerHTML=`<div class="output-box"><div class="box-header"><div class="box-title">✦ Your Lyrics</div><button class="copy-btn" id="copy-lyrics">Copy</button></div><div class="lyrics-text">${lyrics.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;
     document.getElementById('copy-lyrics').addEventListener('click',function(){copyText(lyrics,this);});
