@@ -348,10 +348,14 @@ function hidePipeline() {
 }
 
 function fetchWithTimeout(url, options, ms) {
-  return Promise.race([
-    fetch(url, options),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out — please try again')), ms))
-  ]);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error('Request timed out — please try again')), ms);
+  const externalSignal = options.signal;
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort(externalSignal.reason);
+    else externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
+  }
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
 function cleanText(text) {
@@ -531,12 +535,7 @@ BAD CHORUS: "I hear you screaming in the dark / your spirit won't let go / blood
 NOTE: Spare, atmospheric, presence-of-absence. What's NOT there does the work — the empty seat, the indentation in paper, the gesture with nothing to land on. Maximum restraint. Banned: horror literalism, ghosts, screaming, blood, haunted houses.`
 };
 
-// ─── STAGE 0: TRUTH DISCOVERY (NEW) ─────────────────────────────────────────────
-// Runs BEFORE structure. Decides what the song is actually about and what single
-// line it exists to earn, so every stage after it works from a thesis instead of
-// guessing. This is the fix for "every song sounds the same": without it, the
-// structure stage averages the input into competent mush. With it, the whole
-// pipeline orbits one buried truth and one knife line.
+// ─── STAGE 0: TRUTH DISCOVERY ────────────────────────────────────────────────
 function buildTruthPrompt(theme, wound, genre) {
   const woundBlock = wound ? `\nTHE WRITER'S WOUND (surface = what's physically happening, underneath = what it means):\n${wound}\n` : '';
   return `You are the writing partner a songwriter talks to BEFORE a single line gets written. You have raw material. Your job is not to summarize it. Your job is to find the buried, uncomfortable truth inside it — the thing the song is really about underneath what it appears to be about — and the one brutal line the whole song will exist to earn.
@@ -628,7 +627,7 @@ function buildPrompt(structuredStory, genre, mood, userLines, wound, truth) {
     ? `\n${truthBlockForPrompt(truth)}\n\nWrite the song so every verse gathers evidence FOR the hidden thesis. Never explain it. Only prove it. The knife line must be earned — build toward it across the song and let it land once, at full force, where it hits hardest (usually the bridge or final chorus). Do not soften it. Do not state the thesis as a slogan anywhere.\n`
     : '';
   const examples = GENRE_EXAMPLES[genre] || '';
-  return `You are a world class songwriter and ghostwriter. You have been given structured source material and the buried truth of the song. Your job is to turn it into a song that follows its arc exactly, in the order it was given, and that exists to earn its knife line.
+  return `You are a world class songwriter and ghostwriter. You have structured source material and the buried truth of the song. Turn it into a song that follows its arc exactly, in order, and that exists to earn its knife line.
 
 GENRE: ${genre}
 MOOD: ${mood}
@@ -640,54 +639,22 @@ QUALITY STANDARD for ${genre}:
 ${examples}
 
 RULES:
-
-1. FOLLOW THE ARC
-The song must follow the MOVEMENTS from the structured material in order. What comes first goes in Verse 1. What comes next goes in Verse 2. The turning point goes in the Bridge. The resolution or final beat goes in the Outro. Do not reorder.
-
-2. SERVE THE THESIS, EARN THE KNIFE
-Every verse gathers evidence for the hidden thesis. Never explain it — only prove it through concrete scene. The knife line is the line the whole song exists for; build toward it and let it land once at full force. Do not state it early, do not repeat it into dullness, do not soften it.
-
-3. USE THE REAL DETAILS
-Every specific detail in the KEY IMAGES is gold — names, objects, places, actions, textures. Use them directly. Do not swap for generic alternatives.
-
-4. FINGERPRINT RULE
-Every line must be irreplaceable — it could only exist in this song about this story. If a line could appear in a different song, rewrite it until it couldn't.
-
-5. ONE WORLD
-Stay inside ONE physical world (a house, a fire, a car, a bar, a phone screen) and dig deeper into it. Do not scatter across unrelated image-worlds. If the material gives you a bar, the glass, the ice, the bottle, the window all belong; storms and oceans and stars do not.
-
-6. BANNED PATTERNS:
-- Identity stacking: "I am the [noun] / I am the [noun]"
-- Stock pairs: storm+fire, dark+light, broken+whole, rise+fall
-- Emotion naming: "I felt empty" "I was devastated" "the pain inside"
-- Stock clichés: "heart beating like a drum" "words that cut too deep" "neon lights blurring like tears"
-- Stock rebirth: "wind at my back" "sun on my skin" "dawn after the night"
-- Any line that names the feeling instead of showing the moment
-- Repeating a metaphor or image across multiple sections
-
-7. CHORUS RULE
-The chorus must contain a specific image or detail from the KEY IMAGES — not a summary of the theme. It must feel like it could only come from this specific material. Max 4 lines, each under 10 words.
-
-8. ESCALATION
-Verse 2 must raise the cost or deepen the situation past Verse 1. Verse 1 = the problem exists; Verse 2 = the cost shows. Do not restate Verse 1 with new objects.
-
-9. BRIDGE AND OUTRO
-The bridge is where the narrator realizes something — use the TURNING POINT. The outro lands on the EMOTIONAL DESTINATION. Do not go abstract or motivational. Stay in the imagery.
+1. FOLLOW THE ARC — Verse 1 = first movement, Verse 2 = next movement, Bridge = turning point, Outro = resolution. Do not reorder.
+2. SERVE THE THESIS, EARN THE KNIFE — every verse proves the hidden thesis through concrete scene, never explains it. Land the knife line once, at full force, unsoftened, where it hits hardest.
+3. USE THE REAL DETAILS — use KEY IMAGES directly (names, objects, places, textures). No generic swaps.
+4. FINGERPRINT RULE — every line must be irreplaceable to this specific story. If it could fit another song, rewrite it.
+5. ONE WORLD — stay inside one physical world and dig deeper (e.g. a bar: glass, ice, bottle, window belong; storms and oceans don't).
+6. BANNED: identity stacking ("I am the X / I am the Y"), stock pairs (storm+fire, dark+light, broken+whole, rise+fall), naming emotions instead of showing them ("I felt empty"), greeting-card clichés ("heart beating like a drum," "wind at my back"), repeating an image across sections.
+7. CHORUS — must hold a specific KEY IMAGES detail, not a theme summary. Max 4 lines, each under 10 words.
+8. ESCALATION — Verse 1 = the problem exists, Verse 2 = the cost shows. Don't restate Verse 1 with new objects.
+9. BRIDGE/OUTRO — bridge is the TURNING POINT; outro lands on the EMOTIONAL DESTINATION. Stay concrete, never abstract or motivational.
+10. SINGABILITY — keep lines speakable in one breath; avoid consonant pile-ups and wildly uneven syllable counts between parallel lines (e.g. repeated chorus lines).
 
 FORMAT: [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Pre-Chorus] [Chorus] [Bridge] [Outro]
 Output the complete song. Every section. No truncating. No commentary.`;
 }
 
-// ─── CLARITY PASS (NEW) ─────────────────────────────────────────────────────────
-// The fix for "great images, but it reads like jumble." Every other stage rewards
-// concrete-over-abstract and image density, so they strip out the plain connective
-// lines that tell a listener WHAT HAPPENED. Result: eight strong images in a row
-// with no through-line — knives with no handle. This pass runs right after the
-// draft and asks the opposite question: could a first-time listener follow this on
-// one listen? It guarantees each section has at least one plain, orienting line
-// that states a fact, and that the basic who/why/what is actually answered. It is
-// allowed to ADD plain lines and simplify over-literary ones — the only stage with
-// that license. It must NOT touch the knife line or the chorus hook.
+// ─── CLARITY PASS ────────────────────────────────────────────────────────────
 function buildClarityPrompt(draft, genre, structuredStory, truth) {
   const knifeBlock = truth && truth.knife ? `\nPROTECTED — the knife line (do NOT simplify, weaken, or move it): "${truth.knife}"\n` : '';
   const thesisBlock = truth && truth.thesis ? `\nThe song's spine (what it's about): ${truth.thesis}\n` : '';
@@ -730,10 +697,10 @@ Output the complete revised song. Nothing else.`;
 }
 
 function buildPolishPrompt(draft, genre, structuredStory, truth) {
-  const truthBlock = truth ? `\nTHE BURIED TRUTH (the song must serve this — use it to judge whether lines pull toward the thesis):
+  const truthBlock = truth ? `\nTHE BURIED TRUTH (judge lines against this):
 HIDDEN THESIS: ${truth.thesis}
-THE KNIFE (the line the song exists to earn): ${truth.knife}\n` : '';
-  return `You are a ruthless line editor for a world-class songwriter. You have been given a first draft and the structured story it came from. Your job is to make it consistently great — not to rewrite it, but to find and fix every weak line while leaving strong ones untouched.
+THE KNIFE (must land once, earned): ${truth.knife}\n` : '';
+  return `You are a ruthless line editor for a world-class songwriter. Fix weak lines, leave strong ones untouched.
 
 GENRE: ${genre}
 
@@ -743,37 +710,20 @@ ${truthBlock}
 THE DRAFT:
 ${draft}
 
-YOUR TASK:
-
-Go through every line. Apply these tests in order:
-
-TEST 0 — THESIS TEST
-Does this line pull toward the hidden thesis, or drift away from it? If it drifts — if it's decoration that serves no part of the buried truth — cut it or rewrite it to gather evidence for the thesis.
-
-TEST 1 — FINGERPRINT TEST
-Could this line appear in a different song about a different story? If yes, rewrite it using a specific image from the structured story.
-
-TEST 2 — FILLER TEST
-Does this line name an emotion or state the theme directly? ("I felt lost" / "the pain was real" / "I couldn't breathe") If yes, replace it with the concrete action or image that caused that feeling.
-
-TEST 3 — CHORUS TEST
-Does the chorus contain at least one specific physical detail from the KEY IMAGES? If no, rebuild it around the CHORUS CANDIDATE from the structured material.
-
-TEST 4 — REPETITION TEST
-Does any metaphor, image, or phrase appear more than once across different sections? If yes, cut the weaker instance.
-
-TEST 5 — KNIFE TEST
-Is the knife line present, earned, and landed once at full force? If it's missing, restore it. If it's stated too early or repeated into dullness, fix its placement so it lands once where it hits hardest. Do not soften it.
-
-TEST 6 — ENDING TEST
-Does the outro stay in the imagery and emotional destination from the structured material, or does it go abstract or generically motivational? If abstract, pull it back to a concrete image from the KEY IMAGES.
+Apply these tests to every line, in order:
+0. THESIS — does it pull toward the hidden thesis, or drift into decoration? Cut or rewrite anything that drifts.
+1. FINGERPRINT — could this line fit a different song about a different story? If yes, rewrite it with a specific detail from the structured story.
+2. FILLER — does it name an emotion instead of the concrete thing that caused it ("I felt lost," "the pain was real")? Replace with the image or action.
+3. CHORUS — does the chorus hold a specific KEY IMAGES detail? If not, rebuild it around the CHORUS CANDIDATE.
+4. REPETITION — does any metaphor or image repeat across sections? Cut the weaker instance.
+5. KNIFE — is the knife line present, earned, and landed once at full force? Restore it if missing; fix its placement if it's stated too early or repeated into dullness. Never soften it.
+6. ENDING — does the outro stay in concrete imagery from KEY IMAGES / EMOTIONAL DESTINATION, or does it go abstract or generically motivational? Pull it back to a concrete image if it drifts.
 
 RULES:
-- Keep every section label exactly as written: [Verse 1], [Chorus], etc.
-- Do not add sections. Do not remove sections.
+- Keep every section label exactly as written: [Verse 1], [Chorus], etc. Do not add or remove sections.
 - If a line passes all tests, do not touch it.
-- CLARITY GUARD: some lines are deliberately plain — they orient the listener by stating a fact (who/why/what/where). Do NOT "upgrade" a plain orienting line into an image just because it's less dense than its neighbors. Plain connective lines are load-bearing, not filler. Only rewrite a line if it is genuinely weak (fingerprint/filler failure), not merely because it is plain.
-- Do not add commentary, explanations, or notes.
+- CLARITY GUARD: some lines are deliberately plain — they orient the listener by stating a fact (who/why/what/where). These are load-bearing, not filler. Do NOT "upgrade" a plain line into an image just because it's less dense than its neighbors — only rewrite it if it genuinely fails the Fingerprint or Filler test.
+- No commentary, explanations, or notes.
 
 Output the complete revised song. Nothing else.`;
 }
@@ -797,20 +747,14 @@ ${context}THE FINISHED SONG:
 ${finalSong}
 
 Run these reads:
-
-1. METAPHOR DISCIPLINE — Strong lyrics stay inside ONE physical world (a house, a fire, a car, a phone screen) and dig deeper. AI-sounding lyrics scatter across unrelated worlds for no reason. Name the central world. List any images that break out of it without justification — including subtle register breaks.
-
-2. ESCALATION — In a strong song, verse 2 raises the cost or deepens the situation past verse 1; it does not just restate verse 1 with new objects. Decide whether the song moves or repeats.
-
-3. KNIFE LINE — Strong songs usually have ONE line that is clear, simple, and brutal — the line the whole song exists for. Using the KNIFE from the buried truth above as the target: is that line (or an equally hard line serving the same truth) present and earned, or merely stated flatly / missing? Find the best candidate in the song, or report none.
-
-4. THESIS SERVED — Using the HIDDEN THESIS above: does every section pull toward it, or do sections drift into decoration that serves no part of the buried truth? Name any section that drifts.
-
-5. CONCRETE CHORUS — The chorus must carry a SPECIFIC PHYSICAL OBJECT or action from the verses. A chorus FAILS if it leans on abstract concept-words doing the emotional work. When a chorus couplet pairs a CONCRETE line with an ABSTRACT one, the failure is the ABSTRACT line, NOT its concrete neighbor. Flag the abstract half and name the physical object from the song it should become instead.
-
-6. WOUND NAMED — Using the SOURCE above: the song's central wound or core realization should be RENDERED somewhere as a concrete thing, not left as an abstract label. If the thesis line of the song names a concept the song never makes concrete, say so and point at where it could land as an object. If the wound IS rendered concretely, say where.
-
-7. FOLLOWABLE — Read the song as a first-time listener hearing it once. Can they follow what is literally happening, who the other person is, and why the narrator did the central thing? A song FAILS this if it is all image and fragment with no plain orienting lines — beautiful pieces with no through-line. Name the first section where a new listener would get lost, and what basic fact is never stated plainly anywhere in the song.
+1. METAPHOR DISCIPLINE — name the song's central physical world. List any images that break out of it without justification, including subtle register breaks.
+2. ESCALATION — does Verse 2 raise the cost or deepen the situation past Verse 1, or does it just restate Verse 1 with new objects?
+3. KNIFE LINE — using THE KNIFE above as the target: is that line (or an equally hard line serving the same truth) present in the song and earned, or is it merely stated flatly / missing? Find the best candidate, or report none.
+4. THESIS SERVED — using HIDDEN THESIS above: does every section pull toward it, or do any sections drift into decoration that serves no part of the buried truth? Name any drifting section.
+5. CONCRETE CHORUS — the chorus must carry a specific physical object or action from the verses. It FAILS if it leans on abstract concept-words to do the emotional work. If a couplet pairs a CONCRETE line with an ABSTRACT one, the failure is the ABSTRACT line — flag it and name the physical object from the song it should become instead.
+6. WOUND NAMED — using the SOURCE above: is the song's central wound rendered somewhere as a concrete thing, or left as an abstract label? If the thesis line names a concept the song never makes concrete, say so and point at where it could land as an object. If it IS rendered concretely, say where.
+7. FOLLOWABLE — read the song as a first-time listener hearing it once. Can they follow what is literally happening, who the other person is, and why the narrator did the central thing? It FAILS if it is all image and fragment with no plain orienting lines. Name the first section where a new listener would get lost, and what basic fact is never stated plainly anywhere.
+8. SINGABILITY — read the lines as if singing them aloud. Flag any line with an awkward consonant pile-up, a syllable count wildly out of step with its parallel line (e.g. between the two chorus repeats), or a phrase that would trip a vocalist mid-performance. Name the single worst offending line, or report none.
 
 Return ONLY valid JSON, no preamble, no backticks, in exactly this shape:
 {
@@ -820,7 +764,8 @@ Return ONLY valid JSON, no preamble, no backticks, in exactly this shape:
   "thesis": {"served": true, "drifting_section": "section name or null", "note": "one sentence"},
   "chorus": {"concrete": true, "leans_on": "the abstract line or concept word, or null", "better_object": "a physical object from the song to rebuild around, or null", "note": "one sentence"},
   "wound": {"named": true, "abstract_thesis_line": "the verbatim line that labels the wound abstractly, or null", "could_land": "where/how it could become a concrete object, or null", "note": "one sentence"},
-  "followable": {"clear": true, "lost_section": "section name or null", "missing_fact": "the basic who/why/what never stated plainly, or null", "note": "one sentence"}
+  "followable": {"clear": true, "lost_section": "section name or null", "missing_fact": "the basic who/why/what never stated plainly, or null", "note": "one sentence"},
+  "singability": {"ok": true, "bad_line": "verbatim line or null", "issue": "one short phrase describing what makes it hard to sing, or null", "note": "one sentence"}
 }`;
 }
 
@@ -833,7 +778,8 @@ function diagnosticsHaveFailure(d) {
   const knifeBad   = d.knife && d.knife.present === false;
   const thesisBad  = d.thesis && d.thesis.served === false;
   const clarityBad = d.followable && d.followable.clear === false;
-  return !!(worldBad || escBad || chorusBad || woundBad || knifeBad || thesisBad || clarityBad);
+  const singBad    = d.singability && d.singability.ok === false;
+  return !!(worldBad || escBad || chorusBad || woundBad || knifeBad || thesisBad || clarityBad || singBad);
 }
 
 function buildCorrectionPrompt(finalSong, structuredStory, genre, d, truth) {
@@ -866,11 +812,15 @@ function buildCorrectionPrompt(finalSong, structuredStory, genre, d, truth) {
     const where = d.wound.could_land ? ` It could become concrete here: ${d.wound.could_land}.` : '';
     tasks.push(`- THE WOUND IS NAMED ABSTRACTLY, never rendered as an object.${thesis}${where} Rewrite that line so the wound becomes a specific physical thing the listener can see — an object or action already in the song's world — instead of a concept word. Do not explain the feeling; show the thing. Preserve rhythm, length, and any rhyme.`);
   }
-
   if (d.followable && d.followable.clear === false) {
     const lost = d.followable.lost_section ? ` A first-time listener gets lost at: ${d.followable.lost_section}.` : '';
     const fact = d.followable.missing_fact ? ` The basic fact never stated plainly is: ${d.followable.missing_fact}.` : '';
     tasks.push(`- THE SONG IS HARD TO FOLLOW — it's image-stacked with no plain through-line.${lost}${fact} In the named section (or the most natural place), convert ONE line to a plain orienting statement that tells the listener what is literally happening — who, why, or what was decided. Plain is fine; it does not need to be clever. Add a handle to the knives. Do not touch the knife line or the chorus hook. Change only what's needed to make it followable on one listen.`);
+  }
+  if (d.singability && d.singability.ok === false) {
+    const bad = d.singability.bad_line ? ` The line is: "${d.singability.bad_line}".` : '';
+    const issue = d.singability.issue ? ` Issue: ${d.singability.issue}.` : '';
+    tasks.push(`- A LINE IS HARD TO SING.${bad}${issue} Rewrite it so it flows naturally in one breath — smooth the consonant pile-up or bring its syllable count in line with its parallel line — without changing its meaning, image, or rhyme.`);
   }
 
   return `You are a surgical line editor. Below is a finished song that is mostly strong. A diagnostic has flagged ONLY the specific problems listed under FIXES. Your job is to fix EXACTLY those and change nothing else.
@@ -993,6 +943,7 @@ function renderDiagnostics(d) {
   const knife = d.knife || {};
   const chorus = d.chorus || {};
   const thesis = d.thesis || {};
+  const sing = d.singability || {};
 
   const worldOk = world.obeys !== false && (!world.stray || world.stray.length === 0);
   const strayTxt = (world.stray && world.stray.length) ? ` — stray: ${escapeHTML(world.stray.join(', '))}` : '';
@@ -1005,6 +956,7 @@ function renderDiagnostics(d) {
   const woundOk = woundD.named !== false;
   const followD = d.followable || {};
   const followOk = followD.clear !== false;
+  const singOk = sing.ok !== false;
 
   const row = (label, flagHtml, note) => `
     <div style="padding:11px 0;border-bottom:1px solid var(--border)">
@@ -1031,6 +983,7 @@ function renderDiagnostics(d) {
       ${row('CHORUS', flag(chorusOk, 'concrete', 'concept'), chorus.note || '')}
       ${row('WOUND', flag(woundOk, 'rendered', 'unnamed'), woundD.note || '')}
       ${row('FOLLOWABLE', flag(followOk, 'clear', 'jumbled'), (followD.note || '') + (followD.lost_section ? ' — lost at ' + followD.lost_section : '') + (followD.missing_fact ? ' — missing: ' + followD.missing_fact : ''))}
+      ${row('SINGABLE', flag(singOk, 'flows', 'awkward'), (sing.note || '') + (sing.bad_line ? ' — "' + sing.bad_line + '"' : '') + (sing.issue ? ' (' + sing.issue + ')' : ''))}
     </div>`;
 }
 
@@ -1179,7 +1132,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
       markStepSkipped(0);
       markStepSkipped(1);
     } else {
-      // Stage 0 — Truth Discovery (NEW). The writer's brain. Find the buried
+      // Stage 0 — Truth Discovery. The writer's brain. Find the buried
       // thesis and the knife line BEFORE anything is structured or written.
       setPipelineStep(0);
       try {
@@ -1200,7 +1153,7 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     setPipelineStep(2);
     const draft = await aiCall(buildPrompt(structuredStory, genre, mood, userLines, wound, truth), 0.95, 1600, signal);
 
-    // Stage 2.5 — Clarity (NEW): add the plain through-line before sharpening
+    // Stage 2.5 — Clarity: add the plain through-line before sharpening
     // stages can strip it. This is the fix for "great images, reads like jumble."
     setPipelineStep(3);
     let clarified = draft;
@@ -1216,7 +1169,8 @@ document.getElementById('generate-btn').addEventListener('click', async () => {
     setPipelineStep(4);
     let final = await aiCall(buildPolishPrompt(clarified, genre, structuredStory, truth), 0.4, 1600, signal);
 
-    // Stage 4 — Diagnose, then auto-correct ONLY mechanically-failed parts.
+    // Stage 4 — Diagnose (now includes singability), then auto-correct ONLY
+    // mechanically-failed parts.
     setPipelineStep(5);
     let diag = null;
     try {
